@@ -7,6 +7,7 @@ const explore = [
   { href: "/colours", label: "Colour finder" },
   { href: "/palettes", label: "Colour palettes" },
   { href: "/visualizer", label: "Wall colour visualizer" },
+  { href: "/areas", label: "Areas we serve" },
   { href: "/about", label: "About us" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
@@ -35,10 +36,10 @@ export function Footer() {
         </div>
         <div className="text-[15px]">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-golden">Services</p>
-          <ul className="space-y-1">
+          <ul className="md:space-y-1">
             {services.map((s) => (
               <li key={s.slug}>
-                <Link href={`/services/${s.slug}`} className="block py-1.5 hover:text-on-ink">
+                <Link href={`/services/${s.slug}`} className="flex min-h-11 items-center hover:text-on-ink md:block md:min-h-0 md:py-1.5">
                   {s.name} in {site.city}
                 </Link>
               </li>
@@ -48,7 +49,7 @@ export function Footer() {
         <nav aria-label="Footer" className="flex flex-col text-[15px]">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-golden">Explore</p>
           {explore.map((l) => (
-            <Link key={l.href} href={l.href} className="py-1.5 hover:text-on-ink">
+            <Link key={l.href} href={l.href} className="flex min-h-11 items-center hover:text-on-ink md:block md:min-h-0 md:py-1.5">
               {l.label}
             </Link>
           ))}
@@ -56,9 +57,11 @@ export function Footer() {
       </div>
       <div className="container-page flex flex-col gap-3 border-t border-on-ink/10 py-6 text-xs md:flex-row md:items-center md:justify-between">
         <p>Serving {site.areas.join(" · ")}</p>
-        <p className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link href="/privacy-policy" className="hover:text-on-ink">Privacy policy</Link>
-          <Link href="/terms" className="hover:text-on-ink">Terms of service</Link>
+        {/* Legal links get a 44px tall tap target. On phones the 44px rows space the wrapped lines; on wider
+            screens the negative margin keeps the row at the Staff login pill's 26px, so the strip keeps its height. */}
+        <p className="flex flex-wrap items-center gap-x-5 md:-my-[9px]">
+          <Link href="/privacy-policy" className="inline-flex min-h-11 items-center hover:text-on-ink">Privacy policy</Link>
+          <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-on-ink">Terms of service</Link>
           <span className="whitespace-nowrap">© {year} {site.legalName || site.name}</span>
           {/* Staff entry to the private leads page. nofollow keeps crawlers out; the page itself requires sign-in. */}
           <Link href="/admin" rel="nofollow" prefetch={false} className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-on-ink/20 px-3 py-1 hover:border-golden hover:text-golden">

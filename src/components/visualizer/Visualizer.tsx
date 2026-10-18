@@ -37,6 +37,14 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
   const [result, setResult] = useState<SegmentResult | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [shade, setShade] = useState<Shade>(initialShade ?? { name: colours[18].name, hex: colours[18].hex, code: colours[18].code });
+  // A starting shade can arrive after mount (a brand shade from ?shade= is looked up in the
+  // browser). It replaces the current shade without remounting, so a loaded photo is kept.
+  const initialKey = initialShade ? `${initialShade.hex}|${initialShade.name}|${initialShade.code ?? ""}|${initialShade.bookQuery ?? ""}` : "";
+  const [appliedKey, setAppliedKey] = useState(initialKey);
+  if (initialKey !== appliedKey) {
+    setAppliedKey(initialKey);
+    if (initialShade) setShade(initialShade);
+  }
   const [showOriginal, setShowOriginal] = useState(false);
   const [hint, setHint] = useState("");
 

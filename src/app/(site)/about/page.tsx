@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Emoji } from "@/components/Emoji";
 import { PhotoCrop } from "@/components/PhotoCrop";
 import { CtaBanner } from "@/components/CtaBanner";
@@ -7,8 +8,8 @@ import { site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `About ${site.name}: Managed Painting Service in ${site.city}`,
-  description: `${site.name} is a managed painting service in ${site.city}. We coordinate inspection, quotation, painters, materials and quality checks so homeowners have one accountable team.`,
+  title: `About Our Managed House Painters in ${site.city}`,
+  description: `${site.name} runs house painting in ${site.city} end to end, so you deal with one accountable team: on-site inspection, itemised quotation and supervised painters.`,
   path: "/about",
 });
 
@@ -24,7 +25,7 @@ export default function AboutPage() {
     <>
       <PageHero
         crumbs={[{ name: "About", path: "/about" }]}
-        title={<>We make painting <span className="text-gradient">stress-free</span></>}
+        title={<>Managed house painting in {site.city}, made <span className="text-gradient">stress-free</span></>}
         intro={`Getting a home painted in ${site.city} usually means finding a painter, negotiating a rate, buying paint yourself and checking the work every day. ${site.name} takes all of that off your hands.`}
         image={images.painterWindow}
         shape="scallop"
@@ -69,6 +70,9 @@ export default function AboutPage() {
             problems quickly:
           </p>
           <p className="mt-4 font-display text-xl font-bold text-sunshine">{site.areas.join(" · ")}</p>
+          <Link href="/areas" className="mt-6 inline-flex min-h-11 items-center font-semibold text-on-ink underline decoration-golden underline-offset-4 hover:text-golden">
+            How we work in each area of {site.city}
+          </Link>
         </div>
       </section>
       <CtaBanner />

@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Terms of Service",
-  description: `Terms for using the ${site.name} website and booking painting services in ${site.city}.`,
+  title: `Terms of Service for House Painting in ${site.city}`,
+  description: `Terms for booking house painting with ${site.name} in ${site.city}: site inspections, itemised quotations, payment schedules and approved changes in scope.`,
   path: "/terms",
 });
 
@@ -26,7 +27,7 @@ export default function TermsPage() {
         <h2>Service terms</h2>
         <p>Any warranty or after-service commitment applies only as written in your service agreement.</p>
         <h2>Contact</h2>
-        <p>Questions about these terms? Reach us through our contact page.</p>
+        <p>Questions about these terms? Reach us through our <Link href="/contact" className="underline">contact page</Link>.</p>
       </div>
     </div>
   );

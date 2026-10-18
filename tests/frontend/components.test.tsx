@@ -110,10 +110,26 @@ describe("Header and Footer", () => {
     expect(activeSection([-2000, -900, null, 100], 800)).toBe(3);
   });
 
-  it("footer links about and contact", () => {
+  it("footer links about, contact and the areas we serve", () => {
     render(<Footer />);
     expect(screen.getByRole("link", { name: "About us" })).toHaveAttribute("href", "/about");
     expect(screen.getByRole("link", { name: "Contact" })).toHaveAttribute("href", "/contact");
+    expect(screen.getByRole("link", { name: "Areas we serve" })).toHaveAttribute("href", "/areas");
+    expect(screen.getByText(new RegExp(`Serving ${site.areas[0]}`))).toBeInTheDocument();
+  });
+
+  it("footer legal links have a 44px tall tap target", () => {
+    render(<Footer />);
+    for (const name of ["Privacy policy", "Terms of service"]) {
+      expect(screen.getByRole("link", { name })).toHaveClass("inline-flex", "min-h-11", "items-center");
+    }
+  });
+
+  it("footer shows only the contact details that are filled in", () => {
+    const { container } = render(<Footer />);
+    expect(Boolean(container.querySelector('a[href^="tel:"]'))).toBe(Boolean(site.phone));
+    expect(Boolean(container.querySelector('a[href^="mailto:"]'))).toBe(Boolean(site.email));
+    expect(screen.getByText(site.hoursDisplay)).toBeInTheDocument();
   });
 
   it("call-to-action banner links to booking", () => {
@@ -150,6 +166,15 @@ describe("JsonLd and Breadcrumbs", () => {
     expect(screen.getByRole("link", { name: "Services" })).toHaveAttribute("href", "/services");
     expect(screen.getByText("Interior")).toHaveAttribute("aria-current", "page");
     expect(container.querySelector('script[type="application/ld+json"]')!.innerHTML).toContain("BreadcrumbList");
+  });
+
+  it("gives breadcrumb links a 44px tap target whose padding is cancelled by negative margins", () => {
+    render(<Breadcrumbs items={[{ name: "Colours", path: "/colours" }, { name: "Visualizer", path: "/visualizer" }]} />);
+    for (const name of ["Home", "Colours"]) {
+      expect(screen.getByRole("link", { name })).toHaveClass("inline-flex", "min-h-11", "items-center", "-my-3", "px-1.5", "-mx-1.5");
+    }
+    // the current page is plain text, not a link
+    expect(screen.queryByRole("link", { name: "Visualizer" })).toBeNull();
   });
 });
 

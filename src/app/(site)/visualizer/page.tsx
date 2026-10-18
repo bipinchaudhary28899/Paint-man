@@ -1,15 +1,15 @@
+import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { JsonLd } from "@/components/JsonLd";
 import { Visualizer } from "@/components/visualizer/Visualizer";
+import { VisualizerFromParams } from "@/components/visualizer/VisualizerFromParams";
 import { site } from "@/config/site";
-import { getColour } from "@/lib/colours/search";
-import { getBrandShade } from "@/lib/colours/brands";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Wall Colour Visualizer: See Paint Shades on Your Own Room Photo`,
-  description: `Upload a photo of your room and see any wall colour on your walls only, with furniture, windows and light untouched. Runs in your browser; then book a shade-card visit in ${site.city}.`,
+  title: `Wall Colour Visualizer for Homes in ${site.city}`,
+  description: `See any wall colour on a photo of your own room. It runs in your browser, so the photo stays private; then we bring real shade cards to your home in ${site.city}.`,
   path: "/visualizer",
 });
 
@@ -19,16 +19,9 @@ const faqs = [
   { q: "Will the wall look exactly like this?", a: "It is a close guide. Daylight, tube lights and the finish (matt or sheen) all shift a shade, so the inspector brings physical shade cards and paints a test patch before you decide." },
 ];
 
-export default async function VisualizerPage({ searchParams }: { searchParams: Promise<{ colour?: string; model?: string; shade?: string }> }) {
-  const { colour: code, model, shade: shadeId } = await searchParams;
-  const ours = code ? getColour(code) : undefined;
-  const brandShade = !ours && shadeId ? getBrandShade(shadeId) : undefined;
-  const start = ours
-    ? { name: ours.name, hex: ours.hex, code: ours.code }
-    : brandShade
-      ? { name: brandShade.name, hex: brandShade.hex, code: `${brandShade.brandName} ${brandShade.code}`, bookQuery: `shade=${encodeURIComponent(brandShade.id)}` }
-      : undefined;
-  const modelId = model === "b1" || model === "b2" ? model : "b0";
+// Static page: ?colour=, ?shade= and ?model= are read in the browser by VisualizerFromParams.
+// Its Suspense fallback is the default visualizer, so the prerendered HTML has the full widget.
+export default function VisualizerPage() {
   return (
     <>
       <JsonLd data={faqJsonLd(faqs)} />
@@ -38,7 +31,7 @@ export default async function VisualizerPage({ searchParams }: { searchParams: P
           <div className="mt-5 max-w-3xl">
             <p className="eyebrow">Try it on your wall</p>
             <h1 className="mt-4 text-[clamp(40px,5vw,68px)] leading-[1.04] tracking-[-0.02em]">
-              See the colour on <em>your</em> walls.
+              Wall colour visualizer: see the shade on <em>your</em> walls
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-[1.65] text-muted">
               Drop in a photo of the room. We find the wall surfaces, then only they change colour: the sofa, cupboards, windows and
@@ -49,7 +42,9 @@ export default async function VisualizerPage({ searchParams }: { searchParams: P
       </section>
 
       <section className="container-page mt-10 md:mt-14" aria-label="Visualizer">
-        <Visualizer initialShade={start} model={modelId} />
+        <Suspense fallback={<Visualizer model="b0" />}>
+          <VisualizerFromParams />
+        </Suspense>
       </section>
 
       <section className="container-page mt-24 grid gap-10 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="vis-faq">
