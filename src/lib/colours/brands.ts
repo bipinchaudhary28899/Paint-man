@@ -1,5 +1,6 @@
 import "server-only";
 import raw from "@/data/paintdb.json";
+import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
 
 // Brand paint shades: 50,000+ real shades from 25 paint brands (Asian Paints, Berger, Nerolac,
 // Dulux, Sherwin-Williams…), from PaintDB's open dataset (CC BY 4.0), vendored as
@@ -53,13 +54,33 @@ const brandRank = (slug: string) => {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-let cache: { shades: BrandShade[]; keys: { code: string; name: string; words: string[] }[] } | null = null;
+export const SORTS = ["shade", "code", "name"] as const;
+export type ShadeSort = (typeof SORTS)[number];
+export const isShadeSort = (s: unknown): s is ShadeSort => typeof s === "string" && (SORTS as readonly string[]).includes(s);
+
+const FAMILY_ORDER = ["white", "beige", "yellow", "orange", "pink", "red", "purple", "blue", "green", "gray", "brown", "black"];
+const familyRank = (f: string) => (FAMILY_ORDER.indexOf(f) + 1 || 99);
+
+/**
+ * "Shade card" order key: near-neutral shades first, then narrow hue bands (20°, starting at
+ * magenta-red so reds aren't split across 0°/360°), each band light → dark, like the strips
+ * of a paper shade card. Exported for tests.
+ */
+export function shadeCardKey(hex: string): [number, number] {
+  const [L, a, b] = rgbToOklab(...hexToRgb(hex));
+  const chroma = Math.hypot(a, b);
+  const hue = ((Math.atan2(b, a) * 180) / Math.PI + 360 + 30) % 360;
+  const band = chroma < 0.025 ? -1 : Math.floor(hue / 20);
+  return [band, -L];
+}
+
+let cache: { shades: BrandShade[]; keys: { code: string; name: string; words: string[] }[]; order: Record<ShadeSort, number[]> } | null = null;
 function load() {
   if (cache) return cache;
-  const order = data.shades
+  const byBrand = data.shades
     .map((s, i) => ({ s, i }))
     .sort((a, b) => brandRank(data.brands[a.s[0]].slug) - brandRank(data.brands[b.s[0]].slug) || a.s[0] - b.s[0] || a.i - b.i);
-  const shades = order.map(({ s: [b, code, name, hex, lrv, f, u, where] }) => {
+  const shades = byBrand.map(({ s: [b, code, name, hex, lrv, f, u, where] }) => {
     const brand = data.brands[b];
     return {
       id: `${brand.slug}:${code}`,
@@ -76,7 +97,17 @@ function load() {
     };
   });
   const keys = shades.map((s) => ({ code: norm(s.code), name: s.name.toLowerCase(), words: s.name.toLowerCase().split(/[\s\-/&,.'()]+/).filter(Boolean) }));
-  cache = { shades, keys };
+  // the three browse orders, computed once: brand first, then the chosen order within it
+  const idx = shades.map((_, i) => i);
+  const brandCmp = (i: number, j: number) => brandRank(shades[i].brand) - brandRank(shades[j].brand) || shades[i].brand.localeCompare(shades[j].brand);
+  const card = shades.map((s) => shadeCardKey(s.hex));
+  const codeCollator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+  const order: Record<ShadeSort, number[]> = {
+    shade: [...idx].sort((i, j) => brandCmp(i, j) || familyRank(shades[i].family) - familyRank(shades[j].family) || card[i][0] - card[j][0] || card[i][1] - card[j][1] || i - j),
+    code: [...idx].sort((i, j) => brandCmp(i, j) || codeCollator.compare(shades[i].code, shades[j].code) || i - j),
+    name: [...idx].sort((i, j) => brandCmp(i, j) || shades[i].name.localeCompare(shades[j].name) || i - j),
+  };
+  cache = { shades, keys, order };
   return cache;
 }
 
@@ -93,8 +124,7 @@ export function brandList() {
 
 /** Colour families in the data, in a light-to-dark, warm-to-cool reading order. */
 export function shadeFamilies(): string[] {
-  const order = ["white", "beige", "yellow", "orange", "pink", "red", "purple", "blue", "green", "gray", "brown", "black"];
-  return [...data.families].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+  return [...data.families].sort((a, b) => familyRank(a) - familyRank(b));
 }
 
 export const isBrand = (s: unknown): s is string => typeof s === "string" && data.brands.some((b) => b.slug === s);
@@ -133,21 +163,22 @@ export function splitBrand(q: string): { brand?: string; rest: string } {
 
 const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 
-export type BrandQuery = { q?: string; brand?: string; family?: string; page?: number; perPage?: number };
+export type BrandQuery = { q?: string; brand?: string; family?: string; sort?: ShadeSort; page?: number; perPage?: number };
 
 /**
  * Searches the brand shades. A hex finds the nearest shades; otherwise matches rank as: exact
  * code, code prefix, exact name, name prefix, a word starting with the query, name contains,
- * code contains. Brand and family narrow the set; with no query the brand order is kept.
+ * code contains. Brand and family narrow the set. With no query, `sort` sets the browse order:
+ * "shade" (shade-card order: similar colours together, light → dark), "code" or "name".
  */
-export function searchBrandShades({ q = "", brand, family, page = 1, perPage = 60 }: BrandQuery) {
-  const { shades, keys } = load();
+export function searchBrandShades({ q = "", brand, family, sort = "shade", page = 1, perPage = 60 }: BrandQuery) {
+  const { shades, keys, order } = load();
   const split = brand ? { rest: q.trim() } : splitBrand(q);
   const inBrand = brand ?? split.brand;
   const rest = split.rest;
 
   let idx: number[] = [];
-  for (let i = 0; i < shades.length; i++) {
+  for (const i of order[sort]) {
     if (inBrand && shades[i].brand !== inBrand) continue;
     if (family && shades[i].family !== family) continue;
     idx.push(i);
@@ -178,12 +209,12 @@ export function searchBrandShades({ q = "", brand, family, page = 1, perPage = 6
     idx = idx
       .map((i) => [i, rank(i)] as const)
       .filter(([, r]) => r >= 0)
-      .sort((a, b) => a[1] - b[1] || a[0] - b[0])
+      .sort((a, b) => a[1] - b[1]) // stable: equal matches keep the browse order
       .map(([i]) => i);
   }
 
   const total = idx.length;
   const pages = Math.max(1, Math.ceil(total / perPage));
   const p = Math.min(Math.max(1, page), pages);
-  return { items: idx.slice((p - 1) * perPage, p * perPage).map((i) => shades[i]), total, page: p, pages, perPage, brand: inBrand ?? null, q: rest };
+  return { items: idx.slice((p - 1) * perPage, p * perPage).map((i) => shades[i]), total, page: p, pages, perPage, brand: inBrand ?? null, q: rest, sort };
 }

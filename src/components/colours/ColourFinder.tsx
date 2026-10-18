@@ -118,6 +118,7 @@ export function ColourFinder({
   const [bq, setBq] = useState(initialCatalogue === "brands" ? initialQuery : "");
   const [brand, setBrand] = useState(brands.some((b) => b.slug === initialBrand) ? initialBrand! : "");
   const [bFamily, setBFamily] = useState("");
+  const [bSort, setBSort] = useState<"shade" | "code" | "name">("shade");
   const [bItems, setBItems] = useState<BrandShadeItem[]>([]);
   const [bTotal, setBTotal] = useState(0);
   const [bPage, setBPage] = useState(0);
@@ -135,6 +136,7 @@ export function ColourFinder({
     if (bq.trim()) sp.set("q", bq.trim());
     if (brand) sp.set("brand", brand);
     if (bFamily) sp.set("family", bFamily);
+    if (bSort !== "shade") sp.set("sort", bSort);
     const key = sp.toString();
     let hit = pageCache.current.get(key);
     if (!hit) {
@@ -146,7 +148,7 @@ export function ColourFinder({
       pageCache.current.set(key, hit);
     }
     return hit;
-  }, [bq, brand, bFamily]);
+  }, [bq, brand, bFamily, bSort]);
 
   // first page whenever the brand, colour family or search changes
   useEffect(() => {
@@ -317,6 +319,16 @@ export function ColourFinder({
                 autoComplete="off"
                 className="field mt-2 w-full text-base"
               />
+              {brandInfo && !bq.trim() && (
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  <label htmlFor="brand-sort" className="font-semibold text-muted">Sort</label>
+                  <select id="brand-sort" value={bSort} onChange={(e) => setBSort(e.target.value as typeof bSort)} className="field !w-auto !py-1.5 text-sm">
+                    <option value="shade">Shade card (similar colours together, light → dark)</option>
+                    <option value="code">Shade code</option>
+                    <option value="name">Name (A–Z)</option>
+                  </select>
+                </div>
+              )}
               {brandInfo && (
                 <div className={`${chipRow} mt-4`} role="group" aria-label="Primary colour">
                   {["", ...brandFamilies].map((f) => (

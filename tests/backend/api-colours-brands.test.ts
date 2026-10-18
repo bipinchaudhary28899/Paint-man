@@ -20,7 +20,9 @@ describe("GET /api/v1/colours/paint", () => {
 
   it("filters by brand and family", async () => {
     const body = await (await get("/api/v1/colours/paint?brand=asian-paints&family=blue&perPage=48&page=2")).json();
-    expect(body.meta).toMatchObject({ total: 346, page: 2, pages: 8, perPage: 48 });
+    expect(body.meta).toMatchObject({ total: 346, page: 2, pages: 8, perPage: 48, query: { sort: "shade" } });
+    const byCode = await (await get("/api/v1/colours/paint?brand=asian-paints&sort=code&perPage=3")).json();
+    expect(byCode.meta.query.sort).toBe("code");
     expect(body.data).toHaveLength(48);
     expect(body.links.html).toContain("brand=asian-paints");
   });
@@ -33,6 +35,8 @@ describe("GET /api/v1/colours/paint", () => {
     expect(body.error.details).toContain("asian-paints");
     expect((await (await get("/api/v1/colours/paint?family=plaid")).json()).error.code).toBe("invalid_family");
     expect((await (await get("/api/v1/colours/paint?page=0")).json()).error.code).toBe("invalid_page");
+    const sort = await (await get("/api/v1/colours/paint?sort=random")).json();
+    expect(sort.error).toMatchObject({ code: "invalid_sort", details: ["shade", "code", "name"] });
     expect((await (await get("/api/v1/colours/paint?perPage=101")).json()).error.code).toBe("invalid_per_page");
   });
 });

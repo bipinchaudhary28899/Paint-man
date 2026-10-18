@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import raw from "@/data/paintdb.json";
-import { brandList, getBrandShade, isBrand, isShadeFamily, paintdb, searchBrandShades, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
+import { brandList, getBrandShade, isBrand, isShadeFamily, isShadeSort, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
 
 describe("brand shade data (PaintDB, vendored)", () => {
   it("has every shade from all 25 brands, with valid, unique entries", () => {
@@ -87,5 +87,43 @@ describe("finding brand shades", () => {
     expect(all.items[0].brand).toBe("asian-paints");
     expect(searchBrandShades({ brand: "asian-paints", family: "blue", perPage: 48, page: 99 }).page).toBe(8);
     expect(searchBrandShades({ q: "zzzzqqqq" }).total).toBe(0);
+  });
+});
+
+
+describe("browse order", () => {
+  const all = (opts: Parameters<typeof searchBrandShades>[0]) => searchBrandShades({ ...opts, perPage: 5000 }).items;
+
+  it("shade-card order keeps similar colours together, each hue band light to dark", () => {
+    const browns = all({ brand: "asian-paints", family: "brown" });
+    expect(browns).toHaveLength(130);
+    const keys = browns.map((s) => shadeCardKey(s.hex));
+    for (let i = 1; i < keys.length; i++) {
+      const [band, negL] = keys[i], [pBand, pNegL] = keys[i - 1];
+      expect(band >= pBand).toBe(true); // bands never go backwards
+      if (band === pBand) expect(negL >= pNegL).toBe(true); // within a band: light → dark
+    }
+  });
+
+  it("puts near-neutrals first and runs through the families in order across a whole brand", () => {
+    expect(shadeCardKey("#808080")[0]).toBe(-1);
+    expect(shadeCardKey("#c4473f")[0]).toBeGreaterThanOrEqual(0);
+    const fams = all({ brand: "berger" }).map((s) => s.family);
+    const order = shadeFamilies();
+    for (let i = 1; i < fams.length; i++) expect(order.indexOf(fams[i]) >= order.indexOf(fams[i - 1])).toBe(true);
+  });
+
+  it("sorts by shade code numerically, or by name", () => {
+    const codes = all({ brand: "asian-paints", sort: "code" }).map((s) => s.code);
+    const nums = codes.filter((c) => /^\d+$/.test(c)).map(Number);
+    expect(nums).toEqual([...nums].sort((a, b) => a - b));
+    const names = all({ brand: "nerolac", sort: "name" }).map((s) => s.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+    expect(isShadeSort("code")).toBe(true);
+    expect(isShadeSort("random")).toBe(false);
+  });
+
+  it("keeps ranking by best match when searching, whatever the sort", () => {
+    expect(searchBrandShades({ q: "7982", brand: "asian-paints", sort: "name" }).items[0].code).toBe("7982");
   });
 });

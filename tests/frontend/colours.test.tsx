@@ -173,6 +173,10 @@ describe("ColourFinder: brand shades", () => {
     await waitFor(() => expect(screen.getByText(/100 shades\. Tap/)).toBeInTheDocument());
     expect(fetchSpy.mock.calls.length).toBe(calls + 1);
 
+    // a different order is its own request (and its own cache entry)
+    await user.selectOptions(screen.getByLabelText("Sort"), "code");
+    await waitFor(() => expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain("sort=code"));
+
     // back to the brands
     await user.click(screen.getByRole("button", { name: "← All brands" }));
     expect(screen.getByRole("list", { name: "Paint brands" })).toBeInTheDocument();
