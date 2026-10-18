@@ -109,6 +109,16 @@ describe("POST /api/admin/logout", () => {
     expect(res.headers.get("set-cookie")).toMatch(/pm_admin=;.*Max-Age=0/i);
   });
 
+  it("answers JSON (cookie still cleared) when the sign-out button fetches it", async () => {
+    vi.resetModules();
+    const { POST } = await import("@/app/api/admin/logout/route");
+    const res = await POST(postJson("http://localhost:3000/api/admin/logout", { headers: { accept: "application/json" } }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("set-cookie")).toMatch(/pm_admin=;.*Max-Age=0/i);
+  });
+
   it("rejects cross-site logout", async () => {
     vi.resetModules();
     const { POST } = await import("@/app/api/admin/logout/route");

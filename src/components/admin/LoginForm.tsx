@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { hardNavigate } from "@/lib/browser";
 
 export function LoginForm() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,8 +21,10 @@ export function LoginForm() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
-        router.replace("/admin");
-        router.refresh();
+        // A full page load, not a router transition: the cookie has just been set and the
+        // leads page must be rendered fresh with it (see hardNavigate). The button stays
+        // in its "Signing in…" state until the new page arrives.
+        hardNavigate("/admin");
         return;
       }
       setError(json.error ?? "Sign-in failed.");

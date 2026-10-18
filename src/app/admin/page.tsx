@@ -1,4 +1,5 @@
 import { LeadsTable } from "@/components/admin/LeadsTable";
+import { SignOutButton } from "@/components/admin/SignOutButton";
 import { Logo } from "@/components/Logo";
 import { requireAdmin } from "@/lib/auth/server";
 import { leadLoadErrorMessage } from "@/lib/leads/load-error";
@@ -28,9 +29,7 @@ export default async function AdminPage() {
             <p className="text-xs text-muted">Signed in as {session.sub}</p>
           </div>
         </div>
-        <form action="/api/admin/logout" method="post">
-          <button type="submit" className="btn-secondary !py-2 text-sm">Sign out</button>
-        </form>
+        <SignOutButton />
       </header>
       {loadError ? (
         <div role="alert" className="mt-8 rounded-2xl border border-line bg-peach-wash p-5">

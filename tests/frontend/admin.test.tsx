@@ -3,10 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { filterLeads, LeadsTable } from "@/components/admin/LeadsTable";
 import { LoginForm } from "@/components/admin/LoginForm";
+import { SignOutButton } from "@/components/admin/SignOutButton";
 import { LEAD_COLUMNS, type LeadRecord } from "@/lib/leads/store";
 
-const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// Sign-in and sign-out end with a full page load (not a router transition); capture it here.
+const nav = vi.hoisted(() => ({ hardNavigate: vi.fn() }));
+vi.mock("@/lib/browser", () => nav);
 
 const lead = (over: Partial<LeadRecord>): LeadRecord =>
   ({ ...Object.fromEntries(LEAD_COLUMNS.map((c) => [c, ""])), Status: "New", ...over }) as LeadRecord;
@@ -19,7 +21,7 @@ const leads = [
 
 describe("LoginForm", () => {
   beforeEach(() => {
-    router.replace.mockReset();
+    nav.hardNavigate.mockReset();
   });
 
   it("uses a masked password field with the right autocomplete hints", () => {
@@ -29,7 +31,7 @@ describe("LoginForm", () => {
     expect(screen.getByLabelText("Username")).toHaveAttribute("autocomplete", "username");
   });
 
-  it("signs in and goes to the leads page", async () => {
+  it("signs in and loads the leads page fresh (a full page load, so no router race can blank it)", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true })));
     render(<LoginForm />);
     const user = userEvent.setup();
@@ -37,7 +39,10 @@ describe("LoginForm", () => {
     await user.type(screen.getByLabelText("Password"), "secret-password-123");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/admin"));
+    await waitFor(() => expect(nav.hardNavigate).toHaveBeenCalledWith("/admin"));
+    expect(nav.hardNavigate).toHaveBeenCalledTimes(1);
+    // stays in its busy state until the new page arrives
+    expect(screen.getByRole("button", { name: "Signing in…" })).toBeDisabled();
     const [url, init] = fetchSpy.mock.calls[0];
     expect(url).toBe("/api/admin/login");
     expect(init?.credentials).toBe("same-origin");
@@ -54,7 +59,38 @@ describe("LoginForm", () => {
     await user.type(screen.getByLabelText("Password"), "nope");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect username or password.");
-    expect(router.replace).not.toHaveBeenCalled();
+    expect(nav.hardNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("SignOutButton", () => {
+  beforeEach(() => {
+    nav.hardNavigate.mockReset();
+  });
+
+  it("signs out with a fetch, then loads the login page fresh", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+    render(<SignOutButton />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(nav.hardNavigate).toHaveBeenCalledWith("/admin/login"));
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toBe("/api/admin/logout");
+    expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("accept")).toBe("application/json");
+    expect(screen.getByRole("button", { name: "Signing out…" })).toBeDisabled();
+  });
+
+  it("falls back to the plain form post when the fetch fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("", { status: 500 }));
+    const submit = vi.spyOn(HTMLFormElement.prototype, "submit").mockImplementation(() => {});
+    const { container } = render(<SignOutButton />);
+    const form = container.querySelector("form")!;
+    expect(form).toHaveAttribute("action", "/api/admin/logout");
+    expect(form).toHaveAttribute("method", "post");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Sign out" }));
+    await waitFor(() => expect(submit).toHaveBeenCalled());
+    expect(nav.hardNavigate).not.toHaveBeenCalled();
+    submit.mockRestore();
   });
 });
 
