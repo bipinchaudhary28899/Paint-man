@@ -3,8 +3,8 @@ import { site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Privacy Policy",
-  description: `How ${site.name} collects, uses and protects the personal information you share when booking a painting inspection.`,
+  title: `Privacy Policy for Painting Services in ${site.city}`,
+  description: `How ${site.name} collects, uses and protects the details you share when booking a painting inspection in ${site.city}. We never sell your personal data.`,
   path: "/privacy-policy",
 });
 

@@ -2,29 +2,45 @@ import { Emoji, type EmojiName } from "@/components/Emoji";
 import Link from "next/link";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero } from "@/components/PageHero";
-import { site } from "@/config/site";
+import { services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Contact ${site.name}: Painters in ${site.city}`,
-  description: `Contact ${site.name} for house painting in ${site.city}. Call, WhatsApp or send us a message and our team will get back to you.`,
+  title: `Contact Our House Painters in ${site.city}`,
+  description: `Contact ${site.name}'s house painters in ${site.city}. We call you back during working hours, then send an inspector and an itemised quotation in writing.`,
   path: "/contact",
 });
 
+const steps = [
+  { title: "We call you back", text: `During working hours (${site.hoursDisplay}), to understand the job and fix a time for the site visit.` },
+  { title: "An inspector visits", text: "They measure the walls, check for damp, cracks and peeling paint, and bring shade cards to your home." },
+  { title: "You get an itemised quotation", text: "Scope, materials, inclusions, exclusions and the payment schedule in writing. Nothing is booked until you approve it." },
+];
+
 export default function ContactPage() {
+  // Phone, WhatsApp, email and street address appear only once they are filled in src/config/site.ts.
   const rows = [
     site.phone && { label: "Phone", tint: "bg-sunshine", emoji: "telephone-receiver" as const, node: <a href={`tel:${site.phone}`} className="hover:text-tangerine">{site.phoneDisplay || site.phone}</a> },
     site.whatsapp && { label: "WhatsApp", tint: "bg-sky-wash", emoji: "speech-balloon" as const, node: <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="hover:text-tangerine">Chat on WhatsApp</a> },
     site.email && { label: "Email", tint: "bg-rose-wash", emoji: "mobile-phone" as const, node: <a href={`mailto:${site.email}`} className="hover:text-tangerine">{site.email}</a> },
-    {
+    site.address.street && {
       label: "Address",
       tint: "bg-peach-wash",
       emoji: "round-pushpin" as const,
       node: (
         <address className="not-italic">
-          {site.address.street && <>{site.address.street}, </>}
-          {site.city}, {site.region} {site.address.postalCode}
+          {site.address.street}, {site.city}, {site.region} {site.address.postalCode}
         </address>
+      ),
+    },
+    {
+      label: "Service area",
+      tint: "bg-cream-wash",
+      emoji: "house" as const,
+      node: (
+        <Link href="/areas" className="hover:text-tangerine">
+          {site.city}, {site.region}
+        </Link>
       ),
     },
     { label: "Hours", tint: "bg-cream-wash", emoji: "alarm-clock" as const, node: site.hoursDisplay },
@@ -34,13 +50,25 @@ export default function ContactPage() {
     <>
       <PageHero
         crumbs={[{ name: "Contact", path: "/contact" }]}
-        title={<>Say <span className="text-gradient">hello</span></>}
-        intro={`Questions about painting your home in ${site.city}? We're happy to help.`}
+        title={<>Contact our house painters in <span className="text-gradient">{site.city}</span></>}
+        intro={`Questions about painting your home in ${site.city}? Send a message or book an inspection, and we call you back during working hours, ${site.hoursDisplay}.`}
         tint="bg-rose-wash"
         emoji="speech-balloon"
-      />
+      >
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href="/book" className="btn-primary">Book an inspection</Link>
+          {site.phone ? (
+            <a href={`tel:${site.phone}`} className="btn-secondary">Call {site.phoneDisplay || site.phone}</a>
+          ) : site.whatsapp ? (
+            <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="btn-secondary">Chat on WhatsApp</a>
+          ) : (
+            <a href="#message" className="btn-secondary">Ask for a call back</a>
+          )}
+        </div>
+      </PageHero>
+
       <div className="container-page mt-14 grid gap-10 lg:grid-cols-[1fr_1.3fr]">
-        <dl className="space-y-4">
+        <dl className="space-y-4 lg:self-start">
           {rows.map((r) => (
             <div key={r.label} className={`reveal flex items-center gap-4 rounded-3xl border border-line p-5 ${r.tint}`}>
               <Emoji name={r.emoji} size={48} className="shrink-0" />
@@ -51,14 +79,57 @@ export default function ContactPage() {
             </div>
           ))}
         </dl>
-        <div className="card p-6 md:p-8">
+        <div id="message" className="card scroll-mt-28 p-6 md:p-8">
           <h2 className="text-2xl font-normal">Send us a message</h2>
           <p className="mt-1 text-sm text-muted">
-            Want a quote? <Link href="/book" className="font-bold text-tangerine-text underline">Book an inspection</Link> instead.
+            Leave your mobile number and we call you back. Want a quote?{" "}
+            <Link href="/book" className="font-bold text-tangerine-text underline">Book an inspection</Link> instead.
           </p>
           <div className="mt-6"><LeadForm type="contact" /></div>
         </div>
       </div>
+
+      <section className="container-page mt-24 grid gap-12 lg:grid-cols-[1fr_1.3fr]" aria-labelledby="after-contact">
+        <div>
+          <p className="eyebrow">After you get in touch</p>
+          <h2 id="after-contact" className="mt-3 text-3xl md:text-5xl">
+            From first call to an itemised <em>quote</em>
+          </h2>
+          <p className="mt-4 max-w-md leading-[1.65] text-muted">
+            The same steps for a single bedroom or a whole house, anywhere we work in {site.city}.
+          </p>
+        </div>
+        <ol className="rule-list flex flex-col">
+          {steps.map((s, i) => (
+            <li key={s.title} className="flex gap-5 py-6">
+              <span className="font-display text-3xl text-terracotta" aria-hidden>{i + 1}</span>
+              <div>
+                <h3 className="text-xl">{s.title}</h3>
+                <p className="mt-1 leading-[1.65] text-muted">{s.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="container-page mt-24 grid gap-10 md:grid-cols-2" aria-label={`Where we work and what we paint in ${site.city}`}>
+        <div className="card p-7 md:p-9">
+          <h2 className="text-2xl md:text-3xl">Localities we cover</h2>
+          <p className="mt-3 leading-[1.65] text-muted">{site.areas.join(" · ")}</p>
+          <p className="mt-3 text-sm text-muted">Not on the list? Ask anyway. We&apos;ll tell you honestly whether we can supervise your job.</p>
+          <Link href="/areas" className="link-arrow mt-4 min-h-11">Areas we serve in {site.city} <span aria-hidden>→</span></Link>
+        </div>
+        <div className="card p-7 md:p-9">
+          <h2 className="text-2xl md:text-3xl">What we paint</h2>
+          <ul className="mt-3">
+            {services.map((s) => (
+              <li key={s.slug}>
+                <Link href={`/services/${s.slug}`} className="link-arrow min-h-11">{s.name} in {site.city} <span aria-hidden>→</span></Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
     </>
   );
 }

@@ -10,8 +10,8 @@ import { pageMetadata } from "@/lib/seo";
 const all = resolvePalettes();
 
 export const metadata = pageMetadata({
-  title: `Wall Colour Palettes for Indian Homes: Bedroom, Living Room, Exterior`,
-  description: `${all.length} ready colour palettes for homes in ${site.city}: a feature-wall shade, the white that goes with it and an accent, each shown on an ordinary room. Pick one and book a shade-card visit.`,
+  title: `Wall Colour Combinations for Homes in ${site.city}`,
+  description: `${all.length} wall colour combinations for homes in ${site.city}: a feature-wall shade, its matching white and an accent. We bring the shade cards to your home.`,
   path: "/palettes",
 });
 
@@ -28,18 +28,20 @@ export default function PalettesPage() {
           <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
               <h1 className="text-4xl font-normal leading-[1.05] md:text-6xl">
-                Colour palettes that <span className="brush">already work</span>
+                Wall colour combinations that <span className="brush">already work</span>
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
-                Three shades per room: the feature wall, the white around it and one accent. These are the combinations our
-                inspectors propose most on site visits in {site.city}. Not sure yet? <Link href="/colours" className="font-bold text-cobalt-text underline">Search single shades</Link>.
+                Ready-made colour combinations, three shades per room: the feature wall, the white around it and one accent.
+                Each is set out the way our inspector proposes colours on a site visit in {site.city}, and we bring all three
+                shade cards to your home. Not sure yet? <Link href="/colours" className="font-bold text-cobalt-text underline">Search single shades</Link>{" "}
+                or <Link href="/visualizer" className="font-bold text-cobalt-text underline">try a shade on your own room</Link>.
               </p>
             </div>
             <Emoji name="rainbow" size={120} className="hidden animate-float md:block" />
           </div>
           <nav aria-label="Jump to a palette" className="mt-8 flex flex-wrap gap-2">
             {all.map((p) => (
-              <a key={p.slug} href={`#${p.slug}`} className="rounded-full border border-line bg-paper px-3.5 py-1.5 text-sm font-bold transition hover:bg-sunshine">
+              <a key={p.slug} href={`#${p.slug}`} className="inline-flex min-h-11 items-center rounded-full border border-line bg-paper px-4 text-sm font-bold transition hover:bg-sunshine">
                 {p.name}
               </a>
             ))}

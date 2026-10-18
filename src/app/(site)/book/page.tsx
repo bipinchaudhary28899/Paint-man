@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { BookPrefill } from "@/components/BookPrefill";
 import { Emoji } from "@/components/Emoji";
 import { PhotoCrop } from "@/components/PhotoCrop";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -5,10 +7,6 @@ import { Blob } from "@/components/Decor";
 import { LeadForm } from "@/components/LeadForm";
 import { images } from "@/config/images";
 import { site } from "@/config/site";
-import { getPalette } from "@/config/palettes";
-import { getColour } from "@/lib/colours/search";
-import { getBrandShade } from "@/lib/colours/brands";
-import { serviceTypes } from "@/lib/leads/options";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -17,31 +15,15 @@ export const metadata = pageMetadata({
   path: "/book",
 });
 
-const serviceBySlug: Record<string, (typeof serviceTypes)[number]> = {
-  "interior-painting": "Interior Painting",
-  "exterior-painting": "Exterior Painting",
-  "rental-property-painting": "Rental Property",
-};
-
 const next = [
   { text: "We call you to confirm your requirements and inspection time.", tint: "bg-sunshine", emoji: "telephone-receiver" as const },
   { text: "Our inspector visits, measures the walls and checks their condition.", tint: "bg-pink", emoji: "magnifying-glass-tilted-left" as const },
   { text: "You receive an itemised quotation. Nothing is booked until you approve it.", tint: "bg-cobalt", emoji: "receipt" as const },
 ];
 
-export default async function BookPage({ searchParams }: { searchParams: Promise<{ service?: string; colour?: string; palette?: string; shade?: string }> }) {
-  const { service, colour: colourCode, palette: paletteSlug, shade: shadeId } = await searchParams;
-  const colour = colourCode ? getColour(colourCode) : undefined;
-  // a brand shade from the colour finder, e.g. ?shade=asian-paints:7982
-  const brandShade = shadeId ? getBrandShade(shadeId) : undefined;
-  const palette = paletteSlug ? getPalette(paletteSlug) : undefined;
-  const defaultMessage = palette
-    ? `Interested in the "${palette.name}" palette (${palette.codes.join(", ")}). Please bring the shade cards.`
-    : colour
-      ? `Interested in the shade ${colour.name} (${colour.code}). Please bring the shade card.`
-      : brandShade
-        ? `Interested in ${brandShade.brandName} ${brandShade.code} ${brandShade.name} (${brandShade.hex.toUpperCase()}). Please bring the shade card.`
-        : undefined;
+// Static page: ?service=, ?colour=, ?palette= and ?shade= are read in the browser by BookPrefill.
+// Its Suspense fallback is the plain booking form, so the prerendered HTML always has the form.
+export default function BookPage() {
   return (
     <div className="relative overflow-hidden">
       <Blob className="absolute -left-40 top-20 h-[28rem] w-[28rem] opacity-50" color="var(--pm-peach-wash)" />
@@ -54,11 +36,9 @@ export default async function BookPage({ searchParams }: { searchParams: Promise
             </h1>
             <p className="mt-4 text-lg text-muted">Share a few details. We&apos;ll call you to confirm a convenient time for the site visit.</p>
             <div className="card mt-10 p-6 md:p-8">
-              <LeadForm
-                type="booking"
-                defaultService={service ? serviceBySlug[service] : undefined}
-                defaultMessage={defaultMessage}
-              />
+              <Suspense fallback={<LeadForm type="booking" />}>
+                <BookPrefill />
+              </Suspense>
             </div>
           </div>
           <aside className="space-y-6">

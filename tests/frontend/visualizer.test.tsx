@@ -87,6 +87,30 @@ describe("Visualizer", () => {
     expect(seg.segment).toBeDefined();
   });
 
+  it("takes a starting shade that arrives after mount without dropping the loaded photo", async () => {
+    const user = userEvent.setup();
+    const factory = fakeSegmenter();
+    const { rerender } = render(<Visualizer segmenterFactory={factory} />);
+    await user.upload(screen.getByLabelText("Choose a room photo"), file());
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/1 wall surface found/));
+    const brand = { name: "Mecca Gold", hex: "#e7975b", code: "Asian Paints 7982", bookQuery: "shade=asian-paints%3A7982" };
+    rerender(<Visualizer segmenterFactory={factory} initialShade={brand} />);
+    expect(screen.getByText(/After · Mecca Gold/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/walls shown in Mecca Gold/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with Mecca Gold" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7982");
+    // the visitor's own pick is kept on later renders with the same starting shade
+    await user.click(screen.getByRole("button", { name: "Sindoor" }));
+    rerender(<Visualizer segmenterFactory={factory} initialShade={{ ...brand }} />);
+    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+    // clearing the starting shade keeps the current one
+    rerender(<Visualizer segmenterFactory={factory} />);
+    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+    // a named colour without a code books without one
+    rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Dusty Rose", hex: "#c9a0a0" }} />);
+    expect(screen.getByText(/After · Dusty Rose/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with Dusty Rose" })).toHaveAttribute("href", "/book");
+  });
+
   it("hold-to-compare shows the untouched photo; walls mode toggles a surface; reset restores it", async () => {
     const user = userEvent.setup();
     render(<Visualizer segmenterFactory={fakeSegmenter()} />);
