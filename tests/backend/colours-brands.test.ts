@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import raw from "@/data/paintdb.json";
-import { brandList, getBrandShade, isBrand, isShadeFamily, isShadeSort, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
+import { curatedColours } from "@/config/colours";
+import { brandList, getBrandShade, isBrand, isShadeFamily, isShadeSort, nearestBrandShades, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
+import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
 
 describe("brand shade data (PaintDB, vendored)", () => {
   it("has every shade from all 25 brands, with valid, unique entries", () => {
@@ -125,5 +127,48 @@ describe("browse order", () => {
 
   it("keeps ranking by best match when searching, whatever the sort", () => {
     expect(searchBrandShades({ q: "7982", brand: "asian-paints", sort: "name" }).items[0].code).toBe("7982");
+  });
+});
+
+describe("nearest brand shades to a Paint Man shade", () => {
+  const indian = ["asian-paints", "berger", "nerolac"];
+  const oklabDistance = (x: string, y: string) => {
+    const [a, b] = [rgbToOklab(...hexToRgb(x)), rgbToOklab(...hexToRgb(y))];
+    return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  };
+
+  it("returns each brand in the order asked, closest shades first", () => {
+    const m = nearestBrandShades("#b8c7b0", indian, 2);
+    expect(m.map((x) => x.brand)).toEqual(indian);
+    expect(m.map((x) => x.brandName)).toEqual(["Asian Paints", "Berger Paints", "Kansai Nerolac"]);
+    for (const { brand, shades } of m) {
+      expect(shades).toHaveLength(2);
+      expect(shades.every((s) => s.brand === brand)).toBe(true);
+      expect(shades[0].distance).toBeLessThanOrEqual(shades[1].distance);
+    }
+  });
+
+  it("finds the true nearest shade by OKLab distance, and an exact hex at distance 0", () => {
+    const all = searchBrandShades({ brand: "berger", perPage: 5000 }).items;
+    const target = "#c2623f";
+    const best = Math.min(...all.map((s) => oklabDistance(s.hex, target)));
+    const [match] = nearestBrandShades(target, ["berger"], 1);
+    expect(match.shades[0].distance).toBeCloseTo(best, 3);
+    // a brand shade's own hex finds a shade with that hex
+    expect(nearestBrandShades("#e7975b", ["asian-paints"], 1)[0].shades[0]).toMatchObject({ hex: "#e7975b", distance: 0 });
+  });
+
+  it("finds a close match for every curated shade in each Indian brand", () => {
+    for (const c of curatedColours) {
+      const m = nearestBrandShades(c.hex, indian, 2);
+      expect(m).toHaveLength(3);
+      for (const b of m) expect(b.shades[0].distance).toBeLessThan(0.1);
+    }
+  });
+
+  it("skips unknown brands and keeps n between 1 and 10", () => {
+    expect(nearestBrandShades("#ffffff", ["acme", "berger"], 2).map((m) => m.brand)).toEqual(["berger"]);
+    expect(nearestBrandShades("#ffffff", ["berger"], 0)[0].shades).toHaveLength(1);
+    expect(nearestBrandShades("#ffffff", ["berger"], 50)[0].shades).toHaveLength(10);
   });
 });

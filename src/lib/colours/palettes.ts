@@ -27,3 +27,12 @@ export function palettesUsing(code: string): ResolvedPalette[] {
   const c = getColour(code);
   return c ? resolvePalettes().filter((p) => p.codes.includes(c.code)) : [];
 }
+
+const ROLES = ["the feature wall", "the other walls and ceiling", "the accent (door, niche or trim)"] as const;
+
+/** Where a shade goes in a palette: the feature wall, the other walls, or the accent. */
+export function paletteRole(p: Pick<ResolvedPalette, "codes">, code: string): (typeof ROLES)[number] | undefined {
+  const c = getColour(code);
+  const i = c ? p.codes.indexOf(c.code) : -1;
+  return i < 0 ? undefined : ROLES[i];
+}

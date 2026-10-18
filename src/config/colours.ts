@@ -20,7 +20,13 @@ export type Colour = {
   name: string;
   hex: string;
   family: ColourFamily;
+  /** Rooms it suits, main room first. The main room sets the headline finish. */
   rooms: Room[];
+  /**
+   * The finish we quote for the main room: "Exterior weatherproof" only when the first room is
+   * outside (Exterior or Balcony), otherwise an interior finish. Shades good both inside and out
+   * show both finishes on their page.
+   */
   finish: Finish;
   /** How much light the wall reflects, 0–100. Below 35 makes a small room feel smaller. */
   lrv: number;
@@ -40,7 +46,7 @@ export const curatedColours: Colour[] = [
   { code: "PM-104", name: "Cotton", hex: "#eeeae3", family: "Whites", rooms: ["Bedroom", "Living room", "Rental refresh"], finish: "Matt emulsion", lrv: 81, pairsWith: ["PM-202", "PM-603"], note: "A grey-white for people who find cream too yellow. Clean with wooden furniture.", tags: ["greige white", "light grey white"] },
 
   // Neutrals
-  { code: "PM-201", name: "Agra Stone", hex: "#d9cfc0", family: "Beiges", rooms: ["Living room", "Exterior", "Balcony"], finish: "Exterior weatherproof", lrv: 62, pairsWith: ["PM-101", "PM-404"], note: "Sandstone beige that hides dust on exteriors better than white.", tags: ["beige", "sandstone", "stone", "red fort", "dust"] },
+  { code: "PM-201", name: "Agra Stone", hex: "#d9cfc0", family: "Beiges", rooms: ["Exterior", "Balcony", "Living room"], finish: "Exterior weatherproof", lrv: 62, pairsWith: ["PM-101", "PM-404"], note: "Sandstone beige that hides dust on exteriors better than white.", tags: ["beige", "sandstone", "stone", "red fort", "dust"] },
   { code: "PM-202", name: "Dove", hex: "#c9c6c1", family: "Greys", rooms: ["Bedroom", "Living room", "Kitchen"], finish: "Matt emulsion", lrv: 56, pairsWith: ["PM-104", "PM-802"], note: "A warm light grey. Reads calm, not cold, with 2700K bulbs.", tags: ["light grey", "warm grey", "gray"] },
   { code: "PM-203", name: "Pebble", hex: "#a39d95", family: "Greys", rooms: ["Living room", "Exterior"], finish: "Matt emulsion", lrv: 34, pairsWith: ["PM-102", "PM-702"], note: "Mid grey for one feature wall behind the TV; keep the other three walls white.", tags: ["grey", "mid grey", "feature wall", "tv wall"] },
   { code: "PM-204", name: "Jute", hex: "#bfa98a", family: "Beiges", rooms: ["Living room", "Bedroom"], finish: "Matt emulsion", lrv: 42, pairsWith: ["PM-103", "PM-401"], note: "Looks like raw jute in daylight; hides handprints in a busy family room.", tags: ["tan", "khaki", "camel", "brown beige"] },
@@ -59,7 +65,7 @@ export const curatedColours: Colour[] = [
   { code: "PM-404", name: "Rose Brick", hex: "#b57a73", family: "Browns", rooms: ["Exterior", "Balcony"], finish: "Exterior weatherproof", lrv: 24, pairsWith: ["PM-201", "PM-101"], note: "Dusty rose-brown for boundary walls and gate pillars; weathers gracefully.", tags: ["dusty rose", "brick pink", "boundary wall", "pillar"] },
 
   // Greens
-  { code: "PM-501", name: "Tulsi", hex: "#7f9c6a", family: "Greens", rooms: ["Balcony", "Kitchen", "Pooja room"], finish: "Washable", lrv: 30, pairsWith: ["PM-103", "PM-101"], note: "Leaf green that works next to actual plants on a balcony wall.", tags: ["green", "leaf", "plant", "hara", "olive green"] },
+  { code: "PM-501", name: "Tulsi", hex: "#7f9c6a", family: "Greens", rooms: ["Kitchen", "Balcony", "Pooja room"], finish: "Washable", lrv: 30, pairsWith: ["PM-103", "PM-101"], note: "Leaf green that works next to actual plants on a balcony wall.", tags: ["green", "leaf", "plant", "hara", "olive green"] },
   { code: "PM-502", name: "Sage Mist", hex: "#b8c7b0", family: "Greens", rooms: ["Bedroom", "Living room", "Kitchen"], finish: "Matt emulsion", lrv: 56, pairsWith: ["PM-102", "PM-204"], note: "The quiet green everyone asks for after seeing it once. Good in bedrooms.", tags: ["sage", "pastel green", "light green", "mint grey"] },
   { code: "PM-503", name: "Pista", hex: "#cfe3c4", family: "Greens", rooms: ["Kids room", "Kitchen"], finish: "Washable", lrv: 73, pairsWith: ["PM-102", "PM-303"], note: "Pistachio pastel; bright enough for a kids room, soft enough to live with.", tags: ["pistachio", "mint", "pastel", "light green"] },
   { code: "PM-504", name: "Bottle Green", hex: "#2f5d4a", family: "Greens", rooms: ["Living room", "Bedroom"], finish: "Silk / sheen", lrv: 9, pairsWith: ["PM-101", "PM-403"], note: "A deep, hotel-lobby green for one wall behind a bed or sofa.", tags: ["dark green", "emerald", "forest", "hunter"] },
@@ -76,7 +82,7 @@ export const curatedColours: Colour[] = [
   { code: "PM-703", name: "Onion", hex: "#b77c9a", family: "Purples", rooms: ["Bedroom", "Living room"], finish: "Matt emulsion", lrv: 26, pairsWith: ["PM-101", "PM-403"], note: "Mauve like the inside of an onion skin. Unusual, calm, grown-up.", tags: ["mauve", "lilac", "purple pink", "pyaaz"] },
 
   // Bold
-  { code: "PM-801", name: "Sindoor", hex: "#c9302f", family: "Reds", rooms: ["Pooja room", "Exterior"], finish: "Exterior weatherproof", lrv: 10, pairsWith: ["PM-101", "PM-103"], note: "Vermilion red for a door, a pooja wall or a gate pillar. Never a whole room.", tags: ["red", "vermilion", "lal", "door", "temple"] },
+  { code: "PM-801", name: "Sindoor", hex: "#c9302f", family: "Reds", rooms: ["Exterior", "Pooja room"], finish: "Exterior weatherproof", lrv: 10, pairsWith: ["PM-101", "PM-103"], note: "Vermilion red for a door, a pooja wall or a gate pillar. Never a whole room.", tags: ["red", "vermilion", "lal", "door", "temple"] },
   { code: "PM-802", name: "Mustard Oil", hex: "#c7962a", family: "Yellows", rooms: ["Living room", "Balcony"], finish: "Matt emulsion", lrv: 32, pairsWith: ["PM-104", "PM-202"], note: "Deep mustard for one wall with grey or white around it. Retro, warm.", tags: ["mustard", "ochre", "dark yellow", "sarson"] },
   { code: "PM-803", name: "Peacock", hex: "#1f8f85", family: "Teals", rooms: ["Living room", "Kids room", "Balcony"], finish: "Silk / sheen", lrv: 20, pairsWith: ["PM-102", "PM-303"], note: "Teal with real depth; the wall people photograph. One wall, sheen finish.", tags: ["teal", "mor", "turquoise", "sea green", "aqua"] },
   { code: "PM-804", name: "Aubergine", hex: "#5a3457", family: "Purples", rooms: ["Bedroom"], finish: "Silk / sheen", lrv: 6, pairsWith: ["PM-101", "PM-702"], note: "Deep plum for a bed wall in a room with a big window. Luxurious in the evening.", tags: ["purple", "plum", "baingan", "wine", "dark purple"] },

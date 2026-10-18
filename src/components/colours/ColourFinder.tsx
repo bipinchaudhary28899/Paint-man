@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { colourFamilies, colours, rooms, type Colour, type ColourFamily, type Room } from "@/config/colours";
+import { finishSummary } from "@/lib/colours/guide";
 import { isFamily, isRoom, searchColours } from "@/lib/colours/search";
 import { WallPreview } from "./WallPreview";
 
@@ -34,6 +36,8 @@ type Props = {
   brandFamilies?: string[];
   brandTotal?: number;
   attribution?: { text: string; source: string; licenseUrl: string };
+  /** Pages of brand shades infinite scroll loads by itself; after that the Show more button takes over, so the DOM stays bounded. */
+  autoLoadPages?: number;
 };
 
 /** What the preview panels show, for either catalogue. */
@@ -59,7 +63,7 @@ const ourView = (c: Colour): View => ({
   hex: c.hex,
   lrv: c.lrv,
   eyebrow: c.family,
-  meta: `${c.hex.toUpperCase()} · LRV ${c.lrv} · ${c.finish}`,
+  meta: `${c.hex.toUpperCase()} · LRV ${c.lrv} · ${finishSummary(c)}`,
   note: c.note,
   goodFor: c.rooms.join(", "),
   bookHref: `/book?colour=${c.code}`,
@@ -88,7 +92,60 @@ const FAMILY_SWATCH: Record<string, string> = {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** Shades per load: 12 rows of 4 on a phone, 16 rows of 3 on desktop (about 10 KB). */
 export const PER_PAGE = 48;
+/** Infinite scroll stops after this many pages (about 960 tiles); "Show more" still loads the rest. */
+export const AUTO_LOAD_PAGES = 20;
 type PageResp = { data: BrandShadeItem[]; meta: { total: number; page: number; pages: number } };
+
+const tileClass = (on: boolean) =>
+  `group block w-full overflow-hidden rounded-xl border bg-paper text-left transition hover:-translate-y-0.5 sm:rounded-[1.25rem] ${on ? "border-ink ring-2 ring-ink sm:ring-0 sm:shadow-[6px_6px_0_var(--pm-shadow-ink)]" : "border-line sm:shadow-[3px_3px_0_var(--pm-shadow-ink)]"}`;
+
+/** A plain primary click, the kind a tile turns into "show it on the wall"; anything else (new tab, download) is left to the browser. */
+const isPlainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+
+// A Paint Man shade tile is a real link to the shade's page, so crawlers and no-JS visitors
+// reach every shade from here; with JS a plain click shows it on the wall instead, and
+// ctrl/cmd/middle click still opens the page. Memoised: a tap re-renders only the two tiles
+// whose selected state flips.
+const ShadeTile = memo(function ShadeTile({ colour: c, selected, onSelect }: { colour: Colour; selected: boolean; onSelect: (c: Colour) => void }) {
+  return (
+    <Link
+      href={`/colours/${c.code}`}
+      prefetch={false}
+      aria-current={selected ? "true" : undefined}
+      onClick={(e) => {
+        if (!isPlainClick(e)) return;
+        e.preventDefault();
+        onSelect(c);
+      }}
+      className={tileClass(selected)}
+    >
+      <span className="block h-14 border-b border-line sm:h-24" style={{ background: c.hex }} />
+      <span className="block p-1.5 sm:p-3">
+        <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{c.name}</span>
+        <span className="mt-0.5 flex items-center justify-between text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
+          <span>{c.code}</span>
+          <span className="hidden sm:inline">{c.family}</span>
+        </span>
+      </span>
+    </Link>
+  );
+});
+
+// Brand shades have no pages of their own, so their tiles stay toggle buttons.
+const BrandTile = memo(function BrandTile({ shade: s, selected, showBrand, onSelect }: { shade: BrandShadeItem; selected: boolean; showBrand: boolean; onSelect: (s: BrandShadeItem) => void }) {
+  return (
+    <button type="button" onClick={() => onSelect(s)} aria-pressed={selected} className={tileClass(selected)}>
+      <span className="block h-14 border-b border-line sm:h-24" style={{ background: s.hex }} />
+      <span className="block p-1.5 sm:p-3">
+        <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{s.name}</span>
+        <span className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
+          <span className="truncate">{s.code}</span>
+          <span className="hidden truncate sm:inline">{showBrand ? s.brandName : ""}</span>
+        </span>
+      </span>
+    </button>
+  );
+});
 
 // Two catalogues in one finder. Paint Man shades: our 167, filtered in the browser (the full
 // grid is server-rendered for crawlers). Brand shades: 50,000+ real shades from 25 brands,
@@ -104,6 +161,7 @@ export function ColourFinder({
   brandFamilies = [],
   brandTotal = 0,
   attribution,
+  autoLoadPages = AUTO_LOAD_PAGES,
 }: Props) {
   const [catalogue, setCatalogue] = useState<Catalogue>(initialCatalogue === "brands" && brandTotal > 0 ? "brands" : "ours");
 
@@ -179,7 +237,10 @@ export function ColourFinder({
     loadingMore.current = true;
     try {
       const json = await fetchPage(bPage + 1);
-      setBItems((items) => [...items, ...json.data.filter((s) => !items.some((i) => i.id === s.id))]);
+      setBItems((items) => {
+        const seen = new Set(items.map((i) => i.id));
+        return [...items, ...json.data.filter((s) => !seen.has(s.id))];
+      });
       setBPage(json.meta.page);
       setBPages(json.meta.pages);
     } catch {
@@ -189,13 +250,14 @@ export function ColourFinder({
     }
   }, [bPage, bPages, bState, fetchPage]);
   const sentinel = useRef<HTMLDivElement>(null);
+  const autoLoad = bPage < autoLoadPages;
   useEffect(() => {
     const el = sentinel.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!el || !autoLoad || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver((entries) => { if (entries[0]?.isIntersecting) void loadMore(); }, { rootMargin: "800px 0px" });
     io.observe(el);
     return () => io.disconnect();
-  }, [loadMore, bItems.length]);
+  }, [loadMore, bItems.length, autoLoad]);
 
   const brandInfo = brands.find((b) => b.slug === brand);
 
@@ -219,8 +281,6 @@ export function ColourFinder({
   const view: View | null = catalogue === "brands" ? (brandActive ? brandView(brandActive) : null) : ourActive ? ourView(ourActive) : null;
 
   const chipRow = "chip-row -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0";
-  const tileClass = (on: boolean) =>
-    `group block w-full overflow-hidden rounded-xl border bg-paper text-left transition hover:-translate-y-0.5 sm:rounded-[1.25rem] ${on ? "border-ink ring-2 ring-ink sm:ring-0 sm:shadow-[6px_6px_0_var(--pm-shadow-ink)]" : "border-line sm:shadow-[3px_3px_0_var(--pm-shadow-ink)]"}`;
 
   return (
     // Wide screens: the list on the left and the preview in a sticky column beside it.
@@ -228,7 +288,7 @@ export function ColourFinder({
     // dense swatch grid below it, so every tap shows on the wall without scrolling.
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_440px]">
       {view && (
-        <div className="sticky top-[73px] z-20 -mx-5 mb-4 border-b border-line-soft bg-canvas/95 px-5 pb-3 pt-2 backdrop-blur-md lg:hidden" aria-label="Selected shade preview">
+        <div role="group" aria-label="Selected shade preview" className="sticky top-[73px] z-20 -mx-5 mb-4 border-b border-line-soft bg-canvas/95 px-5 pb-3 pt-2 backdrop-blur-md lg:hidden">
           {/* the whole room on the left, the shade and its actions on the right */}
           <div className="flex items-stretch gap-3">
             <WallPreview colour={view} compact frameClassName="h-[26svh] min-h-[180px] max-h-[240px]" sizes="45vw" className="shrink-0 !rounded-2xl" />
@@ -239,9 +299,9 @@ export function ColourFinder({
                 <p className="mt-0.5 text-xs font-semibold text-muted">{view.code}</p>
                 <p className="mt-0.5 text-[11px] font-semibold text-muted">{view.hex.toUpperCase()} · LRV {view.lrv}</p>
               </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <Link href={view.bookHref} className="btn-primary !min-h-[36px] !px-3.5 !py-1.5 text-xs">Book</Link>
-                {view.detailsHref && <Link href={view.detailsHref} className="text-xs font-semibold underline underline-offset-2">Details</Link>}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <Link href={view.bookHref} className="btn-primary !min-h-11 !px-3.5 !py-1.5 text-xs">Book</Link>
+                {view.detailsHref && <Link href={view.detailsHref} className="inline-flex min-h-11 items-center text-xs font-semibold underline underline-offset-2">Details</Link>}
               </div>
             </div>
           </div>
@@ -356,16 +416,7 @@ export function ColourFinder({
             <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Shades">
               {results.map((c) => (
                 <li key={c.code}>
-                  <button type="button" onClick={() => setSelected(c)} aria-pressed={ourActive?.code === c.code} className={tileClass(ourActive?.code === c.code)}>
-                    <span className="block h-14 border-b border-line sm:h-24" style={{ background: c.hex }} />
-                    <span className="block p-1.5 sm:p-3">
-                      <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{c.name}</span>
-                      <span className="mt-0.5 flex items-center justify-between text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
-                        <span>{c.code}</span>
-                        <span className="hidden sm:inline">{c.family}</span>
-                      </span>
-                    </span>
-                  </button>
+                  <ShadeTile colour={c} selected={ourActive?.code === c.code} onSelect={setSelected} />
                 </li>
               ))}
             </ul>
@@ -399,17 +450,9 @@ export function ColourFinder({
                 </p>
                 <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Brand shades">
                   {bItems.map((s) => (
-                    <li key={s.id}>
-                      <button type="button" onClick={() => setBSelected(s)} aria-pressed={brandActive?.id === s.id} className={tileClass(brandActive?.id === s.id)}>
-                        <span className="block h-14 border-b border-line sm:h-24" style={{ background: s.hex }} />
-                        <span className="block p-1.5 sm:p-3">
-                          <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{s.name}</span>
-                          <span className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
-                            <span className="truncate">{s.code}</span>
-                            <span className="hidden truncate sm:inline">{brand ? "" : s.brandName}</span>
-                          </span>
-                        </span>
-                      </button>
+                    // off-screen tiles skip style and layout work; the reserved size is per breakpoint (phone tiles are shorter)
+                    <li key={s.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_100px] sm:[contain-intrinsic-size:auto_164px]">
+                      <BrandTile shade={s} selected={brandActive?.id === s.id} showBrand={!brand} onSelect={setBSelected} />
                     </li>
                   ))}
                 </ul>
@@ -468,4 +511,25 @@ export function ColourFinder({
       )}
     </div>
   );
+}
+
+const MemoColourFinder = memo(ColourFinder);
+
+/**
+ * The finder with its starting search, filters and catalogue read from the URL in the browser
+ * (/colours?family=Greens, /colours?catalogue=brands&brand=berger&q=3P0050), so /colours itself
+ * stays a static page. Render it inside <Suspense> with a plain <ColourFinder> as the fallback:
+ * the prerendered HTML then still carries the full grid of shade links.
+ */
+export function ColourFinderFromUrl(props: Omit<Props, "initialQuery" | "initialFamily" | "initialRoom" | "initialCatalogue" | "initialBrand">) {
+  const params = useSearchParams();
+  // Read once: later URL changes are the finder's own (it keeps the URL shareable as you filter).
+  const [initial] = useState(() => ({
+    initialQuery: params.get("q") ?? undefined,
+    initialFamily: params.get("family") ?? undefined,
+    initialRoom: params.get("room") ?? undefined,
+    initialCatalogue: params.get("catalogue") ?? undefined,
+    initialBrand: params.get("brand") ?? undefined,
+  }));
+  return <MemoColourFinder {...props} {...initial} />;
 }

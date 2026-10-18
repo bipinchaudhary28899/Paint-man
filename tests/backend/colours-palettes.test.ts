@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getPalette, palettes } from "@/config/palettes";
-import { palettesForRoom, palettesUsing, resolvePalettes } from "@/lib/colours/palettes";
+import { paletteRole, palettesForRoom, palettesUsing, resolvePalettes } from "@/lib/colours/palettes";
 
 describe("palettes", () => {
   it("every palette resolves all three shades and has a unique slug", () => {
@@ -25,6 +25,15 @@ describe("palettes", () => {
     expect(using.length).toBeGreaterThan(2);
     expect(using.every((p) => p.codes.includes("PM-101"))).toBe(true);
     expect(palettesUsing("PM-999")).toEqual([]);
+  });
+
+  it("names a shade's place in a palette: feature wall, other walls or accent", () => {
+    const calm = getPalette("calm-bedroom")!; // Sage Mist, Taj White, Jute
+    expect(paletteRole(calm, "PM-502")).toBe("the feature wall");
+    expect(paletteRole(calm, "101")).toBe("the other walls and ceiling");
+    expect(paletteRole(calm, "PM-204")).toBe("the accent (door, niche or trim)");
+    expect(paletteRole(calm, "PM-603")).toBeUndefined();
+    expect(paletteRole(calm, "PM-999")).toBeUndefined();
   });
 
   it("looks a palette up by slug", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { colourFamilies, colours, curatedColours } from "@/config/colours";
-import { familySpecs, generateShades, lrvOf, oklchToHex } from "@/config/shades";
+import { familySingular, familySpecs, finishFor, generateShades, interiorFinishFor, isOutdoor, lrvBand, lrvOf, oklchToHex, outdoorRooms } from "@/config/shades";
 
 describe("shade ladder", () => {
   const shades = generateShades();
@@ -37,11 +37,53 @@ describe("shade ladder", () => {
     const deep = shades.find((s) => s.lrv < 25)!;
     expect(pale.finish).toBe("Washable");
     expect(pale.rooms).toContain("Rental refresh");
-    expect(["Silk / sheen", "Exterior weatherproof"]).toContain(deep.finish);
-    expect(deep.note).toMatch(/feature wall|single wall/);
+    expect(deep.finish).toBe("Silk / sheen");
+    expect(deep.note).toMatch(/feature wall/);
     expect(deep.tags).toContain("dark");
+    // a deep brown is still good outside, but its headline finish is the indoor one
     const exteriorDeep = shades.find((s) => s.family === "Browns" && s.lrv < 25)!;
-    expect(exteriorDeep.finish).toBe("Exterior weatherproof");
+    expect(exteriorDeep.rooms).toContain("Exterior");
+    expect(exteriorDeep.finish).toBe("Silk / sheen");
+    expect(exteriorDeep.note).toContain("gate pillars");
+  });
+
+  it("uses one set of LRV bands for notes, tags and rooms, so a page never contradicts itself", () => {
+    expect([lrvBand(60), lrvBand(59), lrvBand(35), lrvBand(34)]).toEqual(["light", "mid", "mid", "deep"]);
+    for (const s of shades) {
+      const band = lrvBand(s.lrv);
+      if (band === "light") {
+        expect(s.note).toMatch(/^A pale /);
+        expect(s.tags).toContain("light");
+        expect(s.rooms).toContain("Rental refresh");
+      } else if (band === "mid") {
+        expect(s.note).toContain("all four walls");
+        expect(s.tags).toContain("medium");
+      } else {
+        expect(s.note).toContain("feature wall");
+        expect(s.note).not.toContain("all four walls");
+        expect(s.tags).toContain("dark");
+        expect(s.rooms).not.toContain("Rental refresh");
+        expect(s.rooms).not.toContain("Kids room");
+      }
+      expect(s.note).toContain(familySingular[s.family]);
+    }
+  });
+
+  it("never quotes an exterior finish for a shade whose main room is inside", () => {
+    expect(finishFor(40, ["Exterior", "Living room"])).toBe("Exterior weatherproof");
+    expect(finishFor(40, ["Living room", "Exterior"])).toBe("Matt emulsion");
+    expect(finishFor(80, [])).toBe("Washable");
+    expect([interiorFinishFor(75), interiorFinishFor(50), interiorFinishFor(20)]).toEqual(["Washable", "Matt emulsion", "Silk / sheen"]);
+    expect(outdoorRooms).toEqual(["Exterior", "Balcony"]);
+    for (const s of shades) {
+      expect(s.finish).toBe(finishFor(s.lrv, s.rooms));
+      expect(s.finish).not.toBe("Exterior weatherproof"); // every generated shade lists an indoor room first
+    }
+    // the whole catalogue, curated shades included: weatherproof exactly when the main room is outside
+    for (const c of colours) {
+      expect(c.finish === "Exterior weatherproof").toBe(isOutdoor(c.rooms[0]));
+      if (c.finish === "Exterior weatherproof") expect(c.note).not.toMatch(/all four walls|small room|bedroom|kitchen/i);
+    }
   });
 
   it("pairings resolve inside the catalogue and the curated shades come first", () => {
