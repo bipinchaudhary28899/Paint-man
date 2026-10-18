@@ -61,8 +61,8 @@ export function ColourExplorer() {
   useScrollFrame(frame, needsJs);
 
   return (
-    <section ref={section} id="colour" className="relative min-h-[760px]" data-js={needsJs || undefined}>
-      <div className="container-page relative flex flex-wrap items-center gap-12 py-[120px] md:py-40">
+    <section ref={section} id="colour" className="relative md:min-h-[760px]" data-js={needsJs || undefined}>
+      <div className="container-page relative flex flex-wrap items-center gap-8 py-16 md:gap-12 md:py-40">
         <div className="relative z-[2] min-w-0 max-w-[560px] flex-[1_1_440px]">
           <p className="eyebrow">Colour explorer</p>
           <h2 className="mt-6 text-[clamp(36px,4vw,56px)] leading-[1.06]">
@@ -73,11 +73,11 @@ export function ColourExplorer() {
             your light, furniture and budget.
           </p>
 
-          <div className="mt-9 flex items-stretch gap-5 rounded-[20px] border border-line-soft bg-paper p-4">
-            <div className="w-28 shrink-0 rounded-[14px] transition-colors duration-300" style={{ background: hex }} />
+          <div className="mt-7 flex items-stretch gap-4 rounded-[20px] border border-line-soft bg-paper p-3 md:mt-9 md:gap-5 md:p-4">
+            <div className="w-20 shrink-0 rounded-[14px] transition-colors duration-300 md:w-28" style={{ background: hex }} />
             <div className="flex min-w-0 flex-col justify-center gap-1">
               <span className="text-xs uppercase tracking-[0.12em] text-muted-2">Selected shade</span>
-              <strong className="font-display text-[28px] font-normal tracking-[-0.01em]">{name}</strong>
+              <strong className="font-display text-[24px] font-normal tracking-[-0.01em] md:text-[28px]">{name}</strong>
               <span className="text-sm text-muted">{hex.toUpperCase()} · {family}</span>
             </div>
           </div>
@@ -112,8 +112,10 @@ export function ColourExplorer() {
           </div>
         </div>
 
-        <div aria-hidden className="wheel-wrap pointer-events-none relative mt-8 h-[300px] w-full md:absolute md:-right-[200px] md:top-1/2 md:mt-0 md:h-[1120px] md:w-[760px] md:-translate-y-1/2">
-          <svg viewBox="0 0 1120 1120" className="wheel-svg absolute -left-[20%] -top-[50px] w-[200%] overflow-visible md:left-0 md:top-0 md:h-[1120px] md:w-[1120px]">
+        {/* Phones: the top half of the wheel as a fan, clipped to its own box so it never runs into
+            the next section. Wider screens: the full wheel bleeding off the right edge. */}
+        <div aria-hidden className="wheel-wrap pointer-events-none relative -mx-5 h-[190px] w-[calc(100%+40px)] overflow-hidden md:absolute md:-right-[200px] md:top-1/2 md:mx-0 md:mt-0 md:h-[1120px] md:w-[760px] md:-translate-y-1/2 md:overflow-visible">
+          <svg viewBox="0 0 1120 1120" className="wheel-svg absolute left-1/2 top-2 w-[440px] -translate-x-1/2 md:left-0 md:top-0 md:h-[1120px] md:w-[1120px] md:translate-x-0 md:overflow-visible">
             <g className={`wheel-spin ${visible ? "is-visible" : ""}`}>
               <g className="wheel" style={needsJs ? { transform: `rotate(${angle}deg)`, transition: "transform .12s linear", willChange: "transform" } : undefined}>
                 {segments.map((s, i) => <path key={i} d={s.d} fill={s.hex} />)}

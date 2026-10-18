@@ -27,9 +27,15 @@ describe("ColourFinder", () => {
 
     await user.click(shadeButtons()[0]);
     expect(screen.getByRole("heading", { name: /Sage Mist/ })).toBeInTheDocument();
-    expect(screen.getByAltText("A cosy living room, repainted in Sage Mist")).toBeInTheDocument();
+    // the room is shown twice: the compact pinned preview for phones and the side panel for wide screens
+    expect(screen.getAllByAltText("A cosy living room, repainted in Sage Mist")).toHaveLength(2);
     expect(screen.getByRole("link", { name: /Book an inspection with this shade/ })).toHaveAttribute("href", "/book?colour=PM-502");
     expect(screen.getByRole("link", { name: "Full details" })).toHaveAttribute("href", "/colours/PM-502");
+    // the phone preview carries the same shade with short actions
+    const phone = screen.getByLabelText("Selected shade preview");
+    expect(phone).toHaveTextContent("Sage Mist");
+    expect(within(phone).getByRole("link", { name: "Book" })).toHaveAttribute("href", "/book?colour=PM-502");
+    expect(within(phone).getByRole("link", { name: "Details" })).toHaveAttribute("href", "/colours/PM-502");
   });
 
   it("toggles family and room chips, keeps the selection valid and clears everything", async () => {

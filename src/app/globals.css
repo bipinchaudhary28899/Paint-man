@@ -273,6 +273,14 @@ h1 em, h2 em, h3 em, .accent {
    track drives every part of the panel. Without scroll-timeline support the room is shown finished. */
 @property --fill { syntax: "<integer>"; inherits: true; initial-value: 100; }
 .pin-track { height: auto; }
+/* The room: 7:8 beside the text on wide screens; on phones its height is whatever is left of the
+   screen after the header, heading, stage strip and bottom nav, so the pinned panel always fits
+   and the walls change colour in the middle of the screen. The mask is cover-cropped like the photo. */
+.pin-img { aspect-ratio: 7 / 8; }
+@media (max-width: 767px) {
+  .pin-img { aspect-ratio: auto; height: clamp(180px, calc(100svh - 390px), 430px); }
+  .pin-stages > * { border-top: 2px solid var(--color-line); padding-top: 6px; }
+}
 /* The wrappers carry the blend: a clipped element is its own stacking context, so a blend
    on the spans inside would never reach the photo. */
 .pin-before, .pin-after { mix-blend-mode: multiply; }
@@ -580,3 +588,7 @@ summary { cursor: pointer; list-style: none; }
 summary::-webkit-details-marker { display: none; }
 details[open] .plus { transform: rotate(45deg); }
 .plus { transition: transform 250ms; }
+
+/* swipeable chip rows on phones: no visible scrollbar */
+.chip-row { scrollbar-width: none; }
+.chip-row::-webkit-scrollbar { display: none; }

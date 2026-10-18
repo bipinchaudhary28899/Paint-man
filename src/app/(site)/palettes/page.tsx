@@ -47,49 +47,51 @@ export default function PalettesPage() {
         </div>
       </section>
 
-      <div className="container-page mt-16 space-y-14">
+      <div className="container-page mt-8 space-y-8 md:mt-16 md:space-y-14">
         {all.map((p, i) => {
           return (
             <article key={p.slug} id={p.slug} className="reveal card scroll-mt-28 overflow-hidden" aria-labelledby={`${p.slug}-title`}>
               <div className="grid lg:grid-cols-[1.1fr_1fr]">
-                <div className={`p-6 md:p-10 ${i % 2 ? "lg:order-2" : ""}`}>
+                <div className={`p-5 md:p-10 ${i % 2 ? "lg:order-2" : ""}`}>
                   <p className="eyebrow">{p.rooms.join(" · ")}</p>
-                  <h2 id={`${p.slug}-title`} className="mt-3 text-3xl font-normal md:text-5xl">{p.name}</h2>
-                  <p className="mt-2 font-hand text-2xl text-cobalt-text">{p.mood}</p>
-                  <p className="mt-4 text-lg leading-relaxed text-ink">{p.description}</p>
+                  <h2 id={`${p.slug}-title`} className="mt-2 text-[28px] font-normal md:mt-3 md:text-5xl">{p.name}</h2>
+                  <p className="mt-1 font-hand text-xl text-cobalt-text md:mt-2 md:text-2xl">{p.mood}</p>
+                  <p className="mt-3 text-base leading-relaxed text-ink md:mt-4 md:text-lg">{p.description}</p>
 
-                  <ul className="mt-6 grid gap-3 sm:grid-cols-3" aria-label="Shades in this palette">
+                  {/* phones: the three shades as one compact strip; wider: cards */}
+                  <ul className="mt-5 grid grid-cols-3 gap-2 sm:gap-3 md:mt-6" aria-label="Shades in this palette">
                     {p.colours.map((c, j) => (
                       <li key={c.code}>
-                        <Link href={`/colours/${c.code}`} className="group block rounded-2xl border border-line bg-paper transition hover:-translate-y-0.5">
-                          <span className="block h-16 rounded-t-[0.9rem] border-b border-line" style={{ background: c.hex }} />
-                          <span className="block p-3">
-                            <span className="block text-[11px] font-bold uppercase tracking-wider text-muted">{roles[j]}</span>
-                            <span className="block font-display font-normal leading-tight">{c.name}</span>
-                            <span className="text-xs font-semibold text-muted">{c.code} · {c.hex.toUpperCase()}</span>
+                        <Link href={`/colours/${c.code}`} className="group block rounded-xl border border-line bg-paper transition hover:-translate-y-0.5 sm:rounded-2xl">
+                          <span className="block h-10 rounded-t-[0.7rem] border-b border-line sm:h-16 sm:rounded-t-[0.9rem]" style={{ background: c.hex }} />
+                          <span className="block p-2 sm:p-3">
+                            <span className="block truncate text-[9px] font-bold uppercase tracking-wider text-muted sm:text-[11px]">{roles[j]}</span>
+                            <span className="block truncate font-display text-[13px] font-normal leading-tight sm:text-base">{c.name}</span>
+                            <span className="text-[10px] font-semibold text-muted sm:text-xs">{c.code}<span className="hidden sm:inline"> · {c.hex.toUpperCase()}</span></span>
                           </span>
                         </Link>
                       </li>
                     ))}
                   </ul>
 
-                  <p className="mt-6 flex gap-3 rounded-2xl bg-cream-wash p-4 text-sm leading-relaxed">
-                    <Emoji name="light-bulb" size={28} className="shrink-0 self-start" />
+                  <p className="mt-5 flex gap-3 rounded-2xl bg-cream-wash p-3 text-[13px] leading-relaxed md:mt-6 md:p-4 md:text-sm">
+                    <Emoji name="light-bulb" size={24} className="shrink-0 self-start" />
                     <span><strong>Inspector&apos;s tip:</strong> {p.tip}</span>
                   </p>
 
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link href={`/book?palette=${p.slug}`} className="btn-primary">Book an inspection with this palette</Link>
+                  <div className="mt-5 flex flex-wrap gap-3 md:mt-8">
+                    <Link href={`/book?palette=${p.slug}`} className="btn-primary w-full sm:w-auto">Book an inspection with this palette</Link>
                   </div>
                 </div>
-                <div className={`border-t border-line bg-chalk p-6 lg:border-t-0 ${i % 2 ? "lg:border-r-2" : "lg:border-l-2"} md:p-8`}>
+                {/* phones: the room preview comes first, so the palette is seen before it is read */}
+                <div className={`-order-1 border-b border-line bg-chalk p-3 lg:order-none lg:border-b-0 ${i % 2 ? "lg:border-r-2" : "lg:border-l-2"} md:p-8`}>
                   <WallPreview colour={p.colours[0]} sizes="(min-width: 1024px) 520px, 100vw" />
-                  <div className="mt-4 flex h-10 overflow-hidden rounded-full border border-line" aria-hidden>
+                  <div className="mt-3 flex h-6 overflow-hidden rounded-full border border-line md:mt-4 md:h-10" aria-hidden>
                     <span className="flex-[3]" style={{ background: p.colours[0].hex }} />
                     <span className="flex-[2]" style={{ background: p.colours[1].hex }} />
                     <span className="flex-1" style={{ background: p.colours[2].hex }} />
                   </div>
-                  <p className="mt-2 text-xs text-muted">Roughly the proportion on site: 60% feature, 30% white, 10% accent.</p>
+                  <p className="mt-2 hidden text-xs text-muted md:block">Roughly the proportion on site: 60% feature, 30% white, 10% accent.</p>
                 </div>
               </div>
             </article>

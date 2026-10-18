@@ -67,29 +67,35 @@ export function PinnedReveal() {
 
   return (
     <section ref={track} id="how-a-wall-changes" aria-label="Watch the colour go on" className="pin-track relative" data-js={needsJs || undefined} style={trackStyle}>
-      <div ref={panel} className="pin-panel sticky top-0 flex h-[min(860px,100vh)] items-center">
-        <div className="container-page flex flex-wrap items-center gap-12 lg:gap-[72px]">
-          <div className="min-w-0 flex-[1_1_380px]">
-            <p className="eyebrow">How a wall changes</p>
-            <h2 className="mt-6 text-[clamp(36px,4vw,56px)] leading-[1.06]">
-              Watch the colour <em>go on.</em>
-            </h2>
-            <p className="mt-5 hidden max-w-[400px] text-[17px] leading-[1.65] text-muted sm:block">
-              Keep scrolling. The room is finished; only the walls are waiting. Every stage is on your quotation before a brush
-              touches them.
-            </p>
-            <ol className="rule-list mt-10 flex flex-col">
+      {/* Phones: one column sized to fit between the sticky header and the bottom nav, heading on
+          top, the room in the middle of the screen, the stages as a compact strip under it.
+          Wider screens: text beside the image. The text block is `display: contents` on phones so
+          its children can be ordered around the image without duplicating any heading. */}
+      <div ref={panel} className="pin-panel sticky top-0 flex h-[100svh] flex-col justify-center pb-[128px] pt-[76px] md:h-[min(860px,100vh)] md:flex-row md:items-center md:py-0">
+        <div className="container-page flex w-full flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:gap-12 lg:gap-[72px]">
+          <div className="contents md:block md:min-w-0 md:flex-[1_1_380px]">
+            <div className="order-1 md:order-none">
+              <p className="eyebrow">How a wall changes</p>
+              <h2 className="mt-2 text-[30px] leading-[1.06] md:mt-6 md:text-[clamp(36px,4vw,56px)]">
+                Watch the colour <em>go on.</em>
+              </h2>
+              <p className="mt-5 hidden max-w-[400px] text-[17px] leading-[1.65] text-muted md:block">
+                Keep scrolling. The room is finished; only the walls are waiting. Every stage is on your quotation before a brush
+                touches them.
+              </p>
+            </div>
+            <ol className="pin-stages order-3 grid grid-cols-4 gap-2 md:order-none md:mt-10 md:flex md:flex-col md:gap-0">
               {stages.map((s, i) => (
-                <li key={s.title} className={`pin-stage pin-stage-${i} flex items-baseline gap-6 py-2.5 sm:py-4`} style={js ? { opacity: js.stageOpacity(i) } : undefined}>
-                  <span className="w-6 font-display text-[15px] text-terracotta">0{i + 1}</span>
+                <li key={s.title} className={`pin-stage pin-stage-${i} flex flex-col gap-0.5 md:flex-row md:items-baseline md:gap-6 md:py-4`} style={js ? { opacity: js.stageOpacity(i) } : undefined}>
+                  <span className="font-display text-[13px] text-terracotta md:w-6 md:text-[15px]">0{i + 1}</span>
                   <span className="flex flex-col gap-0.5">
-                    <strong className="text-[17px] font-semibold tracking-[-0.01em]">{s.title}</strong>
-                    <span className="text-[15px] text-muted">{s.text}</span>
+                    <strong className="text-[12px] font-semibold leading-tight tracking-[-0.01em] md:text-[17px]">{s.title}</strong>
+                    <span className="hidden text-[15px] text-muted md:block">{s.text}</span>
                   </span>
                 </li>
               ))}
             </ol>
-            <div className="mt-7 flex items-center gap-4">
+            <div className="order-4 flex items-center gap-4 md:order-none md:mt-7">
               <div aria-hidden className="h-0.5 flex-1 overflow-hidden bg-line-soft">
                 <div className="pin-bar h-full bg-terracotta-light" style={js ? { width: `${js.fill}%` } : undefined} />
               </div>
@@ -97,12 +103,12 @@ export function PinnedReveal() {
                 {js ? `${Math.round(js.fill)}%` : null}
               </span>
             </div>
-            <p className="mt-3 text-[13px] text-muted-2">
+            <p className="order-5 -mt-2 text-[12px] text-muted-2 md:order-none md:mt-3 md:text-[13px]">
               Walls in {wallShade.name} <span className="font-medium">{wallShade.code}</span>
             </p>
           </div>
 
-          <div className="pin-img frame-shadow scene relative -order-1 w-full min-w-0 max-w-[560px] flex-[1_1_440px] overflow-hidden rounded-3xl bg-[#d9d2c5] md:order-none" style={{ aspectRatio: "7 / 8" }}>
+          <div className="pin-img frame-shadow scene relative order-2 w-full min-w-0 overflow-hidden rounded-3xl bg-[#d9d2c5] md:order-none md:max-w-[560px] md:flex-[1_1_440px]">
             <Image src={photo.src} alt={`Living room with the walls being painted ${wallShade.name}`} fill sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
             <div aria-hidden className="pin-before absolute inset-0" style={js ? { clipPath: `inset(0 0 ${js.fill}% 0)` } : undefined}>
               <span className="tint" style={{ background: putty, ...maskStyle }} />
