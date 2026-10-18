@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { bookingDateRange, isCalendarDate } from "./dates";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "./options";
 
 export { floorOptions, homeSizes, propertyTypes, serviceTypes };
@@ -11,6 +12,27 @@ const indianMobile = z
   .refine((v) => /^[6-9]\d{9}$/.test(v), "Enter a valid 10-digit mobile number");
 
 const trimmed = (max: number) => z.string().trim().max(max);
+
+/** The problem with a preferred inspection date, if any: it must be a real date from today (in India) to a year ahead. */
+function dateProblem(value: string): string | undefined {
+  if (!isCalendarDate(value)) return "Choose a date from the calendar";
+  const { min, max } = bookingDateRange();
+  if (value < min) return "Choose today or a later date";
+  if (value > max) return "Choose a date within the next year";
+  return undefined;
+}
+
+// Optional: left blank (or not sent), the team agrees a date on the call.
+const preferredDate = z.preprocess(
+  (v) => (typeof v === "string" ? v.trim() || undefined : v),
+  z
+    .string()
+    .superRefine((value, ctx) => {
+      const problem = dateProblem(value);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    })
+    .optional(),
+);
 
 const tracking = z
   .object({
@@ -38,12 +60,7 @@ export const bookingSchema = z.object({
   locality: trimmed(80).min(2, "Enter your locality"),
   propertyType: z.enum(propertyTypes, { message: "Choose a property type" }),
   service: z.enum(serviceTypes, { message: "Choose a service" }),
-  preferredDate: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .or(z.literal("")),
+  preferredDate,
   message: trimmed(1000).optional(),
   // job size, so a crew can be planned before the visit
   floors: z.enum(floorOptions, { message: "Choose how many floors" }),

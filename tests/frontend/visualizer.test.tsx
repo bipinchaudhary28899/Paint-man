@@ -98,17 +98,41 @@ describe("Visualizer", () => {
     expect(screen.getByText(/After · Mecca Gold/)).toBeInTheDocument();
     expect(screen.getByLabelText(/walls shown in Mecca Gold/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Book an inspection with Mecca Gold" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7982");
-    // the visitor's own pick is kept on later renders with the same starting shade
-    await user.click(screen.getByRole("button", { name: "Sindoor" }));
-    rerender(<Visualizer segmenterFactory={factory} initialShade={{ ...brand }} />);
-    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
     // clearing the starting shade keeps the current one
     rerender(<Visualizer segmenterFactory={factory} />);
-    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+    expect(screen.getByText(/After · Mecca Gold/)).toBeInTheDocument();
     // a named colour without a code books without one
     rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Dusty Rose", hex: "#c9a0a0" }} />);
     expect(screen.getByText(/After · Dusty Rose/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Book an inspection with Dusty Rose" })).toHaveAttribute("href", "/book");
+  });
+
+  it("never replaces a shade the visitor picked with a starting shade that arrives later", async () => {
+    const user = userEvent.setup();
+    const factory = fakeSegmenter();
+    const { rerender } = render(<Visualizer segmenterFactory={factory} />);
+    // a swatch found through the search counts as a pick
+    await user.type(screen.getByLabelText("Search shades"), "sindoor");
+    await user.click(screen.getByRole("button", { name: "Sindoor" }));
+    await user.upload(screen.getByLabelText("Choose a room photo"), file());
+    await waitFor(() => expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument());
+    // the brand shade from the link lands after the pick
+    const brand = { name: "Mecca Gold", hex: "#e7975b", code: "Asian Paints 7982", bookQuery: "shade=asian-paints%3A7982" };
+    rerender(<Visualizer segmenterFactory={factory} initialShade={brand} />);
+    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with Sindoor" })).toHaveAttribute("href", "/book?colour=PM-801");
+    rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Dusty Rose", hex: "#c9a0a0" }} />);
+    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+  });
+
+  it("still takes the linked shade when the visitor only loaded a photo before it arrived", async () => {
+    const user = userEvent.setup();
+    const factory = fakeSegmenter();
+    const { rerender } = render(<Visualizer segmenterFactory={factory} />);
+    await user.upload(screen.getByLabelText("Choose a room photo"), file());
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/1 wall surface found/));
+    rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Peacock", hex: "#1f8f85", code: "PM-803" }} />);
+    expect(screen.getByText(/After · Peacock/)).toBeInTheDocument();
   });
 
   it("hold-to-compare shows the untouched photo; walls mode toggles a surface; reset restores it", async () => {

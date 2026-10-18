@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { site } from "@/config/site";
+import { bookingDateRange } from "@/lib/leads/dates";
 import { estimatePaintArea, formatSqft } from "@/lib/leads/estimate";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
 import { readTracking } from "./UtmCapture";
@@ -42,7 +43,10 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
+  // The date picker's range (today in India to a year ahead) is set after mount: the pages with
+  // this form are prerendered, so a date worked out while rendering would be the build's date.
+  const [dateRange, setDateRange] = useState<{ min: string; max: string }>();
+  useEffect(() => setDateRange(bookingDateRange()), []);
   // live rough size of the job, recomputed as floors, service or carpet area change
   const [job, setJob] = useState<{ area: number | null; exterior: boolean; hasCarpet: boolean }>({ area: null, exterior: false, hasCarpet: false });
   function onJobChange(e: React.FormEvent<HTMLFormElement>) {
@@ -152,7 +156,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
               </select>
             </Field>
             <Field id="preferredDate" label="Preferred inspection date" optional error={errors.preferredDate}>
-              <input id="preferredDate" name="preferredDate" type="date" min={today} className="field" {...aria("preferredDate")} />
+              <input id="preferredDate" name="preferredDate" type="date" min={dateRange?.min} max={dateRange?.max} className="field" {...aria("preferredDate")} />
             </Field>
           </div>
 

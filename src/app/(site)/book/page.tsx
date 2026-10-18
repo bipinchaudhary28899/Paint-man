@@ -1,10 +1,8 @@
-import { Suspense } from "react";
 import { BookPrefill } from "@/components/BookPrefill";
 import { Emoji } from "@/components/Emoji";
 import { PhotoCrop } from "@/components/PhotoCrop";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Blob } from "@/components/Decor";
-import { LeadForm } from "@/components/LeadForm";
 import { images } from "@/config/images";
 import { site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
@@ -22,7 +20,7 @@ const next = [
 ];
 
 // Static page: ?service=, ?colour=, ?palette= and ?shade= are read in the browser by BookPrefill.
-// Its Suspense fallback is the plain booking form, so the prerendered HTML always has the form.
+// The prerendered HTML is the plain booking form, which hydrates in place (no Suspense bailout).
 export default function BookPage() {
   return (
     <div className="relative overflow-hidden">
@@ -36,9 +34,7 @@ export default function BookPage() {
             </h1>
             <p className="mt-4 text-lg text-muted">Share a few details. We&apos;ll call you to confirm a convenient time for the site visit.</p>
             <div className="card mt-10 p-6 md:p-8">
-              <Suspense fallback={<LeadForm type="booking" />}>
-                <BookPrefill />
-              </Suspense>
+              <BookPrefill />
             </div>
           </div>
           <aside className="space-y-6">

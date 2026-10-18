@@ -1,12 +1,15 @@
-import { render, renderHook, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, renderHook, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ReactElement } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { BookPrefill, bookPrefill } from "@/components/BookPrefill";
 import { brandShadeUrl, parseShadeId, pickShade, useBrandShade, type BrandShadeSummary } from "@/components/useBrandShade";
 import { VisualizerFromParams, visualizerModel } from "@/components/visualizer/VisualizerFromParams";
+import { services } from "@/config/site";
 
-const nav = vi.hoisted(() => ({ params: new URLSearchParams() }));
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => nav.params,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
 }));
 
@@ -17,12 +20,38 @@ function api(items: BrandShadeSummary[]) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(JSON.stringify({ apiVersion: "v1", kind: "paint-colour", data: items }), { status: 200 }));
 }
 
+/** The visitor arrives on this address. */
+const open = (url: string) => window.history.replaceState(null, "", url);
+
 const message = () => screen.getByLabelText(/Anything we should know/) as HTMLTextAreaElement;
 const service = () => screen.getByLabelText("Service needed") as HTMLSelectElement;
 
-beforeEach(() => {
-  nav.params = new URLSearchParams();
-});
+/**
+ * Renders `ui` to HTML as the static prerender does, then hydrates that HTML in the browser.
+ * Returns the container and the hydration problems React reported.
+ */
+async function prerenderAndHydrate(ui: ReactElement) {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(ui);
+  document.body.append(container);
+  const serverHtml = container.innerHTML;
+  const before = { form: container.querySelector("form"), name: container.querySelector("#name") };
+  const recoverable = vi.fn();
+  const consoleError = vi.spyOn(console, "error");
+  const root = await act(async () => hydrateRoot(container, ui, { onRecoverableError: recoverable }));
+  return {
+    container,
+    serverHtml,
+    before,
+    problems: [...recoverable.mock.calls, ...consoleError.mock.calls],
+    done: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+}
+
+afterEach(() => open("/"));
 
 describe("brand shade lookup", () => {
   it("accepts only brand-slug:code ids", () => {
@@ -68,25 +97,31 @@ describe("brand shade lookup", () => {
 describe("BookPrefill", () => {
   it("renders the plain booking form when the link carries no choice", () => {
     const fetchSpy = api([]);
+    open("/book");
     render(<BookPrefill />);
     expect(message().value).toBe("");
     expect(service().value).toBe("");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("pre-selects the service from a service page link and ignores unknown slugs", () => {
-    nav.params = new URLSearchParams("service=exterior-painting");
-    const { unmount } = render(<BookPrefill />);
-    expect(service().value).toBe("Exterior Painting");
-    unmount();
-    nav.params = new URLSearchParams("service=constructor");
-    render(<BookPrefill />);
-    expect(service().value).toBe("");
+  it("pre-selects each service from its service page link and ignores unknown slugs", () => {
+    for (const s of services) {
+      open(`/book?service=${s.slug}`);
+      const { unmount } = render(<BookPrefill />);
+      expect(service().value).toBe(s.leadService);
+      unmount();
+    }
+    for (const unknown of ["constructor", "painting", ""]) {
+      open(`/book?service=${unknown}`);
+      const { unmount } = render(<BookPrefill />);
+      expect(service().value).toBe("");
+      unmount();
+    }
   });
 
   it("asks for a palette's shade cards, and a palette wins over a brand shade", () => {
     const fetchSpy = api([mecca]);
-    nav.params = new URLSearchParams("palette=calm-bedroom&shade=asian-paints:7982&service=interior-painting");
+    open("/book?palette=calm-bedroom&shade=asian-paints:7982&service=interior-painting");
     render(<BookPrefill />);
     expect(message().value).toBe('Interested in the "Calm bedroom" palette (PM-502, PM-101, PM-204). Please bring the shade cards.');
     expect(service().value).toBe("Interior Painting");
@@ -95,7 +130,7 @@ describe("BookPrefill", () => {
 
   it("names a Paint Man shade from its code without any network call", () => {
     const fetchSpy = api([mecca]);
-    nav.params = new URLSearchParams("colour=502");
+    open("/book?colour=502");
     render(<BookPrefill />);
     expect(message().value).toBe("Interested in the shade Sage Mist (PM-502). Please bring the shade card.");
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -103,7 +138,7 @@ describe("BookPrefill", () => {
 
   it("looks a brand shade up through the catalogue API and then fills the message", async () => {
     const fetchSpy = api([mecca]);
-    nav.params = new URLSearchParams("shade=asian-paints:7982");
+    open("/book?shade=asian-paints:7982");
     render(<BookPrefill />);
     expect(message().value).toBe("");
     await waitFor(() => expect(message().value).toBe("Interested in Asian Paints 7982 Mecca Gold (#E7975B). Please bring the shade card."));
@@ -111,7 +146,7 @@ describe("BookPrefill", () => {
   });
 
   it("keeps the plain form when the shade is unknown, the API refuses or the network fails", async () => {
-    nav.params = new URLSearchParams("shade=nowhere");
+    open("/book?shade=nowhere");
     const fetchSpy = api([mecca]);
     const { unmount } = render(<BookPrefill />);
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -119,14 +154,14 @@ describe("BookPrefill", () => {
 
     // an unknown brand: the API answers 400
     fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ apiVersion: "v1", kind: "error" }), { status: 400 }));
-    nav.params = new URLSearchParams("shade=made-up-brand:1");
+    open("/book?shade=made-up-brand:1");
     const second = render(<BookPrefill />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
     expect(message().value).toBe("");
     second.unmount();
 
     fetchSpy.mockRejectedValueOnce(new TypeError("offline"));
-    nav.params = new URLSearchParams("shade=asian-paints:7982");
+    open("/book?shade=asian-paints:7982");
     render(<BookPrefill />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
     expect(message().value).toBe("");
@@ -135,22 +170,96 @@ describe("BookPrefill", () => {
   it("leaves the message empty for a palette or colour that does not exist", () => {
     expect(bookPrefill({ palette: "nope", colour: "PM-000" })).toEqual({ defaultService: undefined, defaultMessage: undefined });
   });
+
+  it("follows back and forward to another choice", () => {
+    open("/book?service=exterior-painting");
+    render(<BookPrefill />);
+    expect(service().value).toBe("Exterior Painting");
+    act(() => {
+      window.history.pushState(null, "", "/book?service=rental-property-painting");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(service().value).toBe("Rental Property");
+  });
+});
+
+describe("BookPrefill on the static /book page", () => {
+  it("hydrates the prerendered form in place when the link has no choice: no remount, so typing before hydration is kept", async () => {
+    open("/book?utm_source=google");
+    const page = await prerenderAndHydrate(<BookPrefill />);
+    expect(page.problems).toEqual([]);
+    expect(page.before.form).not.toBeNull();
+    expect(page.container.querySelector("form")).toBe(page.before.form);
+    expect(page.container.querySelector("#name")).toBe(page.before.name);
+    page.done();
+  });
+
+  it("prerenders the plain form, then remounts it once with the choice from the link", async () => {
+    open("/book?service=exterior-painting&colour=PM-502");
+    const page = await prerenderAndHydrate(<BookPrefill />);
+    // the static HTML never depends on the query
+    expect(page.serverHtml).not.toContain("Sage Mist");
+    expect(page.serverHtml).not.toMatch(/<option selected=""[^>]*>Exterior Painting/);
+    expect(page.problems).toEqual([]);
+    expect(page.container.querySelector("form")).not.toBe(page.before.form);
+    expect(page.container.querySelector<HTMLSelectElement>("#service")!.value).toBe("Exterior Painting");
+    expect(page.container.querySelector<HTMLTextAreaElement>("#message")!.value).toBe("Interested in the shade Sage Mist (PM-502). Please bring the shade card.");
+    page.done();
+  });
 });
 
 describe("VisualizerFromParams", () => {
   it("starts on a Paint Man shade from ?colour= and books with that code", () => {
-    nav.params = new URLSearchParams("colour=PM-502");
+    open("/visualizer?colour=PM-502");
     render(<VisualizerFromParams />);
     expect(screen.getByRole("link", { name: "Book an inspection with Sage Mist" })).toHaveAttribute("href", "/book?colour=PM-502");
   });
 
   it("switches to a brand shade from ?shade= once the API answers, and books with the shade id", async () => {
     api([mecca]);
-    nav.params = new URLSearchParams("shade=asian-paints:7982");
+    open("/visualizer?shade=asian-paints:7982");
     render(<VisualizerFromParams />);
     const link = await screen.findByRole("link", { name: "Book an inspection with Mecca Gold" });
     expect(link).toHaveAttribute("href", "/book?shade=asian-paints%3A7982");
     expect(screen.getByText("#E7975B · Asian Paints 7982")).toBeInTheDocument();
+  });
+
+  it("keeps a shade the visitor picked while the brand shade was still being looked up", async () => {
+    let answer!: () => void;
+    const json = vi.fn(async () => ({ data: [mecca] }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockReturnValue(new Promise<Response>((resolve) => (answer = () => resolve({ ok: true, json } as unknown as Response))));
+    open("/visualizer?shade=asian-paints:7982");
+    const user = userEvent.setup();
+    render(<VisualizerFromParams />);
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    await user.click(screen.getByRole("button", { name: "Sindoor" }));
+    // the lookup lands after the pick
+    await act(async () => {
+      answer();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(json).toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "Book an inspection with Sindoor" })).toHaveAttribute("href", "/book?colour=PM-801");
+    expect(screen.queryByText(/Mecca Gold/)).toBeNull();
+  });
+
+  it("hydrates the prerendered default visualizer in place, then takes the shade from the link without remounting", async () => {
+    open("/visualizer?colour=PM-801");
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(<VisualizerFromParams />);
+    document.body.append(container);
+    // the static HTML is the default visualizer, whatever the link
+    expect(container.querySelector('a[href^="/book"]')).toHaveTextContent("Book an inspection with Sage Mist");
+    const dropzone = container.querySelector('input[type="file"]');
+    const recoverable = vi.fn();
+    const consoleError = vi.spyOn(console, "error");
+    const root = await act(async () => hydrateRoot(container, <VisualizerFromParams />, { onRecoverableError: recoverable }));
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(container.querySelector('input[type="file"]')).toBe(dropzone);
+    expect(container.querySelector('a[href="/book?colour=PM-801"]')).toHaveTextContent("Book an inspection with Sindoor");
+    act(() => root.unmount());
+    container.remove();
   });
 
   it("only allows the evaluation models it knows", () => {

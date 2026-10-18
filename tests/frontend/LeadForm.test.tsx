@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LeadForm } from "@/components/LeadForm";
 import { TRACKING_KEY } from "@/components/UtmCapture";
@@ -41,10 +42,25 @@ describe("LeadForm (booking)", () => {
     expect(screen.getByLabelText("Service needed")).toHaveValue("Exterior Painting");
   });
 
-  it("does not allow picking a date in the past", () => {
-    render(<LeadForm type="booking" />);
-    const min = screen.getByLabelText(/Preferred inspection date/).getAttribute("min")!;
-    expect(min).toBe(new Date().toISOString().slice(0, 10));
+  it("offers dates from today in India to a year ahead, worked out in the visitor's browser", () => {
+    // 01:30 on 19 October in Agra is still 18 October in UTC
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-18T20:00:00Z"));
+    try {
+      render(<LeadForm type="booking" />);
+      const date = screen.getByLabelText(/Preferred inspection date/);
+      expect(date).toHaveAttribute("min", "2026-10-19");
+      expect(date).toHaveAttribute("max", "2027-10-19");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves the date range out of the prerendered HTML, so a static page never carries its build date", () => {
+    const html = renderToString(<LeadForm type="booking" />);
+    expect(html).toContain('id="preferredDate"');
+    expect(html).not.toMatch(/\bmin="/);
+    expect(html).not.toMatch(/\bmax="/);
   });
 
   it("posts the form as JSON with page and tracking info, then goes to the thank-you page", async () => {
