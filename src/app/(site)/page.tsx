@@ -64,7 +64,7 @@ export default function HomePage() {
         <div className="min-w-0 flex-[1_1_500px]">
           <p className="eyebrow">Managed home painting · {site.city}</p>
           <h1 className="mt-7 text-[clamp(48px,5.8vw,80px)] leading-[1.02] tracking-[-0.02em]">
-            Your home, painted beautifully. Managed <em>completely.</em>
+            Your space, painted beautifully. Managed <em>completely.</em>
           </h1>
           <p className="mt-7 max-w-[500px] text-lg leading-[1.65] text-muted">
             Tell us what you need. We inspect, quote line by line, bring genuine branded paint and a supervised crew, and hand back a

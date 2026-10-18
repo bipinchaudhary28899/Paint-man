@@ -27,7 +27,7 @@ export default function OpengraphImage() {
           <div style={{ marginLeft: 8 }}>{site.name}</div>
         </div>
         <div style={{ fontSize: 72, fontWeight: 800, marginTop: 20, lineHeight: 1.1 }}>
-          {`Your home, painted beautifully. Managed completely.`}
+          {`Your space, painted beautifully. Managed completely.`}
         </div>
         <div style={{ fontSize: 32, marginTop: 30, opacity: 0.9 }}>
           {`Managed house painting in ${site.city} · Inspection · Itemised quote · Supervised painters`}

@@ -368,7 +368,7 @@ h1 em, h2 em, h3 em, .accent {
 }
 .bnav-dip {
   position: absolute; top: 0; left: var(--nx); width: calc(var(--dip) * 2); height: calc(var(--dip) * 2); margin-left: calc(var(--dip) * -1);
-  transform: translateY(-50%); border-radius: 50%; border: 1px solid var(--color-line); clip-path: inset(50% 0 0 0);
+  transform: translateY(-50%); border-radius: 50%; border: 1px solid rgba(248, 245, 239, 0.12); clip-path: inset(50% 0 0 0);
   pointer-events: none; transition: --nx 0.45s linear;
 }
 .bnav-dab-inner {
@@ -383,8 +383,9 @@ h1 em, h2 em, h3 em, .accent {
   85% { transform: translateY(3px) scale(1.08, 0.9); }
   100% { transform: translateY(0) scale(1); }
 }
-.bnav-label { padding: 5px 10px; border: 1px solid var(--color-line); border-radius: 999px; line-height: 1; }
-.bnav-label-on { line-height: 1; color: var(--color-muted); }
+/* charcoal bar: cream labels in a faint cream outline; the active label sits under its dab */
+.bnav-label { padding: 5px 10px; border: 1px solid rgba(248, 245, 239, 0.22); border-radius: 999px; line-height: 1; color: rgba(248, 245, 239, 0.92); }
+.bnav-label-on { line-height: 1; color: rgba(248, 245, 239, 0.7); }
 @media (prefers-reduced-motion: reduce) {
   .bnav-bar, .bnav-dab, .bnav-dip { transition: none; }
   .bnav-dab-hop { animation: none; }

@@ -15,7 +15,8 @@ export const items: Item[] = [
   { label: "Home", hue: "#71856a", on: "#f8f5ef", home: "#top", href: "/", match: (p) => p === "/" },
   { label: "Services", hue: "#e9b949", on: "#242522", home: "#services", href: "/services", match: (p) => p.startsWith("/services") },
   { label: "Colours", hue: "#c76b4a", on: "#f8f5ef", home: "#colour", href: "/colours", match: (p) => p.startsWith("/colours") || p.startsWith("/palettes") },
-  { label: "Estimate", hue: "#242522", on: "#f8f5ef", home: "/book", href: "/book", match: (p) => p.startsWith("/book") || p.startsWith("/contact") },
+  // cream on the charcoal bar (a charcoal dot would vanish into it)
+  { label: "Estimate", hue: "#f8f5ef", on: "#242522", home: "/book", href: "/book", match: (p) => p.startsWith("/book") || p.startsWith("/contact") },
 ];
 const sectionIds = ["top", "services", "colour", "book"];
 
@@ -70,7 +71,7 @@ export function MobileCtaBar() {
       style={{ ["--nx" as string]: slotCentre(activeIndex) }}
     >
       {/* The bar itself, masked with a dip under the dab */}
-      <span aria-hidden className="bnav-bar absolute inset-0 rounded-full border border-line bg-canvas/95 shadow-[0_24px_48px_-16px_rgba(36,37,34,0.35)] backdrop-blur-xl" />
+      <span aria-hidden className="bnav-bar absolute inset-0 rounded-full border border-white/10 bg-ink/95 shadow-[0_24px_48px_-16px_rgba(36,37,34,0.55)] backdrop-blur-xl" />
       {/* The hairline continues around the dip (the lower half of a ring the size of the cut-out) */}
       <span aria-hidden className="bnav-dip" />
       {/* The dab: a disc of the active tab's colour, half above the bar, carrying the icon */}
@@ -86,7 +87,7 @@ export function MobileCtaBar() {
           const on = i === activeIndex;
           const href = onHome ? item.home : item.href;
           const hash = href.startsWith("#");
-          const cls = "flex flex-1 items-end justify-center pb-[9px] text-[11px] font-semibold tracking-[0.04em] text-ink";
+          const cls = "flex flex-1 items-end justify-center pb-[9px] text-[11px] font-semibold tracking-[0.04em] text-on-ink";
           // the active tab's label drops under its dab; the others sit in a small hairline box
           const content = on ? (
             <span className="bnav-label-on">{item.label}</span>
