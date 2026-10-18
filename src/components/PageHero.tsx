@@ -30,7 +30,8 @@ export function PageHero({ title, intro, crumbs, image, children }: Props) {
         </div>
         {image && (
           <div className="frame-shadow relative aspect-[4/5] w-full max-w-md overflow-hidden rounded-3xl lg:ml-auto">
-            <Image src={image.src} alt={image.alt} fill priority sizes="(min-width: 1024px) 448px, 90vw" className="object-cover" />
+            {/* The hero photo is the mobile LCP: preload it from <head> at high priority (Next 16 deprecates `priority`). */}
+            <Image src={image.src} alt={image.alt} fill preload fetchPriority="high" sizes="(min-width: 1024px) 448px, 90vw" className="object-cover" />
           </div>
         )}
       </div>
