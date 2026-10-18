@@ -1,4 +1,9 @@
-export function FaqList({ faqs, openFirst = false }: { faqs: { q: string; a: string }[]; openFirst?: boolean }) {
+import Link from "next/link";
+import type { FaqItem } from "@/config/site";
+
+// Visible FAQ accordion. An item's optional `link` points to the page that answers it in full;
+// FAQPage JSON-LD (faqJsonLd) still uses only the question and answer text.
+export function FaqList({ faqs, openFirst = false }: { faqs: FaqItem[]; openFirst?: boolean }) {
   return (
     <div className="rule-list flex flex-col">
       {faqs.map((f, i) => (
@@ -9,7 +14,17 @@ export function FaqList({ faqs, openFirst = false }: { faqs: { q: string; a: str
               <path d="M12 5v14M5 12h14" />
             </svg>
           </summary>
-          <p className="mb-7 max-w-[600px] leading-[1.65] text-muted">{f.a}</p>
+          <div className="mb-7 max-w-[600px]">
+            <p className="leading-[1.65] text-muted">{f.a}</p>
+            {f.link && (
+              <Link
+                href={f.link.href}
+                className="mt-2 inline-flex min-h-11 items-center font-semibold underline decoration-terracotta decoration-2 underline-offset-4 hover:text-terracotta"
+              >
+                {f.link.label} →
+              </Link>
+            )}
+          </div>
         </details>
       ))}
     </div>

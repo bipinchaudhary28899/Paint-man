@@ -7,10 +7,12 @@ import { services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Painting Services in ${site.city}: Interior, Exterior and Rental`,
-  description: `Interior wall painting, exterior house painting and rental property repainting in ${site.city}. Inspection, itemised quotation and supervised painters for every job.`,
+  title: `Interior and Exterior Painting Services in ${site.city}`,
+  description: `Interior, exterior and rental property painting in ${site.city}, managed from start to finish. Every job starts with an on-site inspection and itemised quote.`,
   path: "/services",
 });
+
+const linkClass = "font-semibold underline decoration-terracotta decoration-2 underline-offset-4 hover:text-terracotta";
 
 export default function ServicesPage() {
   return (
@@ -50,6 +52,30 @@ export default function ServicesPage() {
           </article>
         ))}
       </div>
+
+      <section className="container-page mt-20 grid gap-10 md:grid-cols-3">
+        <div>
+          <h2 className="text-2xl font-normal">Choosing <em>colours</em></h2>
+          <p className="mt-3 leading-relaxed text-muted">
+            Start from <Link href="/palettes" className={linkClass}>ready colour combinations</Link>, or search{" "}
+            <Link href="/colours" className={linkClass}>wall colour shades by code</Link>. The inspector brings the shade cards to your home.
+          </p>
+        </div>
+        <div>
+          <h2 className="text-2xl font-normal">Price and <em>timing</em></h2>
+          <p className="mt-3 leading-relaxed text-muted">
+            How the price is worked out, how long a 2 BHK takes and how brands are chosen: see the{" "}
+            <Link href="/faq" className={linkClass}>house painting FAQs</Link>.
+          </p>
+        </div>
+        <div>
+          <h2 className="text-2xl font-normal">Where we <em>work</em></h2>
+          <p className="mt-3 leading-relaxed text-muted">
+            Homes, rental flats and shops across {site.city}, including {site.areas.slice(0, 4).join(", ")} and more.{" "}
+            <Link href="/areas" className={linkClass}>See all areas</Link>.
+          </p>
+        </div>
+      </section>
       <CtaBanner />
     </>
   );
