@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "admin:hash": "node scripts/admin-hash.mjs",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "data:paintdb": "node scripts/import-paintdb.mjs"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",

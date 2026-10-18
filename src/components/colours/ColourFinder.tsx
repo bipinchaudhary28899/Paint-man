@@ -1,169 +1,448 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { colourFamilies, rooms, type Colour, type ColourFamily, type Room } from "@/config/colours";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { colourFamilies, colours, rooms, type Colour, type ColourFamily, type Room } from "@/config/colours";
 import { isFamily, isRoom, searchColours } from "@/lib/colours/search";
 import { WallPreview } from "./WallPreview";
 
-type Props = { initialQuery?: string; initialFamily?: string; initialRoom?: string };
+/** A brand shade as the API returns it (see /api/v1/colours/paint). */
+export type BrandShadeItem = {
+  id: string;
+  brand: string;
+  brandName: string;
+  code: string;
+  name: string;
+  hex: string;
+  lrv: number;
+  family: string;
+  undertone: string;
+  interior: boolean;
+  exterior: boolean;
+};
+export type BrandInfo = { slug: string; name: string; count: number };
 
-// Search the shade catalogue by name, code, hex, room or mood; tap a shade to see it on
-// three ordinary walls. Pure client-side filtering over a small catalogue, so results are
-// instant and the full grid is server-rendered for crawlers.
-export function ColourFinder({ initialQuery = "", initialFamily, initialRoom }: Props) {
-  const [q, setQ] = useState(initialQuery);
+type Catalogue = "ours" | "brands";
+type Props = {
+  initialQuery?: string;
+  initialFamily?: string;
+  initialRoom?: string;
+  initialCatalogue?: string;
+  initialBrand?: string;
+  /** brand-shade catalogue facts, passed from the server page */
+  brands?: BrandInfo[];
+  brandFamilies?: string[];
+  brandTotal?: number;
+  attribution?: { text: string; source: string; licenseUrl: string };
+};
+
+/** What the preview panels show, for either catalogue. */
+type View = {
+  key: string;
+  name: string;
+  code: string;
+  hex: string;
+  lrv: number;
+  eyebrow: string;
+  meta: string;
+  note?: string;
+  goodFor?: string;
+  bookHref: string;
+  tryHref: string;
+  detailsHref?: string;
+};
+
+const ourView = (c: Colour): View => ({
+  key: c.code,
+  name: c.name,
+  code: c.code,
+  hex: c.hex,
+  lrv: c.lrv,
+  eyebrow: c.family,
+  meta: `${c.hex.toUpperCase()} · LRV ${c.lrv} · ${c.finish}`,
+  note: c.note,
+  goodFor: c.rooms.join(", "),
+  bookHref: `/book?colour=${c.code}`,
+  tryHref: `/visualizer?colour=${c.code}`,
+  detailsHref: `/colours/${c.code}`,
+});
+
+const brandView = (s: BrandShadeItem): View => ({
+  key: s.id,
+  name: s.name,
+  code: `${s.brandName} ${s.code}`,
+  hex: s.hex,
+  lrv: s.lrv,
+  eyebrow: s.brandName,
+  meta: `${s.hex.toUpperCase()} · LRV ${s.lrv} · ${cap(s.family)} · ${s.undertone}`,
+  note: s.interior && s.exterior ? "Made for interior and exterior walls." : s.exterior ? "An exterior shade." : "An interior shade.",
+  bookHref: `/book?shade=${encodeURIComponent(s.id)}`,
+  tryHref: `/visualizer?shade=${encodeURIComponent(s.id)}`,
+});
+
+/** A representative swatch per PaintDB colour family, for the primary-colour chips. */
+const FAMILY_SWATCH: Record<string, string> = {
+  white: "#f6f3ec", beige: "#e3d3b8", yellow: "#f0cf63", orange: "#ee9a57", pink: "#eaa3a8", red: "#c4473f",
+  purple: "#8c6fa8", blue: "#6c93c4", green: "#7fa77a", gray: "#a3a39e", brown: "#8a5a3c", black: "#2a2a28",
+};
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** Shades per load: 12 rows of 4 on a phone, 16 rows of 3 on desktop (about 10 KB). */
+export const PER_PAGE = 48;
+type PageResp = { data: BrandShadeItem[]; meta: { total: number; page: number; pages: number } };
+
+// Two catalogues in one finder. Paint Man shades: our 167, filtered in the browser (the full
+// grid is server-rendered for crawlers). Brand shades: 50,000+ real shades from 25 brands,
+// searched on the server one page at a time (/api/v1/colours/paint). Either way a tap shows
+// the shade on the same room, pinned on phones and beside the list on wide screens.
+export function ColourFinder({
+  initialQuery = "",
+  initialFamily,
+  initialRoom,
+  initialCatalogue,
+  initialBrand,
+  brands = [],
+  brandFamilies = [],
+  brandTotal = 0,
+  attribution,
+}: Props) {
+  const [catalogue, setCatalogue] = useState<Catalogue>(initialCatalogue === "brands" && brandTotal > 0 ? "brands" : "ours");
+
+  // --- Paint Man shades
+  const [q, setQ] = useState(initialCatalogue === "brands" ? "" : initialQuery);
   const [family, setFamily] = useState<ColourFamily | undefined>(isFamily(initialFamily) ? initialFamily : undefined);
   const [room, setRoom] = useState<Room | undefined>(isRoom(initialRoom) ? initialRoom : undefined);
   const [selected, setSelected] = useState<Colour | null>(null);
-
   const results = useMemo(() => searchColours({ q, family, room }), [q, family, room]);
+
+  // --- Brand shades: pick a brand → (optionally) a primary colour → scroll, or search
+  const [bq, setBq] = useState(initialCatalogue === "brands" ? initialQuery : "");
+  const [brand, setBrand] = useState(brands.some((b) => b.slug === initialBrand) ? initialBrand! : "");
+  const [bFamily, setBFamily] = useState("");
+  const [bItems, setBItems] = useState<BrandShadeItem[]>([]);
+  const [bTotal, setBTotal] = useState(0);
+  const [bPage, setBPage] = useState(0);
+  const [bPages, setBPages] = useState(1);
+  const [bState, setBState] = useState<"idle" | "loading" | "error">("idle");
+  const [bSelected, setBSelected] = useState<BrandShadeItem | null>(null);
+  const showBrandGrid = catalogue === "brands" && !brand && !bq.trim();
+
+  // Every page already loaded stays in memory: scrolling back, or returning to a colour family
+  // or brand opened before, never asks the server again. (The server answers from memory and
+  // Vercel's edge caches each page, so a first load is one short trip.)
+  const pageCache = useRef(new Map<string, Promise<PageResp>>());
+  const fetchPage = useCallback((page: number) => {
+    const sp = new URLSearchParams({ perPage: String(PER_PAGE), page: String(page) });
+    if (bq.trim()) sp.set("q", bq.trim());
+    if (brand) sp.set("brand", brand);
+    if (bFamily) sp.set("family", bFamily);
+    const key = sp.toString();
+    let hit = pageCache.current.get(key);
+    if (!hit) {
+      hit = fetch(`/api/v1/colours/paint?${sp}`).then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return (await res.json()) as PageResp;
+      });
+      hit.catch(() => pageCache.current.delete(key)); // a failed page is retried next time
+      pageCache.current.set(key, hit);
+    }
+    return hit;
+  }, [bq, brand, bFamily]);
+
+  // first page whenever the brand, colour family or search changes
+  useEffect(() => {
+    if (catalogue !== "brands" || showBrandGrid) return;
+    let live = true;
+    setBState("loading");
+    setBItems([]);
+    const t = setTimeout(async () => {
+      try {
+        const json = await fetchPage(1);
+        if (!live) return;
+        setBItems(json.data);
+        setBTotal(json.meta.total);
+        setBPage(json.meta.page);
+        setBPages(json.meta.pages);
+        setBState("idle");
+      } catch {
+        if (live) setBState("error");
+      }
+    }, bq.trim() ? 250 : 0);
+    return () => { live = false; clearTimeout(t); };
+  }, [catalogue, showBrandGrid, fetchPage, bq]);
+
+  // infinite scroll: the next page loads about a screen before the end of the list
+  const loadingMore = useRef(false);
+  const loadMore = useCallback(async () => {
+    if (loadingMore.current || bPage >= bPages || bState === "error") return;
+    loadingMore.current = true;
+    try {
+      const json = await fetchPage(bPage + 1);
+      setBItems((items) => [...items, ...json.data.filter((s) => !items.some((i) => i.id === s.id))]);
+      setBPage(json.meta.page);
+      setBPages(json.meta.pages);
+    } catch {
+      setBState("error");
+    } finally {
+      loadingMore.current = false;
+    }
+  }, [bPage, bPages, bState, fetchPage]);
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => { if (entries[0]?.isIntersecting) void loadMore(); }, { rootMargin: "800px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loadMore, bItems.length]);
+
+  const brandInfo = brands.find((b) => b.slug === brand);
 
   // Keep the URL shareable without a navigation.
   useEffect(() => {
     const sp = new URLSearchParams();
-    if (q) sp.set("q", q);
-    if (family) sp.set("family", family);
-    if (room) sp.set("room", room);
-    const url = `${window.location.pathname}${sp.size ? `?${sp}` : ""}`;
-    window.history.replaceState(null, "", url);
-  }, [q, family, room]);
+    if (catalogue === "brands") {
+      sp.set("catalogue", "brands");
+      if (bq) sp.set("q", bq);
+      if (brand) sp.set("brand", brand);
+    } else {
+      if (q) sp.set("q", q);
+      if (family) sp.set("family", family);
+      if (room) sp.set("room", room);
+    }
+    window.history.replaceState(null, "", `${window.location.pathname}${sp.size ? `?${sp}` : ""}`);
+  }, [catalogue, q, family, room, bq, brand]);
 
-  const active = selected && results.includes(selected) ? selected : results[0] ?? null;
+  const ourActive = selected && results.includes(selected) ? selected : results[0] ?? null;
+  const brandActive = bSelected && bItems.some((s) => s.id === bSelected.id) ? bSelected : bItems[0] ?? null;
+  const view: View | null = catalogue === "brands" ? (brandActive ? brandView(brandActive) : null) : ourActive ? ourView(ourActive) : null;
+
+  const chipRow = "chip-row -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0";
+  const tileClass = (on: boolean) =>
+    `group block w-full overflow-hidden rounded-xl border bg-paper text-left transition hover:-translate-y-0.5 sm:rounded-[1.25rem] ${on ? "border-ink ring-2 ring-ink sm:ring-0 sm:shadow-[6px_6px_0_var(--pm-shadow-ink)]" : "border-line sm:shadow-[3px_3px_0_var(--pm-shadow-ink)]"}`;
 
   return (
     // Wide screens: the list on the left and the preview in a sticky column beside it.
     // Phones: a compact preview pinned under the header, with search, swipeable filters and a
     // dense swatch grid below it, so every tap shows on the wall without scrolling.
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_440px]">
-      {active && (
+      {view && (
         <div className="sticky top-[73px] z-20 -mx-5 mb-4 border-b border-line-soft bg-canvas/95 px-5 pb-3 pt-2 backdrop-blur-md lg:hidden" aria-label="Selected shade preview">
-          <WallPreview colour={active} compact frameClassName="h-[30svh] min-h-[170px]" sizes="100vw" className="!rounded-2xl" />
+          <WallPreview colour={view} compact frameClassName="h-[30svh] min-h-[170px]" sizes="100vw" className="!rounded-2xl" />
           <div className="mt-2.5 flex items-center gap-3">
-            <span className="h-9 w-9 shrink-0 rounded-xl border border-line" style={{ background: active.hex }} />
+            <span className="h-9 w-9 shrink-0 rounded-xl border border-line" style={{ background: view.hex }} />
             <div className="min-w-0 flex-1">
               <p className="truncate font-display text-[19px] leading-tight">
-                {active.name} <span className="font-sans text-xs font-semibold text-muted">{active.code}</span>
+                {view.name} <span className="font-sans text-xs font-semibold text-muted">{view.code}</span>
               </p>
-              <p className="text-[11px] font-semibold text-muted">{active.hex.toUpperCase()} · LRV {active.lrv}</p>
+              <p className="text-[11px] font-semibold text-muted">{view.hex.toUpperCase()} · LRV {view.lrv}</p>
             </div>
-            <Link href={`/colours/${active.code}`} className="shrink-0 text-xs font-semibold underline underline-offset-2">Details</Link>
-            <Link href={`/book?colour=${active.code}`} className="btn-primary shrink-0 !min-h-[36px] !px-3.5 !py-1.5 text-xs">Book</Link>
+            {view.detailsHref && <Link href={view.detailsHref} className="shrink-0 text-xs font-semibold underline underline-offset-2">Details</Link>}
+            <Link href={view.bookHref} className="btn-primary shrink-0 !min-h-[36px] !px-3.5 !py-1.5 text-xs">Book</Link>
           </div>
         </div>
       )}
 
       <div>
-      <div className="card p-4 md:p-7">
-        <label htmlFor="colour-q" className="block text-sm font-bold">
-          Search by name, code, hex or mood
-        </label>
-        <div className="mt-2 flex flex-wrap gap-3">
-          <input
-            id="colour-q"
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="e.g. sage, PM-502, #b8c7b0, pooja room, warm"
-            autoComplete="off"
-            className="field min-w-0 flex-1 text-base"
-          />
-          {(q || family || room) && (
-            <button
-              type="button"
-              onClick={() => { setQ(""); setFamily(undefined); setRoom(undefined); }}
-              className="btn-secondary !py-2.5 text-sm"
-            >
-              Clear
-            </button>
+        <div className="card p-4 md:p-7">
+          {brandTotal > 0 && (
+            <div role="group" aria-label="Catalogue" className="mb-4 inline-flex w-full gap-1 rounded-full border border-line p-1 text-sm font-semibold sm:w-auto">
+              <button type="button" aria-pressed={catalogue === "ours"} onClick={() => setCatalogue("ours")} className={`flex-1 rounded-full px-3.5 py-1.5 sm:flex-none ${catalogue === "ours" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>
+                Paint Man shades ({colours.length})
+              </button>
+              <button type="button" aria-pressed={catalogue === "brands"} onClick={() => setCatalogue("brands")} className={`flex-1 rounded-full px-3.5 py-1.5 sm:flex-none ${catalogue === "brands" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>
+                Brand shades ({brandTotal.toLocaleString("en-IN")})
+              </button>
+            </div>
+          )}
+
+          {catalogue === "ours" ? (
+            <>
+              <label htmlFor="colour-q" className="block text-sm font-bold">Search by name, code, hex or mood</label>
+              <div className="mt-2 flex flex-wrap gap-3">
+                <input
+                  id="colour-q"
+                  type="search"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="e.g. sage, PM-502, #b8c7b0, pooja room, warm"
+                  autoComplete="off"
+                  className="field min-w-0 flex-1 text-base"
+                />
+                {(q || family || room) && (
+                  <button type="button" onClick={() => { setQ(""); setFamily(undefined); setRoom(undefined); }} className="btn-secondary !py-2.5 text-sm">
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* phones: one swipeable row per filter group; wider: wrapped */}
+              <div className={`${chipRow} mt-4 md:mt-5`} role="group" aria-label="Colour family">
+                {colourFamilies.map((f) => (
+                  <button key={f} type="button" aria-pressed={family === f} onClick={() => setFamily(family === f ? undefined : f)} className={`shrink-0 rounded-full border border-line px-3.5 py-1.5 text-sm font-bold transition ${family === f ? "bg-ink text-on-ink" : "bg-paper hover:bg-cream-wash"}`}>
+                    {f}
+                  </button>
+                ))}
+              </div>
+              <div className={`${chipRow} mt-2.5 md:mt-3`} role="group" aria-label="Room">
+                {rooms.map((r) => (
+                  <button key={r} type="button" aria-pressed={room === r} onClick={() => setRoom(room === r ? undefined : r)} className={`shrink-0 rounded-full border border-line px-3 py-1 text-xs font-bold transition ${room === r ? "border-ink bg-sky-wash" : "bg-paper hover:border-line-strong"}`}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              {brandInfo && (
+                <div className="mb-3 flex items-center gap-3">
+                  <button type="button" onClick={() => { setBrand(""); setBFamily(""); setBq(""); setBSelected(null); }} className="text-sm font-semibold text-muted underline underline-offset-2">
+                    ← All brands
+                  </button>
+                  <p className="font-display text-lg">{brandInfo.name} <span className="font-sans text-sm text-muted">({brandInfo.count.toLocaleString("en-IN")} shades)</span></p>
+                </div>
+              )}
+              <label htmlFor="brand-q" className="block text-sm font-bold">
+                {brandInfo ? `Search ${brandInfo.name} by code, name or hex` : "Search all brands by code, name or hex"}
+              </label>
+              <input
+                id="brand-q"
+                type="search"
+                value={bq}
+                onChange={(e) => setBq(e.target.value)}
+                placeholder={brandInfo ? "e.g. 7982, Mecca Gold, #e7975b" : "e.g. Asian Paints 7982, Berger 3P0050, #b8c7b0"}
+                autoComplete="off"
+                className="field mt-2 w-full text-base"
+              />
+              {brandInfo && (
+                <div className={`${chipRow} mt-4`} role="group" aria-label="Primary colour">
+                  {["", ...brandFamilies].map((f) => (
+                    <button key={f || "all"} type="button" aria-pressed={bFamily === f} onClick={() => setBFamily(f)} className={`flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm font-bold transition ${bFamily === f ? "bg-ink text-on-ink" : "bg-paper hover:bg-cream-wash"}`}>
+                      {f && <span aria-hidden className="h-3 w-3 rounded-full border border-line" style={{ background: FAMILY_SWATCH[f] ?? "#ccc" }} />}
+                      {f ? cap(f) : "All colours"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* phones: one swipeable row per filter group; wider: wrapped */}
-        <div className="chip-row -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:mt-5 md:flex-wrap md:overflow-visible md:px-0 md:pb-0" role="group" aria-label="Colour family">
-          {colourFamilies.map((f) => (
-            <button
-              key={f}
-              type="button"
-              aria-pressed={family === f}
-              onClick={() => setFamily(family === f ? undefined : f)}
-              className={`shrink-0 rounded-full border border-line px-3.5 py-1.5 text-sm font-bold transition ${family === f ? "bg-ink text-on-ink" : "bg-paper hover:bg-cream-wash"}`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-        <div className="chip-row -mx-4 mt-2.5 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:mt-3 md:flex-wrap md:overflow-visible md:px-0 md:pb-0" role="group" aria-label="Room">
-          {rooms.map((r) => (
-            <button
-              key={r}
-              type="button"
-              aria-pressed={room === r}
-              onClick={() => setRoom(room === r ? undefined : r)}
-              className={`shrink-0 rounded-full border border-line px-3 py-1 text-xs font-bold transition ${room === r ? "border-ink bg-sky-wash" : "bg-paper hover:border-line-strong"}`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <p className="mt-6 hidden text-sm text-muted md:block">
-        Need a shade that isn&apos;t here? The <Link href="/visualizer" className="font-semibold text-cobalt-text underline">visualizer</Link> also searches 32,000 named colours and shows any of them on your own photo.
-      </p>
-      <p className="mt-4 text-sm font-semibold text-muted md:mt-6" aria-live="polite">
-        {results.length === 0
-          ? "No shade matches that. Try a family or a room above, or a hex like #b8c7b0."
-          : `${results.length} shade${results.length === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}${family ? ` in ${family}` : ""}. Tap one to see it on the wall.`}
-      </p>
-
-      <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Shades">
-        {results.map((c) => {
-          const isActive = active?.code === c.code;
-          return (
-            <li key={c.code}>
-              <button
-                type="button"
-                onClick={() => setSelected(c)}
-                aria-pressed={isActive}
-                className={`group block w-full overflow-hidden rounded-xl border bg-paper text-left transition hover:-translate-y-0.5 sm:rounded-[1.25rem] ${isActive ? "border-ink ring-2 ring-ink sm:ring-0 sm:shadow-[6px_6px_0_var(--pm-shadow-ink)]" : "border-line sm:shadow-[3px_3px_0_var(--pm-shadow-ink)]"}`}
-              >
-                <span className="block h-14 border-b border-line sm:h-24" style={{ background: c.hex }} />
-                <span className="block p-1.5 sm:p-3">
-                  <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{c.name}</span>
-                  <span className="mt-0.5 flex items-center justify-between text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
-                    <span>{c.code}</span>
-                    <span className="hidden sm:inline">{c.family}</span>
-                  </span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      </div>
-
-      {active && (
-        <section className="hidden rounded-[2rem] border border-line bg-paper p-5 lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto" aria-labelledby="active-colour">
-          <WallPreview colour={active} sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
-          <div className="mt-5 flex items-center gap-4">
-            <span className="h-14 w-14 shrink-0 rounded-2xl border border-line" style={{ background: active.hex }} />
-            <div className="min-w-0">
-              <p className="eyebrow">{active.family}</p>
-              <h2 id="active-colour" className="mt-1 text-2xl font-normal md:text-3xl">
-                {active.name} <span className="font-sans text-base font-semibold text-muted">{active.code}</span>
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-muted">
-                {active.hex.toUpperCase()} · LRV {active.lrv} · {active.finish}
+        {catalogue === "ours" ? (
+          <>
+            <p className="mt-6 hidden text-sm text-muted md:block">
+              Want a brand&apos;s shade card instead? Switch to <button type="button" onClick={() => setCatalogue("brands")} className="font-semibold text-cobalt-text underline">Brand shades</button>, or see any colour on your own photo in the <Link href="/visualizer" className="font-semibold text-cobalt-text underline">visualizer</Link>.
+            </p>
+            <p className="mt-4 text-sm font-semibold text-muted md:mt-6" aria-live="polite">
+              {results.length === 0
+                ? "No shade matches that. Try a family or a room above, or a hex like #b8c7b0."
+                : `${results.length} shade${results.length === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}${family ? ` in ${family}` : ""}. Tap one to see it on the wall.`}
+            </p>
+            <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Shades">
+              {results.map((c) => (
+                <li key={c.code}>
+                  <button type="button" onClick={() => setSelected(c)} aria-pressed={ourActive?.code === c.code} className={tileClass(ourActive?.code === c.code)}>
+                    <span className="block h-14 border-b border-line sm:h-24" style={{ background: c.hex }} />
+                    <span className="block p-1.5 sm:p-3">
+                      <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{c.name}</span>
+                      <span className="mt-0.5 flex items-center justify-between text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
+                        <span>{c.code}</span>
+                        <span className="hidden sm:inline">{c.family}</span>
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <>
+            {showBrandGrid ? (
+              <>
+                <p className="mt-4 text-sm font-semibold text-muted md:mt-6">Choose a brand to see its shade card, or search above.</p>
+                <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3" aria-label="Paint brands">
+                  {brands.map((b) => (
+                    <li key={b.slug}>
+                      <button type="button" onClick={() => { setBrand(b.slug); setBFamily(""); setBSelected(null); }} className="flex w-full flex-col items-start rounded-2xl border border-line bg-paper p-3 text-left transition hover:-translate-y-0.5 hover:border-ink sm:p-4">
+                        <span className="font-display text-base leading-tight sm:text-lg">{b.name}</span>
+                        <span className="mt-0.5 text-xs font-semibold text-muted">{b.count.toLocaleString("en-IN")} shades</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <>
+                <p className="mt-4 text-sm font-semibold text-muted md:mt-6" aria-live="polite">
+                  {bState === "error"
+                    ? "Brand shades are unavailable right now. Try again in a minute."
+                    : bState === "loading" && bItems.length === 0
+                      ? "Loading shades…"
+                      : bTotal === 0
+                        ? "No shade matches that. Try a code like 7982, a name, or a hex like #b8c7b0."
+                        : `${bTotal.toLocaleString("en-IN")} shade${bTotal === 1 ? "" : "s"}${bq ? ` for “${bq}”` : ""}${bFamily ? ` · ${cap(bFamily)}` : ""}. Tap one to see it on the wall.`}
+                </p>
+                <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Brand shades">
+                  {bItems.map((s) => (
+                    <li key={s.id}>
+                      <button type="button" onClick={() => setBSelected(s)} aria-pressed={brandActive?.id === s.id} className={tileClass(brandActive?.id === s.id)}>
+                        <span className="block h-14 border-b border-line sm:h-24" style={{ background: s.hex }} />
+                        <span className="block p-1.5 sm:p-3">
+                          <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{s.name}</span>
+                          <span className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
+                            <span className="truncate">{s.code}</span>
+                            <span className="hidden truncate sm:inline">{brand ? "" : s.brandName}</span>
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {/* infinite scroll trigger, plus a button for keyboard users and old browsers */}
+                <div ref={sentinel} aria-hidden className="h-px" />
+                {bPage < bPages && bState !== "error" && bItems.length > 0 && (
+                  <button type="button" onClick={() => void loadMore()} className="btn-secondary mt-5 w-full sm:w-auto">
+                    Show more ({(bTotal - bItems.length).toLocaleString("en-IN")} left)
+                  </button>
+                )}
+              </>
+            )}
+            {attribution && (
+              <p className="mt-5 text-xs leading-relaxed text-muted">
+                Brand shades: <a href={attribution.source} className="underline" rel="noopener" target="_blank">PaintDB</a>, licensed{" "}
+                <a href={attribution.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>. On-screen colours approximate each brand&apos;s
+                published shade. Paint Man isn&apos;t affiliated with these brands; the inspector brings the real shade card.
               </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {!view && catalogue === "brands" && (
+        <aside className="hidden rounded-[2rem] border border-dashed border-line-strong bg-paper p-8 text-center lg:sticky lg:top-24 lg:block">
+          <p className="font-display text-2xl">Pick a brand</p>
+          <p className="mt-2 text-sm text-muted">Then a primary colour, or scroll its whole shade card. Every shade you tap shows on the room here.</p>
+        </aside>
+      )}
+
+      {view && (
+        <section className="hidden rounded-[2rem] border border-line bg-paper p-5 lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto" aria-labelledby="active-colour">
+          <WallPreview colour={view} sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
+          <div className="mt-5 flex items-center gap-4">
+            <span className="h-14 w-14 shrink-0 rounded-2xl border border-line" style={{ background: view.hex }} />
+            <div className="min-w-0">
+              <p className="eyebrow">{view.eyebrow}</p>
+              <h2 id="active-colour" className="mt-1 text-2xl font-normal md:text-3xl">
+                {view.name} <span className="font-sans text-base font-semibold text-muted">{view.code}</span>
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-muted">{view.meta}</p>
             </div>
           </div>
-          <p className="mt-4 text-base text-ink">{active.note}</p>
-          <p className="mt-2 text-sm text-muted">Good for: {active.rooms.join(", ")}.</p>
+          {view.note && <p className="mt-4 text-base text-ink">{view.note}</p>}
+          {view.goodFor && <p className="mt-2 text-sm text-muted">Good for: {view.goodFor}.</p>}
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={`/book?colour=${active.code}`} className="btn-primary">Book an inspection with this shade</Link>
-            <Link href={`/visualizer?colour=${active.code}`} className="btn-secondary">Try on your wall</Link>
-            <Link href={`/colours/${active.code}`} className="btn-secondary">Full details</Link>
+            <Link href={view.bookHref} className="btn-primary">Book an inspection with this shade</Link>
+            <Link href={view.tryHref} className="btn-secondary">Try on your wall</Link>
+            {view.detailsHref && <Link href={view.detailsHref} className="btn-secondary">Full details</Link>}
           </div>
           <p className="mt-4 text-xs text-muted">
             Screen colours are a guide. Paint shifts with daylight, bulbs and sheen, so our inspector brings physical shade cards

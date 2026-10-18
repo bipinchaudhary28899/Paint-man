@@ -7,6 +7,7 @@ import { images } from "@/config/images";
 import { site } from "@/config/site";
 import { getPalette } from "@/config/palettes";
 import { getColour } from "@/lib/colours/search";
+import { getBrandShade } from "@/lib/colours/brands";
 import { serviceTypes } from "@/lib/leads/options";
 import { pageMetadata } from "@/lib/seo";
 
@@ -28,15 +29,19 @@ const next = [
   { text: "You receive an itemised quotation. Nothing is booked until you approve it.", tint: "bg-cobalt", emoji: "receipt" as const },
 ];
 
-export default async function BookPage({ searchParams }: { searchParams: Promise<{ service?: string; colour?: string; palette?: string }> }) {
-  const { service, colour: colourCode, palette: paletteSlug } = await searchParams;
+export default async function BookPage({ searchParams }: { searchParams: Promise<{ service?: string; colour?: string; palette?: string; shade?: string }> }) {
+  const { service, colour: colourCode, palette: paletteSlug, shade: shadeId } = await searchParams;
   const colour = colourCode ? getColour(colourCode) : undefined;
+  // a brand shade from the colour finder, e.g. ?shade=asian-paints:7982
+  const brandShade = shadeId ? getBrandShade(shadeId) : undefined;
   const palette = paletteSlug ? getPalette(paletteSlug) : undefined;
   const defaultMessage = palette
     ? `Interested in the "${palette.name}" palette (${palette.codes.join(", ")}). Please bring the shade cards.`
     : colour
       ? `Interested in the shade ${colour.name} (${colour.code}). Please bring the shade card.`
-      : undefined;
+      : brandShade
+        ? `Interested in ${brandShade.brandName} ${brandShade.code} ${brandShade.name} (${brandShade.hex.toUpperCase()}). Please bring the shade card.`
+        : undefined;
   return (
     <div className="relative overflow-hidden">
       <Blob className="absolute -left-40 top-20 h-[28rem] w-[28rem] opacity-50" color="var(--pm-peach-wash)" />

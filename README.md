@@ -149,9 +149,22 @@ is a local repaint (no inference); hold-to-compare shows the original; Download 
 the image), the page says so and suggests a better photo; nothing is painted.
 Nothing is ever recoloured silently across the whole image.
 
-**Shade sources.** Our catalogue (167 shades, `/api/v1/colours`) and ~32,000 public named colours from
-color.pizza via `/api/v1/colours/web` (proxied and cached server-side for a day; the browser never
-calls the third party).
+**Shade sources.** Our catalogue (167 shades, `/api/v1/colours`); **50,762 brand shades** from 25 paint
+brands (Asian Paints, Berger, Nerolac, Dulux, Sherwin-Williams…) via `/api/v1/colours/paint` and
+`/api/v1/colours/brands`; and ~32,000 public named colours from color.pizza via `/api/v1/colours/web`
+(proxied and cached server-side for a day; the browser never calls the third party).
+
+### Brand shades (PaintDB, CC BY 4.0)
+
+`src/data/paintdb.json` is a compact copy of [PaintDB](https://paintdb.com)'s open dataset
+(CC BY 4.0): brand, shade code, name, hex, LRV, colour family, undertone. Refresh it with
+`npm run data:paintdb` (downloads the CSV and rewrites the file). It is searched in server memory
+(`src/lib/colours/brands.ts`); the colour finder shows it as Brand shades: pick a brand, then a
+primary colour or scroll, 48 shades per load with infinite scroll. Loaded pages stay in the
+browser's memory and each API page is cached at Vercel's edge for a day, so scrolling back or
+reopening a colour family never repeats a request. The attribution ("Brand shades: PaintDB,
+CC BY 4.0") must stay wherever these shades are shown; hex values approximate each brand's
+published shade, and Paint Man is not affiliated with these brands.
 
 **Limitations** (measured on 14 hard room photos, see `docs/visualizer-eval/REPORT.md`). SegFormer-B0
 is small: on the eval set 8/14 photos needed no correction, 3 needed a brush stroke, and 3 failed —

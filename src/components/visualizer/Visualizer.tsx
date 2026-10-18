@@ -17,7 +17,8 @@ import { Segmenter, type ModelId, type SegmentResult } from "./segmenter";
 // Selection = the model's wall surfaces the user has kept (tap a surface to toggle it), feathered.
 
 type Status = "idle" | "loading" | "detecting" | "ready" | "error";
-type Shade = { name: string; hex: string; code?: string };
+/** `bookQuery` overrides the booking link (e.g. `shade=asian-paints%3A7982` for a brand shade). */
+type Shade = { name: string; hex: string; code?: string; bookQuery?: string };
 
 type Photo = { width: number; height: number; pixels: Uint8ClampedArray; name: string };
 
@@ -149,7 +150,7 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
       if (!blob) return;
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `paintman-${shade.code ?? shade.name.toLowerCase().replace(/\s+/g, "-")}.jpg`;
+      a.download = `paintman-${(shade.code ?? shade.name).toLowerCase().replace(/[^a-z0-9]+/g, "-")}.jpg`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }, "image/jpeg", 0.92);
@@ -219,7 +220,7 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
             surfaces; we then repaint only those pixels, keeping their light, shadows and texture. Screen colours are a guide; the
             inspector brings real shade cards.
           </p>
-          <Link href={`/book${shade.code ? `?colour=${shade.code}` : ""}`} className="btn-primary mt-4 w-full">
+          <Link href={`/book${shade.bookQuery ? `?${shade.bookQuery}` : shade.code ? `?colour=${shade.code}` : ""}`} className="btn-primary mt-4 w-full">
             Book an inspection with {shade.name}
           </Link>
         </div>

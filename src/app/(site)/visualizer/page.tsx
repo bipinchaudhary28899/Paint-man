@@ -4,6 +4,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { Visualizer } from "@/components/visualizer/Visualizer";
 import { site } from "@/config/site";
 import { getColour } from "@/lib/colours/search";
+import { getBrandShade } from "@/lib/colours/brands";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -18,9 +19,15 @@ const faqs = [
   { q: "Will the wall look exactly like this?", a: "It is a close guide. Daylight, tube lights and the finish (matt or sheen) all shift a shade, so the inspector brings physical shade cards and paints a test patch before you decide." },
 ];
 
-export default async function VisualizerPage({ searchParams }: { searchParams: Promise<{ colour?: string; model?: string }> }) {
-  const { colour: code, model } = await searchParams;
-  const start = code ? getColour(code) : undefined;
+export default async function VisualizerPage({ searchParams }: { searchParams: Promise<{ colour?: string; model?: string; shade?: string }> }) {
+  const { colour: code, model, shade: shadeId } = await searchParams;
+  const ours = code ? getColour(code) : undefined;
+  const brandShade = !ours && shadeId ? getBrandShade(shadeId) : undefined;
+  const start = ours
+    ? { name: ours.name, hex: ours.hex, code: ours.code }
+    : brandShade
+      ? { name: brandShade.name, hex: brandShade.hex, code: `${brandShade.brandName} ${brandShade.code}`, bookQuery: `shade=${encodeURIComponent(brandShade.id)}` }
+      : undefined;
   const modelId = model === "b1" || model === "b2" ? model : "b0";
   return (
     <>
@@ -42,7 +49,7 @@ export default async function VisualizerPage({ searchParams }: { searchParams: P
       </section>
 
       <section className="container-page mt-10 md:mt-14" aria-label="Visualizer">
-        <Visualizer initialShade={start ? { name: start.name, hex: start.hex, code: start.code } : undefined} model={modelId} />
+        <Visualizer initialShade={start} model={modelId} />
       </section>
 
       <section className="container-page mt-24 grid gap-10 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="vis-faq">

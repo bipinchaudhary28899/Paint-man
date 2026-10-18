@@ -2,6 +2,9 @@ import Image from "next/image";
 import type { Colour } from "@/config/colours";
 import { genericScene } from "@/config/scenes";
 
+/** Anything with a name, code, hex and LRV: a Paint Man shade or a brand shade. */
+export type PreviewShade = Pick<Colour, "name" | "code" | "hex" | "lrv">;
+
 // Every shade on the same ordinary room: the photo never changes, only the wall colour does,
 // so shades compare fairly. Tint layers in the shade's hex are masked by the scene's wall
 // mask (a PNG from the wall detector) and blended onto the photograph (see scenes.ts for the
@@ -15,7 +18,7 @@ export function WallPreview({
   sizes = "(min-width: 1024px) 720px, 100vw",
   compact = false,
   frameClassName = "",
-}: { colour: Colour; className?: string; priority?: boolean; sizes?: string; compact?: boolean; frameClassName?: string }) {
+}: { colour: PreviewShade; className?: string; priority?: boolean; sizes?: string; compact?: boolean; frameClassName?: string }) {
   const scene = genericScene;
   return (
     <figure className={`overflow-hidden rounded-3xl border border-line bg-paper ${className}`}>

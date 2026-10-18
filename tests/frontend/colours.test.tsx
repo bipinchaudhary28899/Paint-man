@@ -1,7 +1,7 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
-import { ColourFinder } from "@/components/colours/ColourFinder";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ColourFinder, PER_PAGE, type BrandShadeItem } from "@/components/colours/ColourFinder";
 import { WallPreview } from "@/components/colours/WallPreview";
 import { colours } from "@/config/colours";
 import { genericScene } from "@/config/scenes";
@@ -88,5 +88,113 @@ describe("WallPreview", () => {
     expect(tints[0].style.maskImage).toContain(genericScene.mask);
     expect(container.textContent).toContain("PM-401");
     expect(container.textContent).toContain("LRV 18");
+  });
+});
+
+describe("ColourFinder: brand shades", () => {
+  const brands = [
+    { slug: "asian-paints", name: "Asian Paints", count: 2221 },
+    { slug: "berger", name: "Berger Paints", count: 1575 },
+  ];
+  const shade = (i: number, extra: Partial<BrandShadeItem> = {}): BrandShadeItem => ({
+    id: `asian-paints:${7000 + i}`, brand: "asian-paints", brandName: "Asian Paints", code: String(7000 + i), name: `Shade ${i}`,
+    hex: "#e7975b", lrv: 40, family: "blue", undertone: "Cool Blue", interior: true, exterior: true, ...extra,
+  });
+  const page = (n: number, total = 100) => ({ data: Array.from({ length: Math.min(PER_PAGE, total - (n - 1) * PER_PAGE) }, (_, i) => shade((n - 1) * PER_PAGE + i)), meta: { total, page: n, pages: Math.ceil(total / PER_PAGE) } });
+  const props = { brands, brandFamilies: ["white", "blue"], brandTotal: 50762, attribution: { text: "Shade data: PaintDB", source: "https://paintdb.com", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" } };
+
+  let observe: ((entries: { isIntersecting: boolean }[]) => void) | null = null;
+  beforeEach(() => {
+    observe = null;
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(cb: (entries: { isIntersecting: boolean }[]) => void) { observe = cb; }
+      observe() {}
+      disconnect() {}
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("starts with the brands, then loads a brand's shades with primary-colour chips and attribution", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const u = new URL(String(url), "http://x");
+      return new Response(JSON.stringify(page(Number(u.searchParams.get("page")))));
+    });
+    const user = userEvent.setup();
+    render(<ColourFinder {...props} initialCatalogue="brands" />);
+    expect(screen.getByRole("button", { name: "Brand shades (50,762)" })).toHaveAttribute("aria-pressed", "true");
+    const brandGrid = screen.getByRole("list", { name: "Paint brands" });
+    expect(within(brandGrid).getAllByRole("button")).toHaveLength(2);
+    expect(fetchSpy).not.toHaveBeenCalled(); // nothing loads until a brand is chosen
+
+    await user.click(within(brandGrid).getByRole("button", { name: /Asian Paints/ }));
+    await waitFor(() => expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(PER_PAGE));
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("brand=asian-paints");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain(`perPage=${PER_PAGE}`);
+    expect(screen.getByText(/100 shades\. Tap one/)).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Primary colour" })).toBeInTheDocument();
+    expect(screen.getByText(/PaintDB/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
+    // the preview shows the first shade, with brand booking links
+    expect(screen.getByRole("heading", { name: /Shade 0/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7000");
+    expect(screen.getByRole("link", { name: "Try on your wall" })).toHaveAttribute("href", "/visualizer?shade=asian-paints%3A7000");
+    await user.click(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("button")[3]);
+    expect(screen.getByRole("heading", { name: /^Shade 3 Asian Paints 7003/ })).toBeInTheDocument();
+  });
+
+  it("scrolls in more pages and never refetches a page it already has", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const u = new URL(String(url), "http://x");
+      return new Response(JSON.stringify(page(Number(u.searchParams.get("page")))));
+    });
+    const user = userEvent.setup();
+    render(<ColourFinder {...props} initialCatalogue="brands" initialBrand="asian-paints" />);
+    await waitFor(() => expect(screen.getByText(/100 shades/)).toBeInTheDocument());
+    await act(async () => { observe?.([{ isIntersecting: true }]); });
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("listitem")).toHaveLength(96));
+    // the last page through the button
+    await user.click(screen.getByRole("button", { name: /Show more \(4 left\)/ }));
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("listitem")).toHaveLength(100));
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
+    const calls = fetchSpy.mock.calls.length;
+
+    // a colour family, then back to all colours: the first page comes from memory
+    await user.click(screen.getByRole("button", { name: "Blue" }));
+    await waitFor(() => expect(fetchSpy.mock.calls.length).toBe(calls + 1));
+    expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain("family=blue");
+    await user.click(screen.getByRole("button", { name: "All colours" }));
+    await waitFor(() => expect(screen.getByText(/100 shades\. Tap/)).toBeInTheDocument());
+    expect(fetchSpy.mock.calls.length).toBe(calls + 1);
+
+    // back to the brands
+    await user.click(screen.getByRole("button", { name: "← All brands" }));
+    expect(screen.getByRole("list", { name: "Paint brands" })).toBeInTheDocument();
+  });
+
+  it("searches all brands from the brand screen and shows errors", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [shade(1, { name: "Mecca Gold", code: "7982" })], meta: { total: 1, page: 1, pages: 1 } })))
+      .mockResolvedValueOnce(new Response("down", { status: 503 }));
+    const user = userEvent.setup();
+    render(<ColourFinder {...props} initialCatalogue="brands" />);
+    await user.type(screen.getByLabelText("Search all brands by code, name or hex"), "7982");
+    await waitFor(() => expect(screen.getByRole("button", { name: /Mecca Gold/ })).toBeInTheDocument());
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("q=7982");
+    expect(screen.getByText(/1 shade for “7982”/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Search all brands by code, name or hex"), "x");
+    await waitFor(() => expect(screen.getByText(/unavailable right now/)).toBeInTheDocument());
+  });
+
+  it("switches back to Paint Man shades", async () => {
+    const user = userEvent.setup();
+    render(<ColourFinder {...props} />);
+    expect(screen.getByRole("button", { name: "Paint Man shades (167)" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: "Brand shades (50,762)" }));
+    expect(screen.getByRole("list", { name: "Paint brands" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Paint Man shades (167)" }));
+    expect(screen.getByRole("list", { name: "Shades" })).toBeInTheDocument();
   });
 });
