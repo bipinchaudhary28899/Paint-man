@@ -1,0 +1,62 @@
+import type { Metadata, Viewport } from "next";
+import { DM_Serif_Display, Manrope } from "next/font/google";
+import { site } from "@/config/site";
+import "./globals.css";
+
+// Editorial pairing from the PaintMan design: DM Serif Display (with its italic) for every
+// heading, Manrope for reading text and UI. Both self-hosted by next/font, so no layout shift.
+const body = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-manrope", display: "swap" });
+const display = DM_Serif_Display({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-dm-serif", display: "swap" });
+
+export const metadata: Metadata = {
+  metadataBase: new URL(site.url),
+  title: {
+    default: `House Painting Services in ${site.city} | ${site.name}`,
+    template: `%s | ${site.name} ${site.city}`,
+  },
+  description: `Managed house painting in ${site.city}: site inspection, itemised quotation, genuine branded paint and supervised painters. Book an inspection online.`,
+  applicationName: site.name,
+  authors: [{ name: site.name }],
+  creator: site.name,
+  publisher: site.name,
+  category: "Home Services",
+  formatDetection: { telephone: true, address: true, email: true },
+  alternates: { canonical: "/" },
+  openGraph: {
+    siteName: site.name,
+    locale: site.locale,
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+  },
+  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : undefined,
+  other: {
+    "geo.region": site.regionCode,
+    "geo.placename": site.city,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#242522",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en-IN" data-scroll-behavior="smooth" className={`${body.variable} ${display.variable}`}>
+      <body className="font-sans antialiased">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-paper focus:p-2">
+          Skip to content
+        </a>
+        {children}
+      </body>
+    </html>
+  );
+}

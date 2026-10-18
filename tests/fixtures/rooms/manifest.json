@@ -1,0 +1,132 @@
+[
+  {
+    "id": "white-kitchen-1",
+    "pexels": 7535073,
+    "case": "White walls + white cupboards",
+    "description": "Kitchen with white cabinets on a white wall",
+    "url": "https://images.pexels.com/photos/7535073/pexels-photo-7535073.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/7535073/"
+  },
+  {
+    "id": "white-kitchen-2",
+    "pexels": 6636302,
+    "case": "White walls + white cupboards",
+    "description": "Open-plan kitchen, white units, light wall",
+    "url": "https://images.pexels.com/photos/6636302/pexels-photo-6636302.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/6636302/"
+  },
+  {
+    "id": "white-wardrobe-1",
+    "pexels": 6489100,
+    "case": "White wardrobe on a white wall",
+    "description": "Bedroom with a built-in white wardrobe",
+    "url": "https://images.pexels.com/photos/6489100/pexels-photo-6489100.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/6489100/"
+  },
+  {
+    "id": "white-wardrobe-2",
+    "pexels": 30002781,
+    "case": "White wardrobe on a white wall",
+    "description": "Bedroom, white wardrobe doors beside the bed",
+    "url": "https://images.pexels.com/photos/30002781/pexels-photo-30002781.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/30002781/"
+  },
+  {
+    "id": "sofa-tv-art-1",
+    "pexels": 7031875,
+    "case": "Wall hidden behind a sofa; TV and art on the wall",
+    "description": "Grey living room, sofa against the wall",
+    "url": "https://images.pexels.com/photos/7031875/pexels-photo-7031875.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/7031875/"
+  },
+  {
+    "id": "sofa-tv-art-2",
+    "pexels": 7587735,
+    "case": "Sofa against wall, framed art, shelves",
+    "description": "Living room with sofa, art and lamp",
+    "url": "https://images.pexels.com/photos/7587735/pexels-photo-7587735.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/7587735/"
+  },
+  {
+    "id": "window-sun-1",
+    "pexels": 2929293,
+    "case": "Window in the wall, strong sunlight",
+    "description": "Bedroom with window and sunlight stripes",
+    "url": "https://images.pexels.com/photos/2929293/pexels-photo-2929293.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/2929293/"
+  },
+  {
+    "id": "window-door-2",
+    "pexels": 7350000,
+    "case": "Window and door in the wall, uneven light",
+    "description": "Bedroom with a large window and curtain",
+    "url": "https://images.pexels.com/photos/7350000/pexels-photo-7350000.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/7350000/"
+  },
+  {
+    "id": "dark-wall-1",
+    "pexels": 6903153,
+    "case": "Dark wall, bright highlights",
+    "description": "Dark teal bedroom wall with lamp",
+    "url": "https://images.pexels.com/photos/6903153/pexels-photo-6903153.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/6903153/"
+  },
+  {
+    "id": "dark-wall-tv-2",
+    "pexels": 13043955,
+    "case": "Dark wall with a television",
+    "description": "Dark bedroom wall, TV and shelving",
+    "url": "https://images.pexels.com/photos/13043955/pexels-photo-13043955.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/13043955/"
+  },
+  {
+    "id": "textured-brick",
+    "pexels": 39367039,
+    "case": "Textured (brick) wall",
+    "description": "Room with an exposed brick wall",
+    "url": "https://images.pexels.com/photos/39367039/pexels-photo-39367039.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/39367039/"
+  },
+  {
+    "id": "mirror-wall",
+    "pexels": 12715512,
+    "case": "Mirror on the wall",
+    "description": "Round mirror on a plain wall",
+    "url": "https://images.pexels.com/photos/12715512/pexels-photo-12715512.jpeg",
+    "width": 1080,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/12715512/"
+  },
+  {
+    "id": "low-res",
+    "pexels": 6782370,
+    "case": "Low-resolution photo (384 px wide copy)",
+    "description": "Living room, downscaled copy",
+    "url": "https://images.pexels.com/photos/6782370/pexels-photo-6782370.jpeg",
+    "width": 384,
+    "licence": "Pexels licence (free to use, no attribution required)",
+    "source": "https://www.pexels.com/photo/6782370/"
+  }
+]

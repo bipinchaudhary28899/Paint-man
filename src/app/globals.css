@@ -1,0 +1,582 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   PaintMan — editorial theme (from the "PaintMan Website" design).
+   Cream canvas, ink text, terracotta action, golden + sage accents;
+   DM Serif Display for headings, Manrope for everything else.
+   Raw values live on :root / [data-theme="night"] so utilities theme.
+   ------------------------------------------------------------------ */
+:root,
+[data-theme="day"] {
+  --pm-canvas: #f8f5ef;
+  --pm-paper: #ffffff;
+  --pm-sand: #e8d7c5;
+  --pm-chalk: #f4f1ea;
+  --pm-line: rgba(36, 37, 34, 0.12);
+  --pm-line-soft: rgba(36, 37, 34, 0.1);
+  --pm-line-strong: rgba(36, 37, 34, 0.3);
+  --pm-ink: #242522;
+  --pm-ink-soft: #3e3a34;
+  --pm-muted: #5f5a52;
+  --pm-muted-2: #6e6862;
+  --pm-on-ink: #f8f5ef;
+  --pm-on-ink-muted: #d8d3ca;
+
+  --pm-terracotta: #a8532f;
+  --pm-terracotta-hover: #8f4526;
+  --pm-terracotta-light: #c76b4a;
+  --pm-golden: #e9b949;
+  --pm-sage: #71856a;
+  --pm-sage-deep: #5b6e55;
+  --pm-on-sage: #e4e8df;
+  --pm-blush: #ebc4be;
+  --pm-fern: #4f6b4a;
+  --pm-paprika: #b5473a;
+
+  --pm-focus: #a8532f;
+  --pm-shadow-ink: rgba(36, 37, 34, 0.5);
+}
+[data-theme="night"] {
+  --pm-canvas: #242522;
+  --pm-paper: #2e2f2b;
+  --pm-sand: #3b332b;
+  --pm-chalk: #2a2b27;
+  --pm-line: rgba(248, 245, 239, 0.14);
+  --pm-line-soft: rgba(248, 245, 239, 0.1);
+  --pm-line-strong: rgba(248, 245, 239, 0.3);
+  --pm-ink: #f8f5ef;
+  --pm-ink-soft: #e4e0d8;
+  --pm-muted: #bdb6ab;
+  --pm-muted-2: #a7a097;
+  --pm-on-ink: #242522;
+  --pm-on-ink-muted: #5f5a52;
+
+  --pm-terracotta: #c76b4a;
+  --pm-terracotta-hover: #d57a58;
+  --pm-terracotta-light: #e08a66;
+  --pm-on-sage: #e4e8df;
+  --pm-fern: #9fb8a8;
+  --pm-paprika: #e8866a;
+
+  --pm-focus: #e9b949;
+  --pm-shadow-ink: rgba(0, 0, 0, 0.7);
+}
+
+@theme inline {
+  --color-canvas: var(--pm-canvas);
+  --color-paper: var(--pm-paper);
+  --color-sand: var(--pm-sand);
+  --color-chalk: var(--pm-chalk);
+  --color-line: var(--pm-line);
+  --color-line-soft: var(--pm-line-soft);
+  --color-line-strong: var(--pm-line-strong);
+  --color-ink: var(--pm-ink);
+  --color-ink-soft: var(--pm-ink-soft);
+  --color-muted: var(--pm-muted);
+  --color-muted-2: var(--pm-muted-2);
+  --color-on-ink: var(--pm-on-ink);
+  --color-on-ink-muted: var(--pm-on-ink-muted);
+
+  --color-terracotta: var(--pm-terracotta);
+  --color-terracotta-hover: var(--pm-terracotta-hover);
+  --color-terracotta-light: var(--pm-terracotta-light);
+  --color-golden: var(--pm-golden);
+  --color-sage: var(--pm-sage);
+  --color-sage-deep: var(--pm-sage-deep);
+  --color-on-sage: var(--pm-on-sage);
+  --color-blush: var(--pm-blush);
+  --color-success: var(--pm-fern);
+  --color-danger: var(--pm-paprika);
+  --color-focus: var(--pm-focus);
+  /* Spec names */
+  --color-ivory: var(--pm-canvas);
+  --color-charcoal: var(--pm-ink);
+  --color-terracotta-deep: var(--pm-terracotta);
+  --color-text-muted: var(--pm-muted);
+  --color-text-caption: var(--pm-muted-2);
+
+  /* Names still used across inner pages, mapped onto the new palette */
+  --color-cream: var(--pm-canvas);
+  --color-cobalt: var(--pm-sage-deep);
+  --color-on-cobalt: var(--pm-on-sage);
+  --color-cobalt-text: var(--pm-sage-deep);
+  --color-tangerine: var(--pm-terracotta);
+  --color-on-tangerine: var(--pm-on-ink);
+  --color-tangerine-text: var(--pm-terracotta);
+  --color-sunshine: var(--pm-golden);
+  --color-pink: var(--pm-blush);
+  --color-pink-text: var(--pm-paprika);
+  --color-cream-wash: var(--pm-chalk);
+  --color-sky-wash: #e4e8df;
+  --color-peach-wash: var(--pm-sand);
+  --color-rose-wash: #f3e1dc;
+  --color-sun: var(--pm-golden);
+  --color-teal: var(--pm-sage);
+  --color-violet: var(--pm-sage-deep);
+  --color-sage-wash: #e4e8df;
+  --color-butter: var(--pm-chalk);
+  --color-lilac: #f3e1dc;
+  --color-brand-50: var(--pm-chalk);
+  --color-brand-100: var(--pm-sand);
+  --color-brand-600: var(--pm-terracotta);
+  --color-brand-700: var(--pm-terracotta-hover);
+  --color-brand-900: var(--pm-ink);
+  --color-accent-400: var(--pm-terracotta-light);
+  --color-accent-500: var(--pm-terracotta);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-dm-serif), Georgia, "Times New Roman", serif;
+  --font-hand: var(--font-dm-serif), Georgia, serif;
+}
+
+@theme {
+  --radius-pm-sm: 12px;
+  --radius-pm-md: 14px;
+  --radius-pm-lg: 20px;
+  --radius-pm-xl: 24px;
+  --radius-pm-2xl: 28px;
+
+  --ease-paint: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --animate-marquee: marquee 32s linear infinite;
+  --animate-spin-slow: spin 18s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-wiggle: wiggle 3s ease-in-out infinite;
+}
+
+/* Keyframes live outside @theme so Tailwind never tree-shakes them away */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-10px) rotate(var(--r, 0deg)); }
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes rise-in {
+  from { transform: translateY(130%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes wobble {
+  to { border-radius: 45% 55% 40% 60% / 60% 45% 55% 40%; }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+h1 em, h2 em, h3 em, .accent {
+  font-style: italic;
+  color: var(--color-terracotta-light);
+}
+.font-hand {
+  font-family: var(--font-display);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-golden);
+  color: #242522;
+}
+
+/* One focus style everywhere */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* ---------- Text effects (word strip) ---------- */
+/* Outlined word: stroke first, then fill in the page colour so Manrope's overlapping
+   contours never show inside the letters. The stroke is doubled because the fill covers its inner half. */
+.text-outline-ink {
+  color: var(--color-canvas);
+  -webkit-text-stroke: 2.4px var(--color-ink);
+  paint-order: stroke fill;
+}
+.text-gradient {
+  background: linear-gradient(90deg, var(--pm-terracotta-light), var(--pm-golden), var(--pm-sage));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-warm {
+  background: linear-gradient(90deg, var(--pm-sage), var(--pm-terracotta-light), var(--pm-golden));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-outline { color: var(--color-canvas); -webkit-text-stroke: 2.4px currentColor; paint-order: stroke fill; }
+.text-pop { color: var(--color-terracotta-light); font-style: italic; }
+
+/* ---------- Scroll reveal (CSS only; content stays visible where unsupported) ---------- */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+
+/* ---------- Photo tint: recolours a traced wall on a photograph ---------- */
+.scene { isolation: isolate; }
+/* Tint layers are masked by a wall-mask PNG; cover + centre crops the mask exactly as object-cover crops the photo */
+.tint { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: cover; mask-size: cover; -webkit-mask-position: center; mask-position: center; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.tint-multiply { mix-blend-mode: multiply; }
+.tint-color { mix-blend-mode: color; }
+.tint-lum { mix-blend-mode: luminosity; opacity: 0.82; }
+.tint-soft { opacity: 0.3; }
+
+/* ---------- Parallax paint chips (background) ---------- */
+.chip-bg {
+  transform: rotate(var(--rot, 0deg));
+  box-shadow: 0 30px 60px -30px rgba(36, 37, 34, 0.25);
+}
+@keyframes chip-drift {
+  from { transform: translateY(var(--drift, 80px)) rotate(var(--rot, 0deg)); }
+  to { transform: translateY(calc(var(--drift, 80px) * -1)) rotate(var(--rot, 0deg)); }
+}
+@supports (animation-timeline: view()) {
+  .chip-bg {
+    animation: chip-drift linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+
+/* ---------- Pinned reveal: "Watch the colour go on" ---------- */
+/* The track is 300vh; the panel sticks for the middle 200vh. One named view timeline on the
+   track drives every part of the panel. Without scroll-timeline support the room is shown finished. */
+@property --fill { syntax: "<integer>"; inherits: true; initial-value: 100; }
+.pin-track { height: auto; }
+/* The wrappers carry the blend: a clipped element is its own stacking context, so a blend
+   on the spans inside would never reach the photo. */
+.pin-before, .pin-after { mix-blend-mode: multiply; }
+.pin-before { clip-path: inset(0 0 100% 0); }
+.pin-after { clip-path: inset(0 0 0 0); }
+.pin-edge { top: 0; opacity: 0; }
+.pin-bar { width: 100%; }
+.pin-pct::after { counter-reset: fill var(--fill); content: counter(fill) "%"; }
+.pin-stage { opacity: 0.55; transition: opacity 400ms ease; }
+.pin-stage-3 { opacity: 1; }
+.pin-label { opacity: 0; }
+.pin-label-3 { opacity: 1; }
+@keyframes pin-before { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
+@keyframes pin-after { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes pin-edge { from { top: 100%; } to { top: 0%; } }
+@keyframes pin-edge-show { 0%, 2% { opacity: 0; } 4%, 96% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes pin-bar { from { width: 0%; } to { width: 100%; } }
+@keyframes pin-pct { from { --fill: 0; } to { --fill: 100; } }
+@keyframes stage-0 { 0%, 22% { opacity: 1; } 23%, 100% { opacity: 0.55; } }
+@keyframes stage-1 { 0%, 22% { opacity: 0.3; } 23%, 50% { opacity: 1; } 51%, 100% { opacity: 0.55; } }
+@keyframes stage-2 { 0%, 50% { opacity: 0.3; } 51%, 78% { opacity: 1; } 79%, 100% { opacity: 0.55; } }
+@keyframes stage-3 { 0%, 78% { opacity: 0.3; } 79%, 100% { opacity: 1; } }
+@keyframes label-0 { 0%, 22% { opacity: 1; } 23%, 100% { opacity: 0; } }
+@keyframes label-1 { 0%, 22% { opacity: 0; } 23%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+@keyframes label-2 { 0%, 50% { opacity: 0; } 51%, 78% { opacity: 1; } 79%, 100% { opacity: 0; } }
+@keyframes label-3 { 0%, 78% { opacity: 0; } 79%, 100% { opacity: 1; } }
+@supports (animation-timeline: view()) {
+  .pin-track { height: 300vh; view-timeline-name: --pin; view-timeline-axis: block; }
+  .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage, .pin-label {
+    animation-timeline: --pin;
+    animation-range: contain 0% contain 100%;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in-out;
+  }
+  .pin-before { animation-name: pin-before; }
+  .pin-after { animation-name: pin-after; }
+  .pin-edge { animation-name: pin-edge, pin-edge-show; }
+  .pin-bar { animation-name: pin-bar; }
+  .pin-pct { animation-name: pin-pct; animation-timing-function: ease-in-out; }
+  .pin-stage-0 { animation-name: stage-0; animation-timing-function: linear; }
+  .pin-stage-1 { animation-name: stage-1; animation-timing-function: linear; }
+  .pin-stage-2 { animation-name: stage-2; animation-timing-function: linear; }
+  .pin-stage-3 { animation-name: stage-3; animation-timing-function: linear; }
+  .pin-label-0 { animation-name: label-0; animation-timing-function: linear; }
+  .pin-label-1 { animation-name: label-1; animation-timing-function: linear; }
+  .pin-label-2 { animation-name: label-2; animation-timing-function: linear; }
+  .pin-label-3 { animation-name: label-3; animation-timing-function: linear; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin-track { height: auto !important; }
+  .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage, .pin-label { animation: none !important; }
+}
+
+/* ---------- Colour wheel: revolves slowly the moment it is on screen, and leans with the scroll ---------- */
+.wheel-spin { transform-origin: 560px 560px; animation: wheel-spin 140s linear infinite; animation-play-state: paused; }
+.wheel-spin.is-visible { animation-play-state: running; }
+@keyframes wheel-spin { to { transform: rotate(360deg); } }
+.wheel { transform-origin: 560px 560px; transform: rotate(0deg); }
+@keyframes wheel-turn { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+@supports (animation-timeline: view()) {
+  .wheel { animation: wheel-turn linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+}
+
+/* ---------- Mobile palette nav: a notched bar with the active tab's dab sitting over it ---------- */
+@media (max-width: 720px) {
+  /* No fill mode on purpose: if the animation never starts (seen in some embedded viewports), the nav is simply visible. */
+  .bnav { animation: rise-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s; }
+}
+/* --nx is the active tab's centre (a percentage of the bar); registering it lets the dip and the dab glide */
+@property --nx { syntax: "<percentage>"; inherits: true; initial-value: 12.5%; }
+.bnav { --nx: 12.5%; --dab: 56px; --dip: 34px; }
+/* The bar is masked with a disc cut out of its top edge, centred on --nx: that is the dip the dab sits in */
+.bnav-bar {
+  -webkit-mask: radial-gradient(circle var(--dip) at var(--nx) 0, transparent calc(100% - 1px), #000 100%);
+  mask: radial-gradient(circle var(--dip) at var(--nx) 0, transparent calc(100% - 1px), #000 100%);
+  transition: --nx 0.45s linear;
+}
+.bnav-dab {
+  position: absolute; top: 0; left: var(--nx); width: var(--dab); height: var(--dab); margin-left: calc(var(--dab) / -2);
+  transform: translateY(-50%); pointer-events: none; z-index: 1; transition: --nx 0.45s linear;
+}
+.bnav-dip {
+  position: absolute; top: 0; left: var(--nx); width: calc(var(--dip) * 2); height: calc(var(--dip) * 2); margin-left: calc(var(--dip) * -1);
+  transform: translateY(-50%); border-radius: 50%; border: 1px solid var(--color-line); clip-path: inset(50% 0 0 0);
+  pointer-events: none; transition: --nx 0.45s linear;
+}
+.bnav-dab-inner {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%;
+  box-shadow: 0 10px 22px -8px rgba(36, 37, 34, 0.5);
+}
+/* One hop per change: the X glide comes from --nx, the arc from this keyframe */
+.bnav-dab-hop { animation: dab-arc 0.45s cubic-bezier(0.35, 0, 0.65, 1) both; }
+@keyframes dab-arc {
+  0% { transform: translateY(0) scale(0.92); }
+  45% { transform: translateY(-30px) scale(1.06); }
+  85% { transform: translateY(3px) scale(1.08, 0.9); }
+  100% { transform: translateY(0) scale(1); }
+}
+.bnav-label { padding: 5px 10px; border: 1px solid var(--color-line); border-radius: 999px; line-height: 1; }
+.bnav-label-on { line-height: 1; color: var(--color-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .bnav-bar, .bnav-dab, .bnav-dip { transition: none; }
+  .bnav-dab-hop { animation: none; }
+}
+
+/* ---------- Word strip ---------- */
+.word-strip { font-weight: 700; font-size: clamp(56px, 6.6vw, 96px); line-height: 1.1; letter-spacing: -0.03em; white-space: nowrap; }
+
+/* ---------- Tilt frame (hero photo) ---------- */
+.tilt {
+  --rx: 0deg;
+  --ry: 0deg;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 200ms ease-out;
+  transform-style: preserve-3d;
+  position: relative;
+}
+
+/* Soft photo shadow used on every large frame */
+.frame-shadow { box-shadow: 0 50px 90px -50px var(--pm-shadow-ink); }
+
+/* Blurred colour glow (kept for inner pages) */
+.glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    animation-timeline: auto !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .chip-bg { transform: none !important; }
+}
+
+.container-page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1264px;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 640px) {
+  .container-page { padding-inline: 2rem; }
+}
+
+@layer components {
+/* Buttons: pills; the primary is solid terracotta, the secondary a hairline ghost */
+.btn-primary,
+.btn-secondary,
+.btn-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: 3.25rem;
+  border-radius: 999px;
+  padding: 0 1.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  transition: transform 250ms ease, background 250ms ease, color 250ms ease, border-color 250ms ease;
+}
+.btn-primary {
+  background: var(--color-terracotta);
+  color: var(--color-on-ink);
+}
+.btn-primary:hover {
+  background: var(--color-terracotta-hover);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  color: var(--color-ink);
+  font-weight: 500;
+  border: 1px solid rgba(36, 37, 34, 0.25);
+  background: transparent;
+}
+.btn-secondary:hover {
+  background: rgba(36, 37, 34, 0.06);
+}
+.btn-dark {
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+.btn-dark:hover {
+  background: var(--color-ink-soft);
+  transform: translateY(-1px);
+}
+.btn-lg { min-height: 3.625rem; padding: 0 2rem; font-size: 1rem; }
+
+/* Arrow link: "All services →" */
+.link-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--color-ink);
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  transition: gap 200ms;
+}
+.link-arrow:hover { gap: 0.875rem; }
+
+/* Brush highlight is retired in this theme: the accent word is italic terracotta */
+.brush { font-style: italic; color: var(--color-terracotta-light); white-space: nowrap; }
+
+.arch { border-radius: 999px 999px 1.5rem 1.5rem; }
+
+/* Pill label on photos and status lines */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  background: rgba(248, 245, 239, 0.9);
+  color: var(--color-ink);
+  backdrop-filter: blur(8px);
+}
+
+/* Section eyebrow */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+}
+
+/* Quiet chip (proof points, filter tags) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  background: rgba(248, 245, 239, 0.9);
+  border: 1px solid var(--color-line-soft);
+}
+
+/* Forms */
+.field {
+  width: 100%;
+  border-radius: var(--radius-pm-md);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  transition: border-color 150ms;
+}
+.field::placeholder { color: var(--color-muted-2); }
+.field:hover { border-color: var(--color-ink); }
+.field:focus { border-color: var(--color-ink); }
+.field[aria-invalid="true"] { border-color: var(--color-danger); }
+
+/* Cards: white, hairline, soft radius. No hard shadows in this theme. */
+.card {
+  border-radius: var(--radius-pm-lg);
+  border: 1px solid var(--color-line-soft);
+  background: var(--color-paper);
+  transition: transform 350ms ease;
+}
+.card-hover:hover { transform: translateY(-4px); }
+
+/* Hairline-divided list used for steps and FAQs */
+.rule-list { border-top: 1px solid var(--color-line); }
+.rule-list > * { border-bottom: 1px solid var(--color-line); }
+}
+
+.prose-page h2 {
+  margin-top: 2.25rem;
+  font-size: 1.75rem;
+}
+.prose-page p,
+.prose-page ul {
+  margin-top: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.75;
+}
+.prose-page ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+/* FAQ disclosure */
+summary { cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+details[open] .plus { transform: rotate(45deg); }
+.plus { transition: transform 250ms; }

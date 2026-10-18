@@ -1,0 +1,18 @@
+node_modules
+.next
+out
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+data/*.csv
+.DS_Store
+
+# test coverage output
+coverage
+
+# local agent tooling (paths point at this machine)
+.claude/
+
+# Vercel CLI link
+.vercel

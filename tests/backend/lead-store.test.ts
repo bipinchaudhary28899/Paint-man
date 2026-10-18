@@ -1,0 +1,178 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { LeadInput } from "@/lib/leads/schema";
+
+const booking: LeadInput = {
+  type: "booking",
+  name: "Asha",
+  phone: "9876543210",
+  locality: "Dayalbagh",
+  propertyType: "Independent House",
+  service: "Exterior Painting",
+  preferredDate: "2026-11-02",
+  message: "Cracks on the east wall",
+  page: "/book",
+  tracking: { utmSource: "google", utmMedium: "cpc", utmCampaign: "diwali", landingPage: "/", referrer: "https://google.com" },
+};
+
+const contact: LeadInput = { type: "contact", name: "Ravi", phone: "9123456789", message: "Hello there" };
+
+describe("toRow", () => {
+  it("maps a booking to the sheet columns in order", async () => {
+    const { toRow, LEAD_COLUMNS } = await import("@/lib/leads/store");
+    const row = toRow(booking, "L1", new Date("2026-10-18T06:30:00Z"));
+    expect(row).toHaveLength(LEAD_COLUMNS.length);
+    expect(row.slice(1, 10)).toEqual([
+      "L1", "booking", "Asha", "9876543210", "Dayalbagh", "Independent House", "Exterior Painting", "2026-11-02", "Cracks on the east wall",
+    ]);
+    expect(row.slice(10)).toEqual(["/book", "google", "cpc", "diwali", "/", "https://google.com", "New"]);
+  });
+
+  it("formats the timestamp in Indian time", async () => {
+    const { toRow } = await import("@/lib/leads/store");
+    const row = toRow(booking, "L1", new Date("2026-10-18T06:30:00Z"));
+    expect(row[0]).toMatch(/18\/10\/2026, 12:00:00\s?pm/i);
+  });
+
+  it("leaves booking-only columns blank for contact messages", async () => {
+    const { toRow } = await import("@/lib/leads/store");
+    const row = toRow(contact, "L2", new Date());
+    expect(row.slice(5, 9)).toEqual(["", "", "", ""]);
+    expect(row[9]).toBe("Hello there");
+  });
+});
+
+describe("csvCell", () => {
+  it.each(["=HYPERLINK(\"http://evil\")", "+1+1", "-2", "@SUM(A1)", "\tcmd"])("neutralises formula injection in %j", async (v) => {
+    const { csvCell } = await import("@/lib/leads/store");
+    expect(csvCell(v).startsWith(`"'`)).toBe(true);
+  });
+
+  it("quotes values and escapes double quotes", async () => {
+    const { csvCell } = await import("@/lib/leads/store");
+    expect(csvCell('say "hi", ok')).toBe('"say ""hi"", ok"');
+  });
+});
+
+describe("parseCsv and rowsToLeads", () => {
+  it("parses quoted fields, escaped quotes, commas and newlines", async () => {
+    const { parseCsv } = await import("@/lib/leads/store");
+    const rows = parseCsv('a,b,c\r\n"x, y","say ""hi""","line1\nline2"\n');
+    expect(rows).toEqual([["a", "b", "c"], ["x, y", 'say "hi"', "line1\nline2"]]);
+  });
+
+  it("maps rows by header name, skips blank rows and returns newest first", async () => {
+    const { rowsToLeads } = await import("@/lib/leads/store");
+    const leads = rowsToLeads([
+      ["Name", "Lead ID", "Type"],
+      ["First", "L1", "booking"],
+      ["", "", ""],
+      ["Second", "L2", "contact"],
+    ]);
+    expect(leads.map((l) => l.Name)).toEqual(["Second", "First"]);
+    expect(leads[0]["Lead ID"]).toBe("L2");
+    expect(leads[0].Phone).toBe("");
+  });
+
+  it("returns no leads for an empty sheet", async () => {
+    const { rowsToLeads } = await import("@/lib/leads/store");
+    expect(rowsToLeads([])).toEqual([]);
+  });
+});
+
+describe("saveLead / readLeads with the local CSV fallback", () => {
+  let dir: string;
+  const env = { ...process.env };
+
+  beforeEach(async () => {
+    dir = await mkdtemp(path.join(os.tmpdir(), "pm-leads-"));
+    vi.spyOn(process, "cwd").mockReturnValue(dir);
+    delete process.env.GOOGLE_SHEETS_ID;
+    delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    delete process.env.GOOGLE_PRIVATE_KEY;
+    vi.resetModules();
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    process.env = { ...env };
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it("writes a header once, appends rows and reads them back newest first", async () => {
+    const { saveLead, readLeads } = await import("@/lib/leads/store");
+    const id1 = await saveLead(booking);
+    const id2 = await saveLead(contact);
+    expect(id1).toMatch(/^L[A-Z0-9]+$/);
+    expect(id1).not.toBe(id2);
+
+    const csv = await readFile(path.join(dir, "data", "leads.csv"), "utf8");
+    expect(csv.match(/Submitted At/g)).toHaveLength(1);
+
+    const leads = await readLeads();
+    expect(leads.map((l) => l.Name)).toEqual(["Ravi", "Asha"]);
+    expect(leads[1].Locality).toBe("Dayalbagh");
+  });
+
+  it("stores formula-like input safely", async () => {
+    const { saveLead } = await import("@/lib/leads/store");
+    await saveLead({ ...contact, message: "=IMPORTXML(\"http://evil\")" });
+    const csv = await readFile(path.join(dir, "data", "leads.csv"), "utf8");
+    expect(csv).toContain(`"'=IMPORTXML(""http://evil"")"`);
+  });
+
+  it("returns an empty list when no leads have been saved", async () => {
+    const { readLeads } = await import("@/lib/leads/store");
+    expect(await readLeads()).toEqual([]);
+  });
+
+  it("refuses to fall back to a local file on Vercel (read-only disk)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL", "1");
+    const { saveLead, readLeads, StorageNotConfiguredError } = await import("@/lib/leads/store");
+    await expect(saveLead(booking)).rejects.toBeInstanceOf(StorageNotConfiguredError);
+    await expect(readLeads()).rejects.toBeInstanceOf(StorageNotConfiguredError);
+    vi.unstubAllEnvs();
+  });
+
+  it("uses the local CSV for a production build on your own machine (npm start)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL", "");
+    const { saveLead, readLeads } = await import("@/lib/leads/store");
+    await saveLead(contact);
+    expect((await readLeads()).map((l) => l.Name)).toEqual(["Ravi"]);
+    vi.unstubAllEnvs();
+  });
+});
+
+describe("leadLoadErrorMessage (shown to the signed-in admin)", () => {
+  it("explains each failure with the setting to fix, never a value", async () => {
+    const { StorageNotConfiguredError, SheetsRequestError } = await import("@/lib/leads/store");
+    const { leadLoadErrorMessage } = await import("@/lib/leads/load-error");
+    expect(leadLoadErrorMessage(new StorageNotConfiguredError())).toMatch(/isn't connected yet.*GOOGLE_SHEETS_ID/);
+    expect(leadLoadErrorMessage(new SheetsRequestError(403))).toMatch(/Share the sheet/);
+    expect(leadLoadErrorMessage(new SheetsRequestError(404))).toMatch(/GOOGLE_SHEETS_ID/);
+    expect(leadLoadErrorMessage(new SheetsRequestError(400))).toMatch(/tab named "Leads"/);
+    expect(leadLoadErrorMessage(new SheetsRequestError(429))).toMatch(/rate-limiting/);
+    expect(leadLoadErrorMessage(new Error("invalid_grant: Invalid JWT Signature."))).toMatch(/GOOGLE_PRIVATE_KEY/);
+    expect(leadLoadErrorMessage(new Error("something else"))).toMatch(/Couldn't load leads/);
+  });
+
+  it("does not include the Sheets response body in errors", async () => {
+    vi.stubEnv("GOOGLE_SHEETS_ID", "sheet123");
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL", "bot@example.iam.gserviceaccount.com");
+    vi.stubEnv("GOOGLE_PRIVATE_KEY", "unused");
+    vi.resetModules();
+    vi.doMock("google-auth-library", () => ({ JWT: class { async getAccessToken() { return { token: "t" }; } } }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("secret details 9876543210", { status: 403 }));
+    const { readLeads, SheetsRequestError } = await import("@/lib/leads/store");
+    const err = await readLeads().catch((e) => e);
+    expect(err).toBeInstanceOf(SheetsRequestError);
+    expect(err.message).not.toContain("9876543210");
+    vi.doUnmock("google-auth-library");
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+});
