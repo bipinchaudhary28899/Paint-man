@@ -7,7 +7,7 @@ import { WallPreview } from "@/components/colours/WallPreview";
 import { colours } from "@/config/colours";
 import { services } from "@/config/site";
 import { nearestBrandShades, paintdb } from "@/lib/colours/brands";
-import { finishSummary, lrvExplanation, lrvLabel, matchLabel, roomGuidance, serviceSlugsFor } from "@/lib/colours/guide";
+import { finishSummary, lrvLabel, matchLabel, serviceSlugsFor, shadeGuide, undertone, undertoneFacts } from "@/lib/colours/guide";
 import { paletteRole, palettesUsing } from "@/lib/colours/palettes";
 import { getColour, pairings, similar } from "@/lib/colours/search";
 import { colourDescription, colourTitle, isIndexableShade } from "@/lib/colours/seo";
@@ -48,14 +48,17 @@ export default async function ColourPage({ params }: { params: Promise<{ code: s
   const { code } = await params;
   const colour = getColour(code);
   if (!colour) notFound();
-  // One URL per shade: /colours/pm-502 and /colours/502 answer with a 308 to /colours/PM-502.
+  // One URL per shade. src/proxy.ts sends case variants (/colours/pm-502) to /colours/PM-502 with a
+  // 308 before the route cache sees them; this catches the short forms the proxy leaves alone
+  // (/colours/502, /colours/pm502), whose cache keys cannot collide with the canonical page.
   if (code !== colour.code) permanentRedirect(`/colours/${colour.code}`);
 
   const goesWith = pairings(colour);
   const alike = similar(colour);
   const inPalettes = palettesUsing(colour.code);
   const brandMatches = nearestBrandShades(colour.hex, MATCH_BRANDS, 2);
-  const roomNotes = roomGuidance(colour);
+  const guide = shadeGuide(colour, brandMatches);
+  const tone = undertone(colour);
   const serviceLinks = serviceSlugsFor(colour).flatMap((slug) => services.filter((s) => s.slug === slug));
 
   return (
@@ -93,18 +96,38 @@ export default async function ColourPage({ params }: { params: Promise<{ code: s
           {colour.name} in an ordinary <em>home</em>
         </h2>
         <p className="mt-3 max-w-2xl text-muted">
-          The same ordinary living room for every shade, with only the wall colour changed, so you compare shade against shade and
-          not room against room. The inspector paints a real test patch before you commit.
+          {colour.name} on the same ordinary living room we show for every shade, with only the wall colour changed, so you compare
+          shade against shade. The inspector paints a real test patch before you commit.
         </p>
         {/* below the fold: lazy-loaded, no preload */}
         <WallPreview colour={colour} className="mt-8 max-w-3xl" sizes="(min-width: 768px) 560px, 100vw" />
+      </section>
+
+      <section className="container-page mt-20" aria-labelledby="about-heading">
+        <p className="eyebrow">The colour</p>
+        <h2 id="about-heading" className="mt-3 text-3xl font-normal md:text-5xl">
+          What colour {colour.name} <em>is</em>
+        </h2>
+        <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-16">
+          <div className="max-w-2xl">
+            {guide.facts.map((para) => (
+              <p key={para} className="mt-4 leading-relaxed text-muted first:mt-0">{para}</p>
+            ))}
+          </div>
+          <dl className="grid h-fit grid-cols-3 gap-4 rounded-3xl border border-line bg-paper p-5 text-sm lg:grid-cols-1">
+            {undertoneFacts(tone).map((f) => (
+              <div key={f.label}><dt className="font-bold text-muted">{f.label}</dt><dd className="font-semibold">{f.value}</dd></div>
+            ))}
+          </dl>
+        </div>
       </section>
 
       <div className="container-page mt-20 grid gap-12 lg:grid-cols-2 lg:gap-16">
         <section aria-labelledby="lrv-heading">
           <p className="eyebrow">Light and depth</p>
           <h2 id="lrv-heading" className="mt-3 text-3xl font-normal">How light {colour.name} <em>reads</em></h2>
-          {lrvExplanation(colour).map((para) => (
+          <p className="mt-4 max-w-xl text-sm text-muted">LRV (light reflectance value) runs from 0 for black to 100 for pure white.</p>
+          {guide.light.map((para) => (
             <p key={para} className="mt-4 max-w-xl leading-relaxed text-muted">{para}</p>
           ))}
         </section>
@@ -112,17 +135,16 @@ export default async function ColourPage({ params }: { params: Promise<{ code: s
         <section aria-labelledby="rooms-heading">
           <p className="eyebrow">Rooms</p>
           <h2 id="rooms-heading" className="mt-3 text-3xl font-normal">Where {colour.name} <em>works</em></h2>
+          <p className="mt-4 leading-relaxed text-muted">{guide.roomsLead}</p>
           <ul className="mt-6 space-y-3">
-            {roomNotes.map(({ room, why }) => (
+            {guide.rooms.map(({ room, why }) => (
               <li key={room} className="rounded-2xl border border-line bg-paper p-4">
                 <p className="font-bold">{room}</p>
                 <p className="mt-1 leading-relaxed text-muted">{why}</p>
               </li>
             ))}
           </ul>
-          <p className="mt-5 leading-relaxed text-muted">
-            Finish we quote: {finishSummary(colour)}. The quotation names the exact brand, range and finish you approve.
-          </p>
+          <p className="mt-5 leading-relaxed text-muted">{guide.finish}</p>
           {serviceLinks.length > 0 && (
             <p className="mt-3 text-sm text-muted">
               Related:{" "}
@@ -142,9 +164,8 @@ export default async function ColourPage({ params }: { params: Promise<{ code: s
           <p className="eyebrow">Brand shade cards</p>
           <h2 id="brands-heading" className="mt-3 text-3xl font-normal md:text-5xl">Closest brand <em>shades</em></h2>
           <p className="mt-3 max-w-2xl text-muted">
-            The Asian Paints, Berger and Nerolac shades nearest to {colour.name} ({colour.hex.toUpperCase()}), matched by on-screen colour.
-            Treat them as a starting point: the inspector brings the brand&apos;s physical shade card so you confirm the match in your own
-            light before anything is quoted.
+            {guide.brands} Treat them as a starting point: the inspector brings the brand&apos;s physical shade card so you confirm the
+            match in your own light before anything is quoted.
           </p>
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {brandMatches.map((m) => (

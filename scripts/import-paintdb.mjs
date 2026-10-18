@@ -34,6 +34,21 @@ function parseCsv(text) {
   return rows;
 }
 
+const NAMED_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", reg: "®", copy: "©", trade: "™" };
+
+/**
+ * PaintDB names arrive HTML-escaped from its source sites ("Dove&#039;s Wing-w", "Spick &amp; Span").
+ * Decodes named, decimal and hex entities in one pass (the same rules as decodeEntities in
+ * src/lib/colours/brands.ts, which also decodes data imported before this step existed).
+ */
+function decodeEntities(s) {
+  return s.replace(/&(#\d{1,7}|#x[0-9a-f]{1,6}|[a-z]+);/gi, (whole, body) => {
+    if (body[0] !== "#") return NAMED_ENTITIES[body.toLowerCase()] ?? whole;
+    const n = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+    return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : whole;
+  });
+}
+
 const text = process.argv[2]
   ? readFileSync(process.argv[2], "utf8")
   : await fetch(SOURCE).then((r) => {
@@ -69,13 +84,13 @@ for (const r of data) {
   seen.add(key);
   if (!brandIndex.has(slug)) {
     brandIndex.set(slug, brands.length);
-    brands.push({ slug, name: r[C.brand_name].trim() || slug });
+    brands.push({ slug, name: decodeEntities(r[C.brand_name].trim()) || slug });
   }
   const b = brandIndex.get(slug);
   const lrv = Math.max(0, Math.min(100, Math.round(Number(r[C.lrv]) || 0)));
   const where = (r[C.interior] === "true" ? 1 : 0) | (r[C.exterior] === "true" ? 2 : 0);
   // [brand, code, name, hex, lrv, family, undertone, interior|exterior bits]
-  shades.push([b, code, r[C.name].trim(), hex, lrv, indexOf(families, familyIndex, r[C.color_family].trim() || "other"), indexOf(undertones, undertoneIndex, r[C.undertone].trim()), where]);
+  shades.push([b, code, decodeEntities(r[C.name].trim()), hex, lrv, indexOf(families, familyIndex, r[C.color_family].trim() || "other"), indexOf(undertones, undertoneIndex, r[C.undertone].trim()), where]);
 }
 const out = {
   source: "https://paintdb.com",

@@ -39,22 +39,30 @@ export const finderDescription = (shades: number, city: string = site.city) =>
 const list = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
 /**
- * "Sage Mist (PM-502) is a green wall paint colour for bedroom and living room walls. See it on a
- * living room wall. We bring the shade card to your Agra home." One benefit (the preview, or the
- * brand matches, that the page shows) and one proof (the shade card brought to the home). Rooms
- * leave out "Rental refresh"; the LRV goes in when there is room for it.
+ * The one benefit a shade description promises, each something the page shows: its nearest
+ * Asian Paints, Berger and Nerolac shades (the brand section), or the living-room preview. Brand
+ * matches come first; every option is used by some shade in the catalogue (tested).
+ */
+export const DESCRIPTION_BENEFITS = [
+  "See its Asian Paints, Berger and Nerolac matches.",
+  "See its nearest Asian Paints codes.",
+  "See its nearest brand shade codes.",
+  "See it on a living room wall.",
+  "Preview it on a room wall.",
+] as const;
+
+/**
+ * "Sage Mist (PM-502) is a green wall paint colour for bedroom, living room and kitchen walls. See
+ * its nearest Asian Paints codes. Shade card brought to your Agra home." One benefit (from
+ * DESCRIPTION_BENEFITS) and one proof (the shade card brought to the home). Rooms leave out
+ * "Rental refresh"; the LRV goes in when there is room for it. More rooms win over a richer
+ * benefit, then the first combination that lands in 140-155 characters.
  */
 export function colourDescription(c: Pick<Colour, "name" | "code" | "family" | "lrv" | "rooms">, city: string = site.city): string {
   const rooms = c.rooms.filter((r) => r !== "Rental refresh").map((r) => r.toLowerCase());
   const opener = (n: number, lrv: boolean) =>
     `${c.name} (${c.code}) is ${familyPhrase(c)} wall paint colour${lrv ? `, LRV ${c.lrv},` : ""}${rooms.length ? ` for ${list(rooms.slice(0, n))} walls` : ""}.`;
-  // richest first; the first combination that lands in 140-155 characters wins
-  const benefits = [
-    " Compare its closest Asian Paints, Berger and Nerolac codes.",
-    " See it on a living room wall with its closest brand codes.",
-    " See it on a living room wall.",
-    " Preview it on a room wall.",
-  ];
+  const benefits = DESCRIPTION_BENEFITS.map((b) => ` ${b}`);
   const proofs = [
     ` Our inspector brings the real shade card to your home in ${city}.`,
     ` We bring the shade card to your home in ${city}.`,

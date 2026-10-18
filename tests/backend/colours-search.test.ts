@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { colourFamilies, colours, rooms } from "@/config/colours";
-import { getColour, isFamily, isHex, isRoom, normaliseCode, pairings, searchColours, searchHints, similar } from "@/lib/colours/search";
+import { familyLadder, getColour, isFamily, isHex, isRoom, neighbours, normaliseCode, pairings, searchColours, searchHints, similar } from "@/lib/colours/search";
 
 describe("catalogue integrity", () => {
   it("has unique PM codes, valid hex and known rooms, and every pairing exists", () => {
@@ -106,17 +106,44 @@ describe("helpers", () => {
     expect(similar(sage, 999)).toHaveLength(colours.filter((c) => c.family === "Greens").length - 1);
   });
 
-  it("picks the nearest neighbours by lightness, one lighter and one darker at a time, wrapping at the ends", () => {
-    const family = colours.filter((c) => c.family === "Greens").sort((a, b) => b.lrv - a.lrv || a.code.localeCompare(b.code));
+  it("picks the nearest neighbours by lightness, one lighter and one darker at a time", () => {
+    const family = familyLadder("Greens");
+    expect(family).toEqual(colours.filter((c) => c.family === "Greens").sort((a, b) => b.lrv - a.lrv || a.code.localeCompare(b.code)));
     const sage = getColour("PM-502")!;
     const i = family.indexOf(sage);
     expect(similar(sage).map((c) => c.code)).toEqual([family[i - 1], family[i + 1], family[i - 2], family[i + 2]].map((c) => c.code));
-    // the lightest shade wraps round to the darkest
-    expect(similar(family[0], 2).map((c) => c.code)).toEqual([family.at(-1)!.code, family[1].code]);
     // shades get different neighbours, not the same first four of the family
     expect(similar(family[0]).map((c) => c.code)).not.toEqual(similar(family.at(-1)!).map((c) => c.code));
     // a shade outside the catalogue still gets its family
     expect(similar({ ...sage, code: "PM-9999" }, 2).every((c) => c.family === "Greens")).toBe(true);
+  });
+
+  it("does not wrap round the ends of a family: when one side runs out, it takes more from the other", () => {
+    const family = familyLadder("Greens");
+    const codes = (xs: { code: string }[]) => xs.map((c) => c.code);
+    // the lightest shade gets the next darker ones, never the darkest of the family
+    expect(codes(similar(family[0]))).toEqual(codes(family.slice(1, 5)));
+    expect(codes(similar(family.at(-1)!))).toEqual(codes(family.slice(-5, -1).reverse()));
+    // one from the end: one lighter, then darker ones
+    expect(codes(similar(family[1]))).toEqual(codes([family[0], family[2], family[3], family[4]]));
+    for (const c of colours) {
+      const ladder = familyLadder(c.family);
+      const i = ladder.indexOf(c);
+      const far = Math.max(...similar(c).map((x) => Math.abs(ladder.indexOf(x) - i)));
+      expect(far, c.code).toBeLessThanOrEqual(4); // never the other end of a long family
+    }
+  });
+
+  it("finds the nearest strictly lighter and darker shade of the family", () => {
+    const sage = getColour("PM-502")!;
+    const { lighter, darker } = neighbours(sage);
+    expect(lighter!.lrv).toBeGreaterThan(sage.lrv);
+    expect(darker!.lrv).toBeLessThan(sage.lrv);
+    const greens = familyLadder("Greens");
+    expect(greens.some((g) => g.lrv > sage.lrv && g.lrv < lighter!.lrv)).toBe(false);
+    expect(greens.some((g) => g.lrv < sage.lrv && g.lrv > darker!.lrv)).toBe(false);
+    expect(neighbours(getColour("PM-102")!).lighter).toBeUndefined(); // the brightest white
+    expect(neighbours(greens.at(-1)!).darker).toBeUndefined();
   });
 
   it("links every shade page from at least two others through pairings and similar shades", () => {

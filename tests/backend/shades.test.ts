@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { colourFamilies, colours, curatedColours } from "@/config/colours";
-import { familySingular, familySpecs, finishFor, generateShades, interiorFinishFor, isOutdoor, lrvBand, lrvOf, oklchToHex, outdoorRooms } from "@/config/shades";
+import { familySingular, familySpecs, finishFor, generateShades, interiorFinishFor, isOutdoor, lrvBand, lrvOf, oklchToHex, outdoorRooms, wallsFor } from "@/config/shades";
 
 describe("shade ladder", () => {
   const shades = generateShades();
@@ -49,8 +49,11 @@ describe("shade ladder", () => {
 
   it("uses one set of LRV bands for notes, tags and rooms, so a page never contradicts itself", () => {
     expect([lrvBand(60), lrvBand(59), lrvBand(35), lrvBand(34)]).toEqual(["light", "mid", "mid", "deep"]);
+    expect([wallsFor(80), wallsFor(35), wallsFor(34)]).toEqual(["all", "all", "feature"]);
     for (const s of shades) {
       const band = lrvBand(s.lrv);
+      // the walls advice follows the same band as the note: deep is one feature wall, the rest every wall
+      expect(s.walls).toBe(band === "deep" ? "feature" : "all");
       if (band === "light") {
         expect(s.note).toMatch(/^A pale /);
         expect(s.tags).toContain("light");
