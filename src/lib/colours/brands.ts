@@ -111,6 +111,55 @@ function load() {
   return cache;
 }
 
+/** OKLab coordinates of every shade, and the shade indices of each brand, computed on first use. */
+let labCache: { lab: Float64Array; byBrand: Map<string, number[]> } | null = null;
+function labs() {
+  if (labCache) return labCache;
+  const { shades } = load();
+  const lab = new Float64Array(shades.length * 3);
+  const byBrand = new Map<string, number[]>();
+  shades.forEach((s, i) => {
+    lab.set(rgbToOklab(...hexToRgb(s.hex)), i * 3);
+    const list = byBrand.get(s.brand);
+    if (list) list.push(i);
+    else byBrand.set(s.brand, [i]);
+  });
+  labCache = { lab, byBrand };
+  return labCache;
+}
+
+export type BrandMatch = {
+  brand: string;
+  brandName: string;
+  /** closest first; `distance` is the OKLab distance (about 0.02 is a just-visible difference) */
+  shades: (BrandShade & { distance: number })[];
+};
+
+/**
+ * The `n` shades of each brand nearest to `hex` by OKLab distance (perceptually even, unlike RGB),
+ * brands in the order given. Unknown brands are left out. Used on a Paint Man shade's page to
+ * name the closest Asian Paints, Berger and Nerolac codes; a screen match to confirm on the card.
+ */
+export function nearestBrandShades(hex: string, brands: readonly string[], n = 2): BrandMatch[] {
+  const { shades } = load();
+  const { lab, byBrand } = labs();
+  const [L, A, B] = rgbToOklab(...hexToRgb(hex));
+  const k = Math.min(10, Math.max(1, Math.floor(n)));
+  return brands.flatMap((slug) => {
+    const idx = byBrand.get(slug);
+    if (!idx) return [];
+    const best: { i: number; d: number }[] = [];
+    for (const i of idx) {
+      const d = Math.hypot(lab[i * 3] - L, lab[i * 3 + 1] - A, lab[i * 3 + 2] - B);
+      if (best.length === k && d >= best[k - 1].d) continue;
+      best.push({ i, d });
+      best.sort((x, y) => x.d - y.d);
+      if (best.length > k) best.pop();
+    }
+    return [{ brand: slug, brandName: shades[idx[0]].brandName, shades: best.map(({ i, d }) => ({ ...shades[i], distance: Math.round(d * 1000) / 1000 })) }];
+  });
+}
+
 export const shadeCount = () => data.shades.length;
 
 /** Brands with shade counts, Indian brands first. */

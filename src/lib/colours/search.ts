@@ -80,9 +80,28 @@ export function pairings(c: Colour): Colour[] {
   return c.pairsWith.map((code) => getColour(code)).filter((x): x is Colour => Boolean(x));
 }
 
-/** Same family, excluding itself. */
+/**
+ * The shade's nearest neighbours by lightness in its own family: the family sorted light → dark,
+ * then the shades either side of it (one lighter, one darker, two lighter, ...), wrapping at the
+ * ends. Every shade gets its own "close by" set, so links spread through the whole family.
+ */
 export function similar(c: Colour, n = 4): Colour[] {
-  return colours.filter((x) => x.family === c.family && x.code !== c.code).slice(0, n);
+  const fam = colours.filter((x) => x.family === c.family).sort((a, b) => b.lrv - a.lrv || a.code.localeCompare(b.code));
+  const i = fam.findIndex((x) => x.code === c.code);
+  if (i < 0) return fam.slice(0, Math.max(0, n));
+  const len = fam.length;
+  const want = Math.min(Math.max(0, n), len - 1);
+  const seen = new Set([i]);
+  const out: Colour[] = [];
+  for (let k = 1; out.length < want; k++) {
+    for (const j of [i - k, i + k]) {
+      const w = ((j % len) + len) % len;
+      if (out.length >= want || seen.has(w)) continue;
+      seen.add(w);
+      out.push(fam[w]);
+    }
+  }
+  return out;
 }
 
 export function isFamily(s: unknown): s is ColourFamily {

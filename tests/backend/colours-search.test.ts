@@ -99,9 +99,31 @@ describe("helpers", () => {
   it("lists similar shades from the same family, excluding itself, capped", () => {
     const sage = getColour("PM-502")!;
     const alike = similar(sage);
-    expect(alike.length).toBeLessThanOrEqual(4);
+    expect(alike).toHaveLength(4);
     expect(alike.every((c) => c.family === "Greens" && c.code !== "PM-502")).toBe(true);
     expect(similar(sage, 1)).toHaveLength(1);
+    expect(similar(sage, 0)).toEqual([]);
+    expect(similar(sage, 999)).toHaveLength(colours.filter((c) => c.family === "Greens").length - 1);
+  });
+
+  it("picks the nearest neighbours by lightness, one lighter and one darker at a time, wrapping at the ends", () => {
+    const family = colours.filter((c) => c.family === "Greens").sort((a, b) => b.lrv - a.lrv || a.code.localeCompare(b.code));
+    const sage = getColour("PM-502")!;
+    const i = family.indexOf(sage);
+    expect(similar(sage).map((c) => c.code)).toEqual([family[i - 1], family[i + 1], family[i - 2], family[i + 2]].map((c) => c.code));
+    // the lightest shade wraps round to the darkest
+    expect(similar(family[0], 2).map((c) => c.code)).toEqual([family.at(-1)!.code, family[1].code]);
+    // shades get different neighbours, not the same first four of the family
+    expect(similar(family[0]).map((c) => c.code)).not.toEqual(similar(family.at(-1)!).map((c) => c.code));
+    // a shade outside the catalogue still gets its family
+    expect(similar({ ...sage, code: "PM-9999" }, 2).every((c) => c.family === "Greens")).toBe(true);
+  });
+
+  it("links every shade page from at least two others through pairings and similar shades", () => {
+    const inlinks = new Map<string, Set<string>>(colours.map((c) => [c.code, new Set()]));
+    for (const c of colours) for (const to of [...pairings(c), ...similar(c)]) if (to.code !== c.code) inlinks.get(to.code)!.add(c.code);
+    const weakest = [...inlinks].filter(([, from]) => from.size < 2).map(([code]) => code);
+    expect(weakest).toEqual([]);
   });
 
   it("type guards and hints", () => {

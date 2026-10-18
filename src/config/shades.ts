@@ -63,17 +63,47 @@ export function lrvOf(hex: string): number {
   return Math.round((0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]) * 100);
 }
 
-const singular: Record<string, string> = { Whites: "white", Greys: "grey", Beiges: "beige", Yellows: "yellow", Oranges: "orange", Reds: "red", Pinks: "pink", Purples: "purple", Blues: "blue", Teals: "teal", Greens: "green", Olives: "olive green", Browns: "brown" };
+/** Family name as a singular adjective: "a green wall", "an olive green wall". */
+export const familySingular: Record<ColourFamily, string> = { Whites: "white", Greys: "grey", Beiges: "beige", Yellows: "yellow", Oranges: "orange", Reds: "red", Pinks: "pink", Purples: "purple", Blues: "blue", Teals: "teal", Greens: "green", Olives: "olive green", Browns: "brown" };
 
-function noteFor(name: string, family: string, lrv: number, exterior: boolean): string {
-  const f = singular[family] ?? family.toLowerCase();
-  if (lrv >= 70) return `A pale ${f} that reads almost as a warm white in daylight; keeps a small room bright (LRV ${lrv}).`;
-  if (lrv >= 45) return `A mid ${f} you can paint on all four walls without the room closing in (LRV ${lrv}).`;
+/**
+ * One set of LRV bands for the generated notes, the depth tags, the room rules and the label on
+ * a shade's page, so they never disagree: light (60+) opens a room, mid (35–59) is easy to live
+ * with on four walls, deep (under 35) is a feature wall.
+ */
+export type LrvBand = "light" | "mid" | "deep";
+export const LRV_LIGHT = 60;
+export const LRV_DEEP = 35;
+export const lrvBand = (lrv: number): LrvBand => (lrv >= LRV_LIGHT ? "light" : lrv >= LRV_DEEP ? "mid" : "deep");
+
+/** Rooms whose walls are outside (or open to the weather) and take exterior paint. */
+export const outdoorRooms: readonly Room[] = ["Exterior", "Balcony"];
+export const isOutdoor = (room: Room) => outdoorRooms.includes(room);
+
+/** The finish we would quote for this shade on an inside wall. Pale walls scuff visibly; deep ones look flat in matt. */
+export const interiorFinishFor = (lrv: number): Finish => (lrv >= 70 ? "Washable" : lrvBand(lrv) === "deep" ? "Silk / sheen" : "Matt emulsion");
+
+/**
+ * The headline finish follows the shade's main (first) room: exterior weatherproof only when that
+ * room is outside, otherwise the interior finish. A shade that is also good outside shows both
+ * on its page (see finishSummary in src/lib/colours/guide.ts).
+ */
+export const finishFor = (lrv: number, rooms: readonly Room[]): Finish => (rooms.length > 0 && isOutdoor(rooms[0]) ? "Exterior weatherproof" : interiorFinishFor(lrv));
+
+function noteFor(family: ColourFamily, lrv: number, exterior: boolean): string {
+  const f = familySingular[family];
+  const band = lrvBand(lrv);
+  if (band === "light") return `A pale ${f} that keeps a small room bright and open (LRV ${lrv}).`;
+  if (band === "mid") return `A mid ${f} you can paint on all four walls without the room closing in (LRV ${lrv}).`;
   if (lrv >= 25) return `A full ${f}: best on one feature wall with a light shade around it (LRV ${lrv}).`;
-  return `A deep ${f} for a single wall in a room with good daylight; needs a tinted primer and two finish coats (LRV ${lrv}).${exterior ? " Also strong on gate pillars." : ""}`;
+  return `A deep ${f} for a single feature wall in a room with good daylight; needs a tinted primer and two finish coats (LRV ${lrv}).${exterior ? " Also strong on gate pillars." : ""}`;
 }
-const finishFor = (lrv: number, exterior: boolean): Finish => (exterior && lrv < 55 ? "Exterior weatherproof" : lrv >= 70 ? "Washable" : lrv < 30 ? "Silk / sheen" : "Matt emulsion");
-const roomsFor = (base: Room[], lrv: number): Room[] => (lrv >= 60 ? Array.from(new Set<Room>([...base, "Rental refresh"])) : lrv < 30 ? base.filter((r) => r !== "Rental refresh" && r !== "Kids room").concat(base.includes("Exterior") ? [] : []) : base);
+const roomsFor = (base: Room[], lrv: number): Room[] => {
+  const band = lrvBand(lrv);
+  if (band === "light") return Array.from(new Set<Room>([...base, "Rental refresh"]));
+  if (band === "deep") return base.filter((r) => r !== "Rental refresh" && r !== "Kids room");
+  return base;
+};
 
 /** Every generated shade, family by family, light → dark. */
 export function generateShades(): Colour[] {
@@ -86,18 +116,20 @@ export function generateShades(): Colour[] {
       const hex = oklchToHex(L, chromaAt(i, spec.chroma), spec.hue);
       const lrv = lrvOf(hex);
       const name = spec.names[i];
-      const depth = lrv >= 60 ? "pale" : lrv >= 25 ? "mid" : "deep";
+      const band = lrvBand(lrv);
+      const depth = band === "light" ? "pale" : band;
+      const shadeRooms = roomsFor(spec.rooms, lrv);
       out.push({
         code: codes[i],
         name,
         hex,
         family: spec.family,
-        rooms: roomsFor(spec.rooms, lrv),
-        finish: finishFor(lrv, Boolean(spec.exterior)),
+        rooms: shadeRooms,
+        finish: finishFor(lrv, shadeRooms),
         lrv,
         pairsWith: [i < 6 ? "PM-101" : codes[0], i < last / 2 ? codes[Math.min(last, i + 4)] : codes[Math.max(0, i - 6)]],
-        note: noteFor(name, spec.family, lrv, Boolean(spec.exterior)),
-        tags: [...spec.tags, `${depth} ${singular[spec.family] ?? spec.family.toLowerCase()}`, depth === "deep" ? "dark" : depth === "pale" ? "light" : "medium", `step ${i + 1}`],
+        note: noteFor(spec.family, lrv, Boolean(spec.exterior)),
+        tags: [...spec.tags, `${depth} ${familySingular[spec.family]}`, band === "deep" ? "dark" : band === "light" ? "light" : "medium", `step ${i + 1}`],
       });
     });
   }

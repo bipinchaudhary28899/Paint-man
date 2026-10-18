@@ -11,16 +11,16 @@ export type PreviewShade = Pick<Colour, "name" | "code" | "hex" | "lrv">;
 // two blend modes); shadows and texture stay real and the furniture is untouched.
 // The whole photo is always shown (never cropped). `maxHeight` caps how tall it gets: the frame
 // narrows to keep the photo's shape. `compact` (phones): the height comes from `frameClassName`,
-// the width follows the photo's shape, and there is no caption.
+// the width follows the photo's shape, and there is no caption. Every preview sits below the
+// fold or beside the list, so the photo lazy-loads (no preload: it would compete with the CSS).
 export function WallPreview({
   colour,
   className = "",
-  priority,
   sizes = "(min-width: 1024px) 720px, 100vw",
   compact = false,
   frameClassName = "",
   maxHeight = "75vh",
-}: { colour: PreviewShade; className?: string; priority?: boolean; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string }) {
+}: { colour: PreviewShade; className?: string; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string }) {
   const scene = genericScene;
   const ratio = scene.width / scene.height;
   const frame = compact
@@ -29,7 +29,7 @@ export function WallPreview({
   return (
     <figure className={`overflow-hidden rounded-3xl border border-line bg-paper ${className}`}>
       <div className={`scene relative ${compact ? "w-auto" : ""} ${frameClassName}`} style={frame}>
-        <Image src={scene.image.src} alt={`${scene.label} in ${colour.name}`} fill priority={priority} sizes={sizes} className="object-cover" />
+        <Image src={scene.image.src} alt={`${scene.label} in ${colour.name}`} fill sizes={sizes} className="object-cover" />
         {(scene.blend === "color" ? ["color", "lum"] : ["multiply"]).map((blend) => (
           <span
             key={blend}
