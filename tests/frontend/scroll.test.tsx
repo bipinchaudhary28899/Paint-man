@@ -121,8 +121,9 @@ describe("home effects in a browser with CSS scroll timelines", () => {
     const panel = container.querySelector(".pin-panel") as HTMLElement;
     track.getBoundingClientRect = () => ({ top: -1200, height: 2400, width: 1000, left: 0, right: 1000, bottom: 1200, x: 0, y: -1200, toJSON: () => ({}) });
     Object.defineProperty(panel, "offsetHeight", { configurable: true, value: 800 });
-    const colour = container.querySelector("#colour") as HTMLElement;
-    colour.getBoundingClientRect = () => ({ top: 0, height: 800, width: 1000, left: 0, right: 1000, bottom: 800, x: 0, y: 0, toJSON: () => ({}) });
+    // the wheel's own box: top at the top of an 800px screen, 800 tall → halfway across → 90°
+    const wheelBox = container.querySelector(".wheel-wrap") as HTMLElement;
+    wheelBox.getBoundingClientRect = () => ({ top: 0, height: 800, width: 1000, left: 0, right: 1000, bottom: 800, x: 0, y: 0, toJSON: () => ({}) });
     await act(async () => { window.dispatchEvent(new Event("scroll")); });
 
     expect(track).toHaveAttribute("data-js", "true");
@@ -131,7 +132,7 @@ describe("home effects in a browser with CSS scroll timelines", () => {
     expect((container.querySelector(".pin-after") as HTMLElement).style.clipPath).toBe("inset(12.5% 0 0 0)");
     expect((container.querySelector(".pin-before") as HTMLElement).style.clipPath).toBe("inset(0 0 87.5% 0)");
     expect(container.querySelector(".pin-pct")?.textContent).toBe("88%");
-    expect((container.querySelector(".wheel") as HTMLElement).style.transform).toBe("rotate(0deg)");
+    expect((container.querySelector(".wheel") as HTMLElement).style.transform).toBe("rotate(90deg)");
     expect((container.querySelector(".chip-bg") as HTMLElement).style.transform).toContain("translateY(-60px)");
 
     // A canvas-like viewport cannot pin: collapse the runway and show 60%

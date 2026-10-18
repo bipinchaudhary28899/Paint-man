@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { colours as catalogue } from "@/config/colours";
 import { clamp01, useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
-// Semicircular wheel of 36 illustrative shades slowly turning as the section scrolls, with
-// twelve tappable swatches and a card for the chosen shade. CSS view timeline where
-// available (see .wheel in globals.css); passive rAF-throttled scroll handler elsewhere.
+// Wheel of 36 illustrative shades that turns only with the scroll: it starts the moment the
+// wheel's box enters the screen (0°) and has turned half a revolution when it leaves (180°);
+// no auto-rotation. Twelve tappable swatches and a card for the chosen shade. CSS view timeline
+// on the wheel's box where available (see .wheel in globals.css); passive rAF-throttled scroll
+// handler elsewhere.
 
 export const wheelShades: [string, string, string][] = [
   ["Chalk", "#F4F1EA", "Whites"], ["Linen", "#EDE6D8", "Whites"], ["Oat", "#E3D7C2", "Neutrals"], ["Sand", "#E8D7C5", "Neutrals"],
@@ -33,35 +35,29 @@ export const segments = wheelShades.map((c, i) => {
   return { hex: c[1], d: `M${pt(R1, a0)} A${R1} ${R1} 0 0 1 ${pt(R1, a1)} L${pt(R0, a1)} A${R0} ${R0} 0 0 0 ${pt(R0, a0)} Z` };
 });
 
-/** Rotation for a section progress 0..1: −28° → +28°. Exported for tests. */
-export const wheelAngle = (cp: number) => Math.round((-28 + clamp01(cp) * 56) * 10) / 10;
+/** Rotation for the wheel's progress across the screen 0..1 (enters → leaves): 0° → 180°. Exported for tests. */
+export const WHEEL_SWEEP = 180;
+export const wheelAngle = (cp: number) => Math.round(clamp01(cp) * WHEEL_SWEEP * 10) / 10;
 
 export function ColourExplorer() {
   const [sel, setSel] = useState(2);
   const [name, hex, family] = wheelShades[swatchIndices[sel]];
   const needsJs = useNeedsJsScroll();
-  const section = useRef<HTMLElement>(null);
+  const wheelBox = useRef<HTMLDivElement>(null);
   const [angle, setAngle] = useState(0);
-  // The wheel revolves from the moment any of it is on screen (and rests when it is not).
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = section.current;
-    if (!el) return;
-    if (typeof IntersectionObserver === "undefined") { setVisible(true); return; }
-    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  // (centred with top: calc(50% - half height), not a translate: view timelines ignore transforms)
+  // progress = how far the wheel's own box has travelled from entering the bottom of the
+  // screen (0) to leaving the top (1), the same range as the CSS `view()` timeline
   const frame = useCallback(() => {
-    if (!section.current) return;
+    if (!wheelBox.current) return;
     const vh = window.innerHeight || 800;
-    const r = section.current.getBoundingClientRect();
+    const r = wheelBox.current.getBoundingClientRect();
     setAngle(wheelAngle((vh - r.top) / (vh + r.height)));
   }, []);
   useScrollFrame(frame, needsJs);
 
   return (
-    <section ref={section} id="colour" className="relative md:min-h-[760px]" data-js={needsJs || undefined}>
+    <section id="colour" className="relative md:min-h-[760px]" data-js={needsJs || undefined}>
       <div className="container-page relative flex flex-wrap items-center gap-8 py-16 md:gap-12 md:py-40">
         <div className="relative z-[2] min-w-0 max-w-[560px] flex-[1_1_440px]">
           <p className="eyebrow">Colour explorer</p>
@@ -112,17 +108,15 @@ export function ColourExplorer() {
           </div>
         </div>
 
-        {/* Phones: the top half of the wheel as a fan, clipped to its own box so it never runs into
-            the next section. Wider screens: the full wheel bleeding off the right edge. */}
-        <div aria-hidden className="wheel-wrap pointer-events-none relative -mx-5 h-[190px] w-[calc(100%+40px)] overflow-hidden md:absolute md:-right-[200px] md:top-1/2 md:mx-0 md:mt-0 md:h-[1120px] md:w-[760px] md:-translate-y-1/2 md:overflow-visible">
-          <svg viewBox="0 0 1120 1120" className="wheel-svg absolute left-1/2 top-2 w-[440px] -translate-x-1/2 md:left-0 md:top-0 md:h-[1120px] md:w-[1120px] md:translate-x-0 md:overflow-visible">
-            <g className={`wheel-spin ${visible ? "is-visible" : ""}`}>
-              <g className="wheel" style={needsJs ? { transform: `rotate(${angle}deg)`, transition: "transform .12s linear", willChange: "transform" } : undefined}>
-                {segments.map((s, i) => <path key={i} d={s.d} fill={s.hex} />)}
-                <circle cx={CX} cy={CY} r="212" fill="#f8f5ef" />
-                <circle cx={CX} cy={CY} r="212" fill="none" stroke="rgba(36,37,34,0.1)" />
-              </g>
-            </g>
+        {/* Background wheel. Phones: a large wheel centred just off the right edge, so its left half
+            shows as a vertical semicircle behind the content (faded so the text stays readable).
+            Wider screens: the full wheel bleeding off the right edge beside the content. Either way
+            it turns only with the scroll (.wheel in globals.css). */}
+        <div ref={wheelBox} aria-hidden className="wheel-wrap pointer-events-none absolute -right-[290px] top-[calc(50%-290px)] z-0 h-[580px] w-[580px] opacity-30 md:-right-[200px] md:top-[calc(50%-560px)] md:h-[1120px] md:w-[760px] md:opacity-100">
+          <svg viewBox="0 0 1120 1120" className="wheel wheel-svg absolute inset-0 h-full w-full overflow-visible md:inset-auto md:left-0 md:top-0 md:h-[1120px] md:w-[1120px]" style={needsJs ? { transform: `rotate(${angle}deg)`, transition: "transform .12s linear", willChange: "transform" } : undefined}>
+            {segments.map((s, i) => <path key={i} d={s.d} fill={s.hex} />)}
+            <circle cx={CX} cy={CY} r="212" fill="#f8f5ef" />
+            <circle cx={CX} cy={CY} r="212" fill="none" stroke="rgba(36,37,34,0.1)" />
           </svg>
         </div>
       </div>

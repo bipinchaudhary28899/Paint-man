@@ -334,14 +334,18 @@ h1 em, h2 em, h3 em, .accent {
   .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage, .pin-label { animation: none !important; }
 }
 
-/* ---------- Colour wheel: revolves slowly the moment it is on screen, and leans with the scroll ---------- */
-.wheel-spin { transform-origin: 560px 560px; animation: wheel-spin 140s linear infinite; animation-play-state: paused; }
-.wheel-spin.is-visible { animation-play-state: running; }
-@keyframes wheel-spin { to { transform: rotate(360deg); } }
-.wheel { transform-origin: 560px 560px; transform: rotate(0deg); }
-@keyframes wheel-turn { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+/* ---------- Colour wheel: turns only with the scroll, no auto-rotation ----------
+   The timeline is the wheel's own HTML box (.wheel-wrap): 0% the moment its top enters the
+   bottom of the screen, 100% when it has left the top. Named on the HTML wrapper because view
+   timelines on SVG children are unreliable; the <svg> box picks it up by name and rotates. */
+.wheel { transform-origin: 50% 50%; transform: rotate(0deg); }
+@keyframes wheel-turn { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
 @supports (animation-timeline: view()) {
-  .wheel { animation: wheel-turn linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+  .wheel-wrap { view-timeline: --wheel block; }
+  .wheel { animation: wheel-turn linear both; animation-timeline: --wheel; animation-range: cover 0% cover 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wheel { animation: none !important; transform: none !important; }
 }
 
 /* ---------- Mobile palette nav: a notched bar with the active tab's dab sitting over it ---------- */

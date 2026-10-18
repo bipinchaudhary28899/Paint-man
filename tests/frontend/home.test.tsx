@@ -58,8 +58,9 @@ describe("PinnedReveal", () => {
 describe("ColourExplorer", () => {
   it("builds 36 wheel wedges and twelve swatches from the spec list, with Terracotta selected", () => {
     const { container } = render(<ColourExplorer />);
-    // no IntersectionObserver in jsdom → treated as visible, so the revolution runs
-    expect(container.querySelector(".wheel-spin")).toHaveClass("is-visible");
+    // no auto-rotation: the wheel only turns with the scroll
+    expect(container.querySelector(".wheel-spin")).toBeNull();
+    expect(container.querySelector("svg.wheel")).not.toBeNull();
     expect(wheelShades).toHaveLength(36);
     expect(container.querySelectorAll("svg.wheel-svg path")).toHaveLength(36);
     const swatches = within(screen.getByRole("list", { name: "Featured shades" })).getAllByRole("button");
@@ -80,10 +81,11 @@ describe("ColourExplorer", () => {
     expect(screen.getByText("#71856A · Greens")).toBeInTheDocument();
   });
 
-  it("maps section progress to a −28°…+28° wheel rotation", () => {
-    expect(wheelAngle(0)).toBe(-28);
-    expect(wheelAngle(0.5)).toBe(0);
-    expect(wheelAngle(1)).toBe(28);
-    expect(wheelAngle(2)).toBe(28);
+  it("turns the wheel 0°→180° from the moment it enters the screen to when it leaves", () => {
+    expect(wheelAngle(-0.5)).toBe(0); // not on screen yet: at rest
+    expect(wheelAngle(0)).toBe(0);
+    expect(wheelAngle(0.5)).toBe(90);
+    expect(wheelAngle(1)).toBe(180);
+    expect(wheelAngle(2)).toBe(180);
   });
 });
