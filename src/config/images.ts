@@ -1,8 +1,9 @@
 // Placeholder stock photos from Pexels (https://www.pexels.com/license/, free to use).
 // Swap these for real photos of your own jobs as soon as you have them: genuine
 // before/after shots build more trust and help local SEO.
-// Each alt describes only what the photo shows. These are not Paint Man jobs, so no alt names
-// Agra, a locality or a finished job; add those only to real, consented job photos.
+// Each alt describes only what the photo shows. These are not Paint Man jobs, so no stock alt
+// names Agra, a locality or a finished job. Real, consented job photos (not on images.pexels.com)
+// should get a local alt ("Freshly painted teal living room in Dayalbagh, Agra"), as AGENTS.md asks.
 
 const pexels = (id: string) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg`;
 

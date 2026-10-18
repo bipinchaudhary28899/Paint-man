@@ -52,6 +52,18 @@ export const site = {
   social: [] as string[], // TODO: Google Business Profile, Instagram, Facebook URLs
 } as const;
 
+/**
+ * The anchor id of a locality on /areas: the name lower-cased with every run of other characters
+ * turned into one hyphen ("Fatehabad Road" → "fatehabad-road"). The /areas page gives each
+ * locality this id and the home page's "Painters in {area}" links point at it, so both use this.
+ */
+export function areaSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /** One question and answer. `link` is shown after the answer; FAQPage JSON-LD uses only `q` and `a`. */
 export type FaqItem = { q: string; a: string; link?: { href: string; label: string } };
 
@@ -90,12 +102,22 @@ export type Service = {
 };
 
 /**
+ * How long a job of this many working days is said to take, in the one wording every page uses.
+ * Crews are sized for jobs of about a week (src/lib/leads/estimate.ts), so 5 to 8 working days
+ * reads "about a week"; only a job the crew rule cannot fit into about a week gets its own number.
+ */
+export function jobDuration(days: number): string {
+  return days >= 5 && days <= 8 ? "about a week" : `about ${days} working days`;
+}
+
+/**
  * Walls + ceilings and the planned crew for a home of this carpet area (one floor), using the
  * same rule of thumb as the booking form. Rough sizing only: the inspector measures on site.
  */
 export function jobSize(carpetArea: number) {
   const paintArea = Math.round((carpetArea * PAINT_AREA_PER_CARPET_SQFT) / 10) * 10;
-  return { carpetArea, paintArea, ...crewEstimate(paintArea) };
+  const crew = crewEstimate(paintArea);
+  return { carpetArea, paintArea, ...crew, duration: jobDuration(crew.days) };
 }
 
 const sqft = (n: number) => `${n.toLocaleString("en-IN")} sq ft`;
@@ -184,7 +206,7 @@ export const services: Service[] = [
       { title: "Extras", body: "Doors, window frames and grilles, if you want them painted, are listed as separate line items so you can include or leave them out." },
     ],
     timeline: [
-      `As a rule of thumb, the walls and ceilings inside a home add up to about 3 to 3.5 times its carpet area, and ${rule}. Crews are sized so most full-home jobs take about a week of working days, as the examples below show.`,
+      `As a rule of thumb, the walls and ceilings inside a home add up to about 3 to 3.5 times its carpet area, and ${rule}. The crew is sized to the home, so a full repaint of one floor takes about a week: a bigger home gets more painters rather than more days, as the examples below show.`,
       "Walls in good condition need less putty and go faster; heavy crack repair, damp patches or deep shades add time. Your quotation states the expected duration before you approve it, and you can usually keep living at home while rooms are done in turn.",
     ],
     sizeExamples: [
@@ -205,7 +227,7 @@ export const services: Service[] = [
     faqs: [
       {
         q: "How long does interior painting take for a 2BHK in Agra?",
-        a: "Most 2BHK repainting jobs take 4 to 7 working days depending on wall condition, putty work and the number of coats. Your quotation states the expected duration before you approve it.",
+        a: `A full repaint of a 2 BHK takes ${twoBhk.duration} with a crew sized to the job, usually ${twoBhk.painters} painters, and less when the walls need little putty work. Heavy crack repair, damp patches or deep shades add time. Your quotation states the expected duration before you approve it.`,
       },
       {
         q: "Do I need to move my furniture out?",
@@ -466,7 +488,7 @@ export const generalFaqs: FaqItem[] = [
   },
   {
     q: "How is the price calculated?",
-    a: `Price depends on the measured wall area, surface condition, preparation needed, paint brand and range, and the number of coats. As a rule of thumb, the walls and ceilings inside a home add up to about 3 to 3.5 times its carpet area, so a 2 BHK with ${sqft(twoBhk.carpetArea)} of carpet area has roughly ${sqft(twoBhk.paintArea)} to paint. ${rule[0].toUpperCase()}${rule.slice(1)}, so that home is about ${twoBhk.painterDays} painter-days of work: usually a crew of ${twoBhk.painters} for about ${twoBhk.days} working days. The inspector measures exactly on site, and the quotation lists each item, what is included and excluded, and the payment schedule.`,
+    a: `Price depends on the measured wall area, surface condition, preparation needed, paint brand and range, and the number of coats. As a rule of thumb, the walls and ceilings inside a home add up to about 3 to 3.5 times its carpet area, so a 2 BHK with ${sqft(twoBhk.carpetArea)} of carpet area has roughly ${sqft(twoBhk.paintArea)} to paint. ${rule[0].toUpperCase()}${rule.slice(1)}, so that home is about ${twoBhk.painterDays} painter-days of work: usually a crew of ${twoBhk.painters} for ${twoBhk.duration}. The inspector measures exactly on site, and the quotation lists each item, what is included and excluded, and the payment schedule.`,
     link: { href: "/services", label: "See what each service includes" },
   },
   {

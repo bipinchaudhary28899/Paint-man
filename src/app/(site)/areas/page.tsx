@@ -2,21 +2,21 @@ import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { Emoji, type EmojiName } from "@/components/Emoji";
-import { services, site } from "@/config/site";
+import { areaSlug, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
-// One hub for the localities in site.areas, not a page per locality: each gets an anchored
-// section here, and the shared process and Agra-specific advice are written once. Per-locality
-// pages should wait until there is real local content for them (jobs, photos) from the owner.
+// One hub for the localities in site.areas, not a page per locality: each gets an anchored entry
+// here (id from areaSlug(), which the home page's area links use too), and the shared process and
+// Agra-specific advice are written once. Per-locality pages should wait until there is real local
+// content for them (jobs, photos) from the owner.
+// The h1 leads with "Areas we serve" so this page does not compete with the home page for the
+// "house painters in Agra" head term.
 
 export const metadata = pageMetadata({
-  title: `Painters in ${site.city}: Areas We Serve`,
-  description: `House painters in ${site.areas.length} localities of ${site.city}, one process in each: an on-site inspection, an itemised quotation and a supervised crew. Book a slot online.`,
+  title: `Areas We Serve for House Painting in ${site.city}`,
+  description: `House painting in ${site.areas.length} localities of ${site.city}, one process in each: an on-site inspection, an itemised quotation and a supervised crew. Book a slot online.`,
   path: "/areas",
 });
-
-/** "Kamla Nagar" → "kamla-nagar": the anchor of each locality's section. */
-const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 const steps = [
   {
@@ -43,7 +43,7 @@ const climate: { title: string; emoji: EmojiName; text: string; link?: { href: s
     emoji: "sun",
     text:
       "Summers in Agra are long, hot and dusty. Walls are cleaned before primer goes on, and a washable finish is worth it in living rooms, kitchens and kids' rooms, where dust and hand marks get wiped off often. Very dark exterior shades take in more heat and fade faster in strong sun.",
-    link: { href: "/colours", label: "Find light, washable shades" },
+    link: { href: "/colours", label: "Find light shades" },
   },
   {
     title: "Monsoon damp",
@@ -74,18 +74,17 @@ export default function AreasPage() {
           <Breadcrumbs items={[{ name: "Areas we serve", path: "/areas" }]} />
           <div className="mt-5 max-w-3xl">
             <h1 className="text-[clamp(40px,5vw,68px)] leading-[1.04] tracking-[-0.02em]">
-              House painters in <em>{site.city}</em>: the areas we serve
+              Areas we serve in <em>{site.city}</em> for house painting
             </h1>
             <p className="mt-5 text-lg leading-[1.65] text-muted">
               We paint homes in the {site.areas.length} localities below, a list kept short so a supervisor can reach every site.
-              Each one gets the same process: an on-site inspection, an itemised quotation and a supervised crew. Not on the list?{" "}
-              <Link href="/book" className="font-bold text-tangerine-text underline">Book anyway</Link> and we&apos;ll tell you honestly
-              whether we can take the job.
+              Not on the list? <Link href="/book" className="font-bold text-tangerine-text underline">Book anyway</Link> and we&apos;ll
+              tell you honestly whether we can take the job.
             </p>
           </div>
           <nav aria-label="Jump to a locality" className="mt-8 flex flex-wrap gap-2">
             {site.areas.map((a) => (
-              <a key={a} href={`#${slug(a)}`} className="inline-flex min-h-11 items-center rounded-full border border-line bg-paper px-4 text-sm font-semibold transition hover:bg-sand">
+              <a key={a} href={`#${areaSlug(a)}`} className="inline-flex min-h-11 items-center rounded-full border border-line bg-paper px-4 text-sm font-semibold transition hover:bg-sand">
                 {a}
               </a>
             ))}
@@ -98,19 +97,20 @@ export default function AreasPage() {
         <h2 id="localities" className="mt-3 text-3xl md:text-5xl">
           Where we <em>paint</em> in {site.city}
         </h2>
-        <div className="mt-8 grid border-t border-line sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-3">
+        <p className="mt-4 max-w-2xl leading-[1.65] text-muted">
+          Every locality gets the same process: an on-site inspection, an itemised quotation and the same supervised crew as anywhere
+          else in {site.city}. Pick yours to book the visit.
+        </p>
+        <ul className="mt-8 grid border-t border-line sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-3">
           {site.areas.map((a) => (
-            <section key={a} id={slug(a)} aria-labelledby={`${slug(a)}-name`} className="scroll-mt-28 border-b border-line pb-3 pt-5">
-              <h3 id={`${slug(a)}-name`} className="text-2xl">{a}</h3>
-              <p className="mt-1 text-[15px] leading-[1.6] text-muted">
-                An on-site inspection, an itemised quotation and the same supervised crew as anywhere else in {site.city}.
-              </p>
+            <li key={a} id={areaSlug(a)} className="flex scroll-mt-28 flex-wrap items-center justify-between gap-x-4 border-b border-line py-3">
+              <h3 className="text-2xl">{a}</h3>
               <Link href="/book" className="link-arrow min-h-11 text-[15px]">
                 Book a slot <span className="sr-only">in {a}</span> <span aria-hidden>→</span>
               </Link>
-            </section>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
       <section className="container-page mt-24 grid gap-12 lg:grid-cols-[1fr_1.4fr]" aria-labelledby="visit">

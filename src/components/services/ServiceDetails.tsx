@@ -29,7 +29,8 @@ export function JobSizeTable({ examples }: { examples: { home: string; carpetAre
     <div className="mt-6 overflow-x-auto rounded-2xl border border-line bg-paper">
       <table className="w-full text-left text-sm">
         <caption className="caption-bottom border-t border-line px-4 py-3 text-left text-xs text-muted">
-          Rule of thumb for a full repaint (putty, primer and two coats) of one floor. The inspector measures exactly on site.
+          Rule of thumb for a full repaint (putty, primer and two coats) of one floor. The crew grows with the home, so the job length
+          stays about the same. The inspector measures exactly on site.
         </caption>
         <thead className="bg-cream-wash">
           <tr>
@@ -53,7 +54,7 @@ export function JobSizeTable({ examples }: { examples: { home: string; carpetAre
                 </td>
                 <td className="px-3 py-3 sm:px-4">
                   {j.painters} painters
-                  <span className="block text-muted">about {j.days} working days</span>
+                  <span className="block text-muted">for {j.duration}</span>
                 </td>
               </tr>
             );

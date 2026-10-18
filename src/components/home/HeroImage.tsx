@@ -11,7 +11,16 @@ import type { SiteImage } from "@/config/images";
 // So: no deprecated `priority`, an eager <img> with no fetchpriority (never lazy-loaded on
 // desktop), and a high-priority preload limited to the side-by-side media query.
 export const heroSideBySide = "(min-width: 1080px)";
-export const heroSizes = `${heroSideBySide} 560px, 100vw`;
+
+/**
+ * The widest the photo column gets side by side. Both columns grow equally from their bases
+ * (`flex: 1 1 500px` and `1 1 420px`) into the 1200px content box of the 1264px container, so the
+ * photo is 420 + (1200 − 500 − 420 − 72) / 2 = 524px at most, and about 420px at the breakpoint.
+ */
+const HERO_PHOTO_MAX_WIDTH = 524;
+
+/** One `sizes` for both the <img> and the preload, so the browser picks the same file for each. */
+export const heroSizes = `${heroSideBySide} ${HERO_PHOTO_MAX_WIDTH}px, 100vw`;
 
 export function HeroImage({ image }: { image: SiteImage }) {
   const { props } = getImageProps({ src: image.src, alt: image.alt, fill: true, sizes: heroSizes });

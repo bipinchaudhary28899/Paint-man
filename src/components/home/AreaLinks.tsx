@@ -1,18 +1,10 @@
 import Link from "next/link";
+import { areaSlug } from "@/config/site";
 
 /**
- * The anchor id of a locality on /areas: the name lower-cased with every run of other characters
- * turned into one hyphen ("Fatehabad Road" → "fatehabad-road"). /areas gives each locality
- * section the same id, so these links land on it.
+ * The home page's "Painters in {area}" strip, each locality linking to its entry on /areas. The
+ * anchor comes from areaSlug() in src/config/site.ts, the same function /areas uses for its ids.
  */
-export function areaSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-/** The home page's "Painters in {area}" strip, each locality linking to its section on /areas. */
 export function AreaLinks({ areas }: { areas: readonly string[] }) {
   return (
     <ul className="grid flex-[2_1_480px] grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-6 font-medium">
