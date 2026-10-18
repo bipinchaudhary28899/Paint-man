@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { site } from "@/config/site";
 import { propertyTypes, serviceTypes } from "@/lib/leads/options";
 import { readTracking } from "./UtmCapture";
@@ -42,6 +42,11 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
+  // The thank-you page is static: load it while the visitor fills the form, so it appears
+  // the instant the lead is saved.
+  useEffect(() => {
+    router.prefetch(`/thank-you?type=${type}`);
+  }, [router, type]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

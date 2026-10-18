@@ -11,7 +11,7 @@ import { Tilt } from "@/components/Tilt";
 import { images } from "@/config/images";
 import { site } from "@/config/site";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/", useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }) }));
 
 describe("paint motion", () => {
   it("PaintSpill renders three pours with drips, hidden from assistive tech", () => {

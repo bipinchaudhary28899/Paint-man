@@ -147,6 +147,102 @@ describe("saveLead / readLeads with the local CSV fallback", () => {
   });
 });
 
+describe("Google Sheets storage", () => {
+  const sheetEnv = () => {
+    vi.stubEnv("GOOGLE_SHEETS_ID", "sheet123");
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL", "bot@example.iam.gserviceaccount.com");
+    vi.stubEnv("GOOGLE_PRIVATE_KEY", "unused");
+  };
+  const tokenCalls = vi.fn();
+  const mockAuth = () =>
+    vi.doMock("google-auth-library", () => ({
+      JWT: class {
+        async getAccessToken() {
+          tokenCalls();
+          return { token: "t" };
+        }
+      },
+    }));
+  const lead = { type: "contact" as const, name: "Ravi", phone: "9123456789", message: "Shop repaint" };
+
+  afterEach(() => {
+    vi.doUnmock("google-auth-library");
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    tokenCalls.mockReset();
+  });
+
+  it("appends a lead with one Google request, reusing the token fetched early", async () => {
+    sheetEnv();
+    vi.resetModules();
+    mockAuth();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(JSON.stringify({ updates: { updatedRange: "Leads!A7:Q7" } })),
+    );
+    const { saveLead, warmLeadStorage } = await import("@/lib/leads/store");
+    const { createTimer } = await import("@/lib/timing");
+    warmLeadStorage();
+    const timer = createTimer();
+    await saveLead(lead, timer);
+    await saveLead(lead);
+
+    expect(tokenCalls).toHaveBeenCalledTimes(1); // one token, shared by the warm-up and both leads
+    expect(fetchSpy).toHaveBeenCalledTimes(2); // one append per lead, no header check
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(String(url)).toContain("/values/Leads!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS");
+    expect(init?.method).toBe("POST");
+    expect(new Headers(init?.headers).get("authorization")).toBe("Bearer t");
+    expect(Object.keys(timer.summary())).toEqual(expect.arrayContaining(["sheets-token", "sheets-append"]));
+  });
+
+  it("writes the header above the first lead when the sheet was empty", async () => {
+    sheetEnv();
+    vi.resetModules();
+    mockAuth();
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ updates: { updatedRange: "Leads!A1:Q1" } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({})));
+    const { saveLead, LEAD_COLUMNS } = await import("@/lib/leads/store");
+    await saveLead(lead);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const [url, init] = fetchSpy.mock.calls[1];
+    expect(String(url)).toContain("/values/Leads!A1?valueInputOption=RAW");
+    expect(init?.method).toBe("PUT");
+    const values = JSON.parse(String(init?.body)).values;
+    expect(values[0]).toEqual([...LEAD_COLUMNS]);
+    expect(values[1]).toContain("Ravi");
+  });
+
+  it("retries the token after a failed token request", async () => {
+    sheetEnv();
+    vi.resetModules();
+    let fail = true;
+    vi.doMock("google-auth-library", () => ({
+      JWT: class {
+        async getAccessToken() {
+          tokenCalls();
+          if (fail) throw new Error("invalid_grant");
+          return { token: "t2" };
+        }
+      },
+    }));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(JSON.stringify({ updates: { updatedRange: "Leads!A3:Q3" } })));
+    const { saveLead, warmLeadStorage } = await import("@/lib/leads/store");
+    warmLeadStorage(); // a failing warm-up is swallowed
+    await expect(saveLead(lead)).rejects.toThrow("invalid_grant");
+    fail = false;
+    await expect(saveLead(lead)).resolves.toMatch(/^L/);
+    expect(tokenCalls.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("does nothing on warm-up when Sheets is not configured", async () => {
+    vi.resetModules();
+    const { warmLeadStorage } = await import("@/lib/leads/store");
+    expect(() => warmLeadStorage()).not.toThrow();
+  });
+});
+
 describe("leadLoadErrorMessage (shown to the signed-in admin)", () => {
   it("explains each failure with the setting to fix, never a value", async () => {
     const { StorageNotConfiguredError, SheetsRequestError } = await import("@/lib/leads/store");

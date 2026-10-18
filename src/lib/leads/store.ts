@@ -2,6 +2,7 @@ import "server-only";
 import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { JWT } from "google-auth-library";
+import type { Timer } from "@/lib/timing";
 import type { LeadInput } from "./schema";
 
 export const LEAD_COLUMNS = [
@@ -81,14 +82,36 @@ const sheetsConfig = () => {
 };
 
 let jwt: JWT | null = null;
-let headerChecked = false;
+let token: { value: Promise<string>; expires: number } | null = null;
 
-async function sheetsRequest(url: string, init: RequestInit, cfg: NonNullable<ReturnType<typeof sheetsConfig>>) {
+/**
+ * One Google access token per server instance, shared by concurrent callers and refreshed a
+ * little before Google's one-hour expiry. Started early by `warmLeadStorage` so the token
+ * request overlaps the rate-limit check instead of following it.
+ */
+function accessToken(cfg: NonNullable<ReturnType<typeof sheetsConfig>>): Promise<string> {
+  if (token && Date.now() < token.expires) return token.value;
   jwt ??= new JWT({ email: cfg.email, key: cfg.key, scopes: ["https://www.googleapis.com/auth/spreadsheets"] });
-  const { token } = await jwt.getAccessToken();
+  const value = jwt.getAccessToken().then(({ token: t }) => {
+    if (!t) throw new Error("Google did not return an access token.");
+    return t;
+  });
+  token = { value, expires: Date.now() + 50 * 60 * 1000 };
+  value.catch(() => { token = null; }); // a failed request is retried on the next call
+  return value;
+}
+
+/** Starts fetching the Google access token without waiting for it. No-op without Sheets. */
+export function warmLeadStorage() {
+  const cfg = sheetsConfig();
+  if (cfg) accessToken(cfg).catch(() => {});
+}
+
+async function sheetsRequest(url: string, init: RequestInit, cfg: NonNullable<ReturnType<typeof sheetsConfig>>, timer?: Timer) {
+  const bearer = timer ? await timer.time("sheets-token", accessToken(cfg)) : await accessToken(cfg);
   const res = await fetch(url, {
     ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { ...init.headers, Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
     cache: "no-store",
   });
   // The response body is not included: it can echo request details.
@@ -96,28 +119,31 @@ async function sheetsRequest(url: string, init: RequestInit, cfg: NonNullable<Re
   return res.json();
 }
 
-async function appendToSheet(row: string[], cfg: NonNullable<ReturnType<typeof sheetsConfig>>) {
+async function appendToSheet(row: string[], cfg: NonNullable<ReturnType<typeof sheetsConfig>>, timer?: Timer) {
   const base = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values`;
   const tab = encodeURIComponent(cfg.tab);
 
-  if (!headerChecked) {
-    const existing = await sheetsRequest(`${base}/${tab}!A1:A1`, { method: "GET" }, cfg);
-    if (!existing.values?.length) {
-      await sheetsRequest(
-        `${base}/${tab}!A1?valueInputOption=RAW`,
-        { method: "PUT", body: JSON.stringify({ values: [LEAD_COLUMNS] }) },
-        cfg,
-      );
-    }
-    headerChecked = true;
-  }
-
+  // Append straight away: one Google request per lead. (This used to read A1 first on every
+  // fresh server instance to check for the header row, an extra round trip on most leads.)
   // RAW stores values as plain text, so user input is never evaluated as a formula.
-  await sheetsRequest(
+  const append = sheetsRequest(
     `${base}/${tab}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     { method: "POST", body: JSON.stringify({ values: [row] }) },
     cfg,
+    timer,
   );
+  const res = await (timer ? timer.time("sheets-append", append) : append);
+
+  // Only for the very first lead: the sheet was empty, so the row landed on row 1. Put the
+  // header there and the lead on row 2.
+  const updated: string = res?.updates?.updatedRange ?? "";
+  if (/!A1(:|$)/.test(updated)) {
+    await sheetsRequest(
+      `${base}/${tab}!A1?valueInputOption=RAW`,
+      { method: "PUT", body: JSON.stringify({ values: [LEAD_COLUMNS, row] }) },
+      cfg,
+    );
+  }
 }
 
 // ---------- Local CSV (development fallback) ----------
@@ -199,13 +225,14 @@ export async function readLeads(): Promise<LeadRecord[]> {
   return rowsToLeads(parseCsv(text));
 }
 
-export async function saveLead(lead: LeadInput) {
+/** Saves a lead and returns its ID. `timer` (optional) records the Google steps. */
+export async function saveLead(lead: LeadInput, timer?: Timer) {
   const id = `L${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
   const row = toRow(lead, id, new Date());
   const cfg = sheetsConfig();
 
   if (cfg) {
-    await appendToSheet(row, cfg);
+    await appendToSheet(row, cfg, timer);
   } else if (!canUseLocalFile()) {
     throw new StorageNotConfiguredError();
   } else {

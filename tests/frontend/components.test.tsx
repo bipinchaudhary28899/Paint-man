@@ -15,7 +15,12 @@ import { images } from "@/config/images";
 import { services, site } from "@/config/site";
 
 const usePathnameMock = vi.hoisted(() => vi.fn(() => "/services"));
-vi.mock("next/navigation", () => ({ usePathname: usePathnameMock, useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
+const searchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
+vi.mock("next/navigation", () => ({
+  usePathname: usePathnameMock,
+  useSearchParams: searchParamsMock,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
+}));
 
 describe("Header and Footer", () => {
   it("header links to the main pages and the booking page", () => {
@@ -195,5 +200,18 @@ describe("UtmCapture", () => {
     expect(readTracking()).toBeUndefined();
     sessionStorage.setItem(TRACKING_KEY, "{not json");
     expect(readTracking()).toBeUndefined();
+  });
+});
+
+describe("ThankYouMessage", () => {
+  it("shows the booking wording by default and the message wording for contact", async () => {
+    const { ThankYouMessage } = await import("@/components/ThankYouMessage");
+    searchParamsMock.mockReturnValue(new URLSearchParams("type=booking"));
+    const { unmount } = render(<ThankYouMessage />);
+    expect(screen.getByRole("heading", { name: "Your inspection request is in" })).toBeInTheDocument();
+    unmount();
+    searchParamsMock.mockReturnValue(new URLSearchParams("type=contact"));
+    render(<ThankYouMessage />);
+    expect(screen.getByRole("heading", { name: "Thanks for your message" })).toBeInTheDocument();
   });
 });

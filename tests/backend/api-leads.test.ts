@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { postJson } from "../support/request";
 
 const saveLead = vi.fn();
-vi.mock("@/lib/leads/store", () => ({ saveLead }));
+const warmLeadStorage = vi.fn();
+vi.mock("@/lib/leads/store", () => ({ saveLead, warmLeadStorage }));
 
 const URL_ = "http://localhost:3000/api/leads";
 const valid = {
@@ -31,7 +32,20 @@ describe("POST /api/leads", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     expect(res.headers.get("cache-control")).toContain("no-store");
-    expect(saveLead).toHaveBeenCalledWith(expect.objectContaining({ name: "Asha Verma", phone: "9876543210" }));
+    expect(saveLead).toHaveBeenCalledWith(expect.objectContaining({ name: "Asha Verma", phone: "9876543210" }), expect.anything());
+  });
+
+  it("starts the Google token early and reports step timings (durations only)", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const { POST } = await loadRoute();
+    const res = await POST(postJson(URL_, { body: valid }));
+    expect(warmLeadStorage).toHaveBeenCalled();
+    expect(res.headers.get("server-timing")).toMatch(/^ratelimit;dur=[\d.]+, total;dur=[\d.]+$/);
+    const logged = info.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(logged).toMatch(/Lead saved in .*"ratelimit"/);
+    expect(logged).not.toContain("Asha");
+    expect(logged).not.toContain("9876543210");
+    info.mockRestore();
   });
 
   it("returns field errors for invalid input without saving", async () => {

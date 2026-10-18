@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { leadSchema } from "@/lib/leads/schema";
-import { saveLead } from "@/lib/leads/store";
+import { saveLead, warmLeadStorage } from "@/lib/leads/store";
 import { bodyTooLarge, clientIp, isSameOrigin, noStore } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
+import { createTimer } from "@/lib/timing";
 
 export const runtime = "nodejs";
 
@@ -32,15 +33,20 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = clientIp(req);
+  const timer = createTimer();
+  // Fetch the Google access token while the rate limit is checked, not after it.
+  warmLeadStorage();
   // Only valid submissions count, so customers fixing typos aren't locked out.
-  if (!(await rateLimit(ip))) {
+  if (!(await timer.time("ratelimit", rateLimit(ip)))) {
     return NextResponse.json({ ok: false, error: "Too many requests. Please call us or try again later." }, { status: 429 });
   }
 
   try {
     // Nothing about stored data is sent back to the browser.
-    await saveLead(parsed.data);
-    return NextResponse.json({ ok: true }, { headers: noStore });
+    await saveLead(parsed.data, timer);
+    // Step durations only (no lead data): shows in the Vercel logs and the browser's network panel.
+    console.info("Lead saved in", JSON.stringify(timer.summary()));
+    return NextResponse.json({ ok: true }, { headers: { ...noStore, "Server-Timing": timer.header() } });
   } catch (err) {
     // Log the error type only: never the submitted personal details.
     console.error("Failed to save lead:", err instanceof Error ? err.message.slice(0, 200) : "unknown error");

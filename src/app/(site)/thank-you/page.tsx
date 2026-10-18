@@ -1,6 +1,7 @@
 import { Emoji } from "@/components/Emoji";
 import Link from "next/link";
-import { site } from "@/config/site";
+import { Suspense } from "react";
+import { ThankYouMessage } from "@/components/ThankYouMessage";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -10,21 +11,15 @@ export const metadata = pageMetadata({
   noindex: true,
 });
 
-export default async function ThankYouPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
-  const { type } = await searchParams;
-  const booking = type !== "contact";
+// Static: prerendered and served from the CDN, and prefetched by the forms, so it appears
+// immediately after a lead is saved. The booking/contact wording is chosen in the browser.
+export default function ThankYouPage() {
   return (
     <div className="container-page max-w-2xl py-20 text-center">
       <Emoji name="party-popper" size={120} className="mx-auto animate-wiggle" />
-      <h1 className="mt-6 text-3xl font-normal text-brand-900">
-        {booking ? "Your inspection request is in" : "Thanks for your message"}
-      </h1>
-      <p className="mt-4 text-lg text-muted">
-        {booking
-          ? "Our team will call you shortly to confirm a time for the site visit."
-          : "We'll get back to you as soon as possible."}{" "}
-        Hours: {site.hoursDisplay}.
-      </p>
+      <Suspense fallback={<h1 className="mt-6 text-3xl font-normal text-brand-900">Thank you</h1>}>
+        <ThankYouMessage />
+      </Suspense>
       <div className="mt-8 flex justify-center gap-3">
         <Link href="/" className="btn-secondary text-brand-700">Back to home</Link>
         <Link href="/services" className="btn-primary">Explore services</Link>
