@@ -116,7 +116,12 @@ export function PinnedReveal() {
             <div aria-hidden className="pin-after absolute inset-0" style={js ? { clipPath: `inset(${100 - js.fill}% 0 0 0)` } : undefined}>
               <span className="tint" style={{ background: wallShade.hex, ...maskStyle }} />
             </div>
-            <div aria-hidden className="pin-edge absolute inset-x-0 h-px bg-canvas/90 shadow-[0_0_20px_4px_rgba(248,245,239,0.5)]" style={js ? { top: `${100 - js.fill}%`, opacity: js.edgeVisible ? 1 : 0 } : undefined} />
+            {/* The wet edge: a 1px line at the top of a full-size track that only ever moves by
+                translateY (a percentage of its own height, i.e. the image's), never by `top`, so the
+                sweep causes no layout shift. */}
+            <div aria-hidden className="pin-edge pointer-events-none absolute inset-0" style={js ? { transform: `translateY(${100 - js.fill}%)`, opacity: js.edgeVisible ? 1 : 0 } : undefined}>
+              <div className="absolute inset-x-0 top-0 h-px bg-canvas/90 shadow-[0_0_20px_4px_rgba(248,245,239,0.5)]" />
+            </div>
             <span className="sticker absolute left-5 top-5">
               {/* an invisible copy of the longest label sizes the sticker, so no stage label ever wraps */}
               <span aria-hidden className="invisible whitespace-nowrap">{longestLabel}</span>

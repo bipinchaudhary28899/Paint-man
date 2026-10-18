@@ -1,11 +1,70 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { AreaLinks, areaSlug } from "@/components/home/AreaLinks";
 import { ColourExplorer, swatchIndices, wheelAngle, wheelShades } from "@/components/home/ColourExplorer";
+import { HeroImage, heroSideBySide, heroSizes } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal, reveal } from "@/components/home/PinnedReveal";
 import { colours } from "@/config/colours";
+import { images } from "@/config/images";
+import { site } from "@/config/site";
 import { clamp01, easeInOutQuad } from "@/lib/scroll";
+
+// The shared setup renders next/image as a bare <img>; here the real getImageProps is kept (the
+// hero builds its preload from it) and the <img> keeps sizes/loading/fetchPriority so the
+// loading strategy can be checked.
+vi.mock("next/image", async () => {
+  const actual = await vi.importActual<typeof import("next/image")>("next/image");
+  return {
+    ...actual,
+    default: ({ src, alt, fill: _fill, priority, preload: _preload, ...rest }: Record<string, unknown>) => (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={String(src)} alt={String(alt ?? "")} data-priority={priority ? "true" : undefined} {...rest} />
+    ),
+  };
+});
+
+describe("HeroImage", () => {
+  it("loads eagerly without the deprecated priority and preloads only where it sits beside the copy", () => {
+    render(<HeroImage image={images.livingMoody} />);
+    const img = screen.getByAltText(images.livingMoody.alt);
+    expect(img).toHaveAttribute("loading", "eager");
+    expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 560px, 100vw");
+    // on phones the photo is far below the h1 (the LCP there): it must not jump the queue
+    expect(img).not.toHaveAttribute("fetchpriority");
+    expect(img).not.toHaveAttribute("data-priority");
+
+    const link = document.head.querySelector('link[rel="preload"][as="image"]');
+    expect(link).not.toBeNull();
+    expect(link).toHaveAttribute("media", heroSideBySide);
+    expect(link).toHaveAttribute("fetchpriority", "high");
+    expect(link).toHaveAttribute("imagesizes", heroSizes);
+    expect(link?.getAttribute("imagesrcset")).toContain("pexels-photo-30386991.jpeg");
+    expect(link?.getAttribute("imagesrcset")).toMatch(/ 640w, .* 1200w/);
+  });
+});
+
+describe("AreaLinks", () => {
+  it("links every locality to its own section on /areas", () => {
+    render(<AreaLinks areas={site.areas} />);
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(site.areas.length);
+    for (const a of site.areas) {
+      expect(screen.getByRole("link", { name: `Painters in ${a}` })).toHaveAttribute("href", `/areas#${areaSlug(a)}`);
+    }
+    expect(screen.getByRole("link", { name: "Painters in Fatehabad Road" })).toHaveAttribute("href", "/areas#fatehabad-road");
+  });
+
+  it("slugs are the lower-cased, hyphenated name and unique per locality", () => {
+    expect(areaSlug("Kamla Nagar")).toBe("kamla-nagar");
+    expect(areaSlug("Dayalbagh")).toBe("dayalbagh");
+    expect(areaSlug("  M.G. Road & Civil Lines ")).toBe("m-g-road-civil-lines");
+    const slugs = site.areas.map(areaSlug);
+    expect(new Set(slugs).size).toBe(site.areas.length);
+    for (const s of slugs) expect(s).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+});
 
 describe("ParallaxChips", () => {
   it("draws seven decorative chips, hidden from assistive tech, each with its own drift", () => {
@@ -37,6 +96,11 @@ describe("PinnedReveal", () => {
     expect(container.querySelectorAll(".pin-label")).toHaveLength(4);
     expect(container.querySelector(".pin-track")).not.toBeNull();
     expect(container.querySelector(".pin-bar")).not.toBeNull();
+    // the wet edge is a full-size track (moved only by transform) carrying a 1px line at its top
+    const edge = container.querySelector(".pin-edge") as HTMLElement;
+    expect(edge).toHaveAttribute("aria-hidden", "true");
+    expect(edge).toHaveClass("absolute", "inset-0", "pointer-events-none");
+    expect(edge.firstElementChild).toHaveClass("top-0", "h-px");
   });
 
   it("turns scroll progress into fill, stage and opacities exactly as the design does", () => {
