@@ -49,6 +49,19 @@ const nextConfig: NextConfig = {
     // Placeholder stock photos from Pexels (free licence). Replace with your own project photos.
     remotePatterns: [{ protocol: "https", hostname: "images.pexels.com", pathname: "/photos/**" }],
     formats: ["image/avif", "image/webp"],
+    // No 2048/3840 variants: no image box is wider than 1200 CSS px, and every extra width is
+    // another slow first-request resize of a multi-MB original. 1080 must stay: the visualizer
+    // requests /_next/image at w=1080.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // Keep optimised variants for 30 days (default 4 hours) so photos are not re-encoded
+    // after every short upstream max-age; the photo URLs change whenever the photo does.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+  },
+  experimental: {
+    // Inline the (small, Tailwind) CSS into the HTML so first paint no longer waits on a
+    // render-blocking stylesheet request (docs: 05-config/01-next-config-js/inlineCss.md,
+    // experimental in Next 16; production builds only).
+    inlineCss: true,
   },
   async headers() {
     return [

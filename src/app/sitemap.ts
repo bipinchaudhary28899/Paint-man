@@ -1,29 +1,30 @@
 import type { MetadataRoute } from "next";
-import { colours } from "@/config/colours";
+import { curatedColours } from "@/config/colours";
+import { contentUpdated } from "@/config/seo-dates";
 import { services, site } from "@/config/site";
 
+// Every indexable page, with the date its content last changed (src/config/seo-dates.ts).
+// Only the curated shades get /colours/[code] entries: the generated shade ladder is noindex.
+// changefreq and priority are left out because Google ignores them.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-  const page = (path: string, priority: number, changeFrequency: "weekly" | "monthly" | "yearly" = "monthly") => ({
-    url: `${site.url}${path}`,
-    lastModified: now,
-    changeFrequency,
-    priority,
-  });
-
-  return [
-    page("", 1, "weekly"),
-    page("/book", 0.9),
-    page("/services", 0.9),
-    ...services.map((s) => page(`/services/${s.slug}`, 0.8)),
-    page("/colours", 0.8, "weekly"),
-    page("/palettes", 0.8, "weekly"),
-    page("/visualizer", 0.8, "weekly"),
-    ...colours.map((c) => page(`/colours/${c.code}`, 0.5)),
-    page("/about", 0.6),
-    page("/faq", 0.6),
-    page("/contact", 0.7),
-    page("/privacy-policy", 0.2, "yearly"),
-    page("/terms", 0.2, "yearly"),
+  const paths = [
+    "/",
+    "/services",
+    ...services.map((s) => `/services/${s.slug}`),
+    "/areas",
+    "/colours",
+    ...curatedColours.map((c) => `/colours/${c.code}`),
+    "/palettes",
+    "/visualizer",
+    "/book",
+    "/about",
+    "/faq",
+    "/contact",
+    "/privacy-policy",
+    "/terms",
   ];
+  return paths.map((path) => ({
+    url: `${site.url}${path === "/" ? "" : path}`,
+    lastModified: contentUpdated(path),
+  }));
 }
