@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Serif_Display, Manrope } from "next/font/google";
 import { site } from "@/config/site";
-import { TITLE_SUFFIX } from "@/lib/seo";
+import { siteVerification, TITLE_SUFFIX } from "@/lib/seo";
 import "./globals.css";
 
 // Editorial pairing from the PaintMan design: DM Serif Display (with its italic) for every
 // heading, Manrope for reading text and UI. Both self-hosted by next/font, so no layout shift.
-// Manrope is one variable file: a single @font-face per subset instead of one per weight,
-// which keeps the (inlined) CSS small. The page uses weights 400–700.
+// Manrope is one variable file: a single @font-face per subset instead of one per weight.
+// The page uses weights 400–700.
 const body = Manrope({ subsets: ["latin"], weight: "variable", variable: "--font-manrope", display: "swap" });
 const display = DM_Serif_Display({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-dm-serif", display: "swap" });
 
@@ -38,9 +38,11 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
   },
-  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
-    : undefined,
+  // NEXT_PUBLIC_* values are inlined at build time, so pass them explicitly.
+  verification: siteVerification({
+    NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    NEXT_PUBLIC_BING_SITE_VERIFICATION: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION,
+  }),
   other: {
     "geo.region": site.regionCode,
     "geo.placename": site.city,

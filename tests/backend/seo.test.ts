@@ -19,6 +19,7 @@ import {
   openingHoursSpecification,
   pageMetadata,
   serviceJsonLd,
+  siteVerification,
   TITLE_SUFFIX,
   websiteJsonLd,
 } from "@/lib/seo";
@@ -52,7 +53,8 @@ describe("pageMetadata", () => {
     const m = pageMetadata({ title: "Contact", description: "Reach us", path: "/contact" });
     const og = (m.openGraph as { images: Json[] }).images;
     expect(og).toHaveLength(1);
-    expect(og[0]).toMatchObject({ url: `${site.url}/opengraph-image`, width: 1200, height: 630, type: "image/png" });
+    // versioned by the content date so share caches refetch the card when the copy changes
+    expect(og[0]).toMatchObject({ url: `${site.url}/opengraph-image?v=${SITE_UPDATED}`, width: 1200, height: 630, type: "image/png" });
     expect(String(og[0].alt).length).toBeGreaterThan(10);
     const twitter = m.twitter as { card: string; images: Json[] };
     expect(twitter.card).toBe("summary_large_image");
@@ -76,6 +78,9 @@ describe("pageMetadata", () => {
 
     const remote = pageMetadata({ title: "t", description: "d", path: "/x", image: { url: "https://cdn.example.com/a.jpg", alt: "A room" } });
     expect((remote.openGraph as { images: Json[] }).images[0].url).toBe("https://cdn.example.com/a.jpg");
+    // protocol-relative URLs are already absolute: never glue the site origin onto them
+    const cdn = pageMetadata({ title: "t", description: "d", path: "/x", image: { url: "//cdn.example.com/b.jpg", alt: "A hall" } });
+    expect((cdn.openGraph as { images: Json[] }).images[0].url).toBe("//cdn.example.com/b.jpg");
   });
 
   it("supports absolute titles and noindex pages", () => {
@@ -139,7 +144,8 @@ describe("business structured data", () => {
       const ld = serviceJsonLd(service);
       expect(offered["@id"]).toBe(ld["@id"]);
       expect(offered.url).toBe(ld.url);
-      expect(offered.name).toBe(service.name);
+      // one entity, one name: the catalogue and the service page's own schema agree
+      expect(offered.name).toBe(ld.name);
     }
   });
 
@@ -341,5 +347,28 @@ describe("web manifest", () => {
     }
     expect(icons).toContainEqual({ src: iconPath(512), sizes: "512x512", type: "image/png", purpose: "maskable" });
     expect(m.background_color).toBe("#f8f5ef");
+  });
+});
+
+describe("siteVerification", () => {
+  it("publishes nothing until a console code is set", () => {
+    expect(siteVerification({})).toBeUndefined();
+    expect(siteVerification({ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: "  ", NEXT_PUBLIC_BING_SITE_VERIFICATION: "" })).toBeUndefined();
+  });
+
+  it("emits Google's tag and Bing's msvalidate.01 tag from their own env vars", () => {
+    expect(siteVerification({ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: " g-code " })).toEqual({ google: "g-code" });
+    expect(siteVerification({ NEXT_PUBLIC_BING_SITE_VERIFICATION: "B1NG" })).toEqual({ other: { "msvalidate.01": "B1NG" } });
+    expect(siteVerification({ NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: "g", NEXT_PUBLIC_BING_SITE_VERIFICATION: "b" })).toEqual({
+      google: "g",
+      other: { "msvalidate.01": "b" },
+    });
+  });
+
+  it("reads process.env by default", () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION", "from-env");
+    vi.stubEnv("NEXT_PUBLIC_BING_SITE_VERIFICATION", "");
+    expect(siteVerification()).toEqual({ google: "from-env" });
+    vi.unstubAllEnvs();
   });
 });

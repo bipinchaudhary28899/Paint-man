@@ -54,7 +54,7 @@ Each row records: time (IST), lead ID, type, name, phone, locality, property typ
 The code makes the site easy for Google to read. Ranking for searches like "painters in Agra" depends mostly on these steps:
 
 1. **Google Business Profile:** create and verify it with the same name, phone and address as the site. This drives the map results, which matter most for local searches.
-2. **Google Search Console:** verify the domain (set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`) and submit `/sitemap.xml`.
+2. **Google Search Console and Bing Webmaster Tools:** verify the site (set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, and `NEXT_PUBLIC_BING_SITE_VERIFICATION` unless you import the site into Bing from Search Console) and submit `/sitemap.xml`. The step-by-step owner list is in `docs/seo-owner-checklist.md`.
 3. **Real reviews** on your Google Business Profile from every completed job.
 4. **Consistent listings** on Justdial, Sulekha, IndiaMART and similar directories, using the same name, address and phone everywhere.
 5. **Content:** real before-and-after project photos, a page for each locality once you have work to show there, and Hindi versions of key pages.
@@ -112,7 +112,7 @@ Vitest runs **161 tests**: backend tests in Node, frontend tests in jsdom (a sim
    - `NEXT_PUBLIC_SITE_URL`: your domain, e.g. `https://www.yourdomain.in`
    - `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_TAB`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`: paste the key exactly as it is in the JSON file, including the `\n` sequences
    - `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`: from `npm run admin:hash`
-   - `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` (optional)
+   - `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_BING_SITE_VERIFICATION` (optional)
 3. **Add Redis for rate limits (important):** in Vercel, open **Storage → Marketplace → Upstash for Redis** (free tier is fine) and connect it to the project. It sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically. Vercel runs the site on many serverless instances that don't share memory, so without Redis the login lockout and form spam limits only apply per instance.
 4. Add your domain under **Settings → Domains**. HTTPS and HSTS are handled automatically.
 5. After deploying, check that `/admin` asks for a password, submit a test booking, then confirm it appears on `/admin` and in the Google Sheet.

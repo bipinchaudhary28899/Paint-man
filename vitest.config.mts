@@ -12,6 +12,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias },
   test: {
+    // The brand-shade suites index 50,000 shades on first use; under coverage on a busy machine
+    // that alone can pass the 5 s default, so allow more time (a timeout, not a threshold).
+    testTimeout: 20_000,
     // Coverage gate (see AGENTS.md): the testable surface must stay above 90%.
     // Next.js pages, layouts and metadata routes are rendered by the framework and
     // checked by typecheck + the browser, so they are excluded from the gate.

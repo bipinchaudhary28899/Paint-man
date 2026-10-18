@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_UPDATED } from "@/config/seo-dates";
 import { services, site, type Service } from "@/config/site";
 
 /** Appended to every page title by the root layout's title template ("{Topic} in Agra | Paint Man"). */
@@ -12,13 +13,17 @@ const abs = (path: string) => `${site.url}${path === "/" ? "" : path}`;
 
 export type OgImage = { url: string; alt: string; width?: number; height?: number; type?: string };
 
+/** Root-relative paths ("/x") become absolute; full and protocol-relative ("//cdn…") URLs pass through. */
+const absUrl = (url: string) => (url.startsWith("/") && !url.startsWith("//") ? abs(url) : url);
+
 /**
  * The share card drawn by src/app/opengraph-image.tsx. Every page states it explicitly: Next
  * merges metadata shallowly, so a page's own `openGraph` object would otherwise drop the
- * file-based image. Keep `alt` in step with that file's `alt` export.
+ * file-based image. Keep `alt` in step with that file's `alt` export. The `?v=` is the content
+ * date, so WhatsApp, Facebook and LinkedIn fetch the card again when the site copy changes.
  */
 export const defaultOgImage = {
-  url: abs("/opengraph-image"),
+  url: abs(`/opengraph-image?v=${SITE_UPDATED}`),
   width: 1200,
   height: 630,
   type: "image/png",
@@ -40,7 +45,7 @@ type PageMeta = {
 // Builds per-page metadata with a canonical URL, matching Open Graph/Twitter tags and a share image.
 export function pageMetadata({ title, description, path, noindex, absoluteTitle, image }: PageMeta): Metadata {
   const url = path;
-  const shareImage = image ? { ...image, url: image.url.startsWith("/") ? abs(image.url) : image.url } : defaultOgImage;
+  const shareImage = image ? { ...image, url: absUrl(image.url) } : defaultOgImage;
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
@@ -130,7 +135,11 @@ export function openingHoursSpecification(hours: string) {
     });
 }
 
-/** GeoCoordinates only for a real, published address: a service-area business never gets a pin. */
+/**
+ * GeoCoordinates only together with a published street address. A service-area business (no
+ * public address, as Google Business Profile allows) must not leak its base through a map pin,
+ * so setting site.geo without site.address.street publishes nothing.
+ */
 function businessGeo() {
   const geo = extra().geo;
   const latitude = geo?.lat ?? geo?.latitude;
@@ -188,11 +197,26 @@ export function localBusinessJsonLd() {
       name: `House painting services in ${site.city}`,
       itemListElement: services.map((s) => ({
         "@type": "Offer",
-        itemOffered: { "@type": "Service", "@id": serviceId(s), name: s.name, url: serviceUrl(s) },
+        // same name as serviceJsonLd(), so the merged graph gives each service one name
+        itemOffered: { "@type": "Service", "@id": serviceId(s), name: s.title, url: serviceUrl(s) },
       })),
     },
     sameAs: [...site.social],
   });
+}
+
+type VerificationEnv = { NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?: string; NEXT_PUBLIC_BING_SITE_VERIFICATION?: string; [key: string]: string | undefined };
+
+/**
+ * Search-engine ownership tags for the root layout: Google Search Console's
+ * `google-site-verification` and Bing Webmaster Tools' `msvalidate.01`, each only when its env
+ * var holds the code from that console (the `content` value of the tag they show you).
+ */
+export function siteVerification(env: VerificationEnv = process.env): Metadata["verification"] {
+  const google = env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
+  const bing = env.NEXT_PUBLIC_BING_SITE_VERIFICATION?.trim();
+  if (!google && !bing) return undefined;
+  return { ...(google && { google }), ...(bing && { other: { "msvalidate.01": bing } }) };
 }
 
 export function websiteJsonLd() {
