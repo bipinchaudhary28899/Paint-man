@@ -29,7 +29,7 @@ export type PhotoScene = {
 
 /**
  * The one generic room every shade is shown on: the same cosy living room as the home-page
- * reveal (sofa, shelf, curtains), cropped 7:8 like the reveal. Its walls are already sage, so
+ * reveal (sofa, shelf, curtains), shown whole: the full photo from ceiling fan to rug. Its walls are already sage, so
  * the tint uses the "color" blend (hue + a pull towards the shade's lightness).
  */
 export const genericScene: PhotoScene = {
@@ -37,9 +37,9 @@ export const genericScene: PhotoScene = {
   label: "A cosy living room, repainted",
   image: images.livingMoody,
   width: 933,
-  height: 1066,
+  height: 1400,
   mask: "/scenes/living-moody-mask.png",
-  wallCoverage: 0.36,
+  wallCoverage: 0.39,
   blend: "color",
 };
 

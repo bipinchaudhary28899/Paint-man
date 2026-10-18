@@ -86,6 +86,10 @@ describe("WallPreview", () => {
     expect(tints[0].style.background).toBe("rgb(194, 98, 63)");
     expect(tints[0].style.maskImage).toContain("/scenes/living-moody-mask.png");
     expect(tints[0].style.maskImage).toContain(genericScene.mask);
+    // the whole photo, never cropped: the frame keeps the photo's shape and narrows to a height cap
+    const frame = container.querySelector<HTMLElement>(".scene")!;
+    expect(frame.style.aspectRatio).toBe("933 / 1400");
+    expect(frame.style.width).toMatch(/^min\(100%, (calc\(75vh \* 0\.6664\)|49\.98vh)\)$/);
     expect(container.textContent).toContain("PM-401");
     expect(container.textContent).toContain("LRV 18");
   });

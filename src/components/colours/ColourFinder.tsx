@@ -227,17 +227,21 @@ export function ColourFinder({
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_440px]">
       {view && (
         <div className="sticky top-[73px] z-20 -mx-5 mb-4 border-b border-line-soft bg-canvas/95 px-5 pb-3 pt-2 backdrop-blur-md lg:hidden" aria-label="Selected shade preview">
-          <WallPreview colour={view} compact frameClassName="h-[30svh] min-h-[170px]" sizes="100vw" className="!rounded-2xl" />
-          <div className="mt-2.5 flex items-center gap-3">
-            <span className="h-9 w-9 shrink-0 rounded-xl border border-line" style={{ background: view.hex }} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-display text-[19px] leading-tight">
-                {view.name} <span className="font-sans text-xs font-semibold text-muted">{view.code}</span>
-              </p>
-              <p className="text-[11px] font-semibold text-muted">{view.hex.toUpperCase()} · LRV {view.lrv}</p>
+          {/* the whole room on the left, the shade and its actions on the right */}
+          <div className="flex items-stretch gap-3">
+            <WallPreview colour={view} compact frameClassName="h-[26svh] min-h-[180px] max-h-[240px]" sizes="45vw" className="shrink-0 !rounded-2xl" />
+            <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
+              <div>
+                <span className="block h-7 w-7 rounded-lg border border-line" style={{ background: view.hex }} />
+                <p className="mt-2 font-display text-[19px] leading-tight">{view.name}</p>
+                <p className="mt-0.5 text-xs font-semibold text-muted">{view.code}</p>
+                <p className="mt-0.5 text-[11px] font-semibold text-muted">{view.hex.toUpperCase()} · LRV {view.lrv}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Link href={view.bookHref} className="btn-primary !min-h-[36px] !px-3.5 !py-1.5 text-xs">Book</Link>
+                {view.detailsHref && <Link href={view.detailsHref} className="text-xs font-semibold underline underline-offset-2">Details</Link>}
+              </div>
             </div>
-            {view.detailsHref && <Link href={view.detailsHref} className="shrink-0 text-xs font-semibold underline underline-offset-2">Details</Link>}
-            <Link href={view.bookHref} className="btn-primary shrink-0 !min-h-[36px] !px-3.5 !py-1.5 text-xs">Book</Link>
           </div>
         </div>
       )}
@@ -426,7 +430,7 @@ export function ColourFinder({
 
       {view && (
         <section className="hidden rounded-[2rem] border border-line bg-paper p-5 lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto" aria-labelledby="active-colour">
-          <WallPreview colour={view} sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
+          <WallPreview colour={view} maxHeight="min(56vh, 600px)" sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
           <div className="mt-5 flex items-center gap-4">
             <span className="h-14 w-14 shrink-0 rounded-2xl border border-line" style={{ background: view.hex }} />
             <div className="min-w-0">

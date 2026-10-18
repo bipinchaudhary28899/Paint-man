@@ -9,8 +9,9 @@ export type PreviewShade = Pick<Colour, "name" | "code" | "hex" | "lrv">;
 // so shades compare fairly. Tint layers in the shade's hex are masked by the scene's wall
 // mask (a PNG from the wall detector) and blended onto the photograph (see scenes.ts for the
 // two blend modes); shadows and texture stay real and the furniture is untouched.
-// `compact`: a short, wide crop for phones (height set by the caller via `frameClassName`); the
-// mask is cover-cropped like the photo, so any frame shape stays aligned. No caption.
+// The whole photo is always shown (never cropped). `maxHeight` caps how tall it gets: the frame
+// narrows to keep the photo's shape. `compact` (phones): the height comes from `frameClassName`,
+// the width follows the photo's shape, and there is no caption.
 export function WallPreview({
   colour,
   className = "",
@@ -18,11 +19,16 @@ export function WallPreview({
   sizes = "(min-width: 1024px) 720px, 100vw",
   compact = false,
   frameClassName = "",
-}: { colour: PreviewShade; className?: string; priority?: boolean; sizes?: string; compact?: boolean; frameClassName?: string }) {
+  maxHeight = "75vh",
+}: { colour: PreviewShade; className?: string; priority?: boolean; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string }) {
   const scene = genericScene;
+  const ratio = scene.width / scene.height;
+  const frame = compact
+    ? { aspectRatio: `${scene.width} / ${scene.height}` }
+    : { aspectRatio: `${scene.width} / ${scene.height}`, width: `min(100%, calc(${maxHeight} * ${ratio.toFixed(4)}))`, marginInline: "auto" };
   return (
     <figure className={`overflow-hidden rounded-3xl border border-line bg-paper ${className}`}>
-      <div className={`scene relative w-full ${frameClassName}`} style={compact ? undefined : { aspectRatio: `${scene.width} / ${scene.height}` }}>
+      <div className={`scene relative ${compact ? "w-auto" : ""} ${frameClassName}`} style={frame}>
         <Image src={scene.image.src} alt={`${scene.label} in ${colour.name}`} fill priority={priority} sizes={sizes} className="object-cover" />
         {(scene.blend === "color" ? ["color", "lum"] : ["multiply"]).map((blend) => (
           <span
