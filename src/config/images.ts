@@ -1,24 +1,26 @@
 // Placeholder stock photos from Pexels (https://www.pexels.com/license/, free to use).
 // Swap these for real photos of your own jobs as soon as you have them: genuine
 // before/after shots build more trust and help local SEO.
+// Each alt describes only what the photo shows. These are not Paint Man jobs, so no alt names
+// Agra, a locality or a finished job; add those only to real, consented job photos.
 
 const pexels = (id: string) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg`;
 
 export const images = {
-  heroPainter: { src: pexels("7218579"), alt: "Painter applying fresh paint to an interior wall with a roller" },
+  heroPainter: { src: pexels("7218579"), alt: "Painter rolling white paint onto an interior wall edged with blue masking tape" },
   rollerCloseup: { src: pexels("5583126"), alt: "Close-up of a paint roller applying a smooth beige coat on a wall" },
   swatchFan: { src: pexels("6474454"), alt: "Hands holding a fan of paint colour swatches against a wall" },
-  swatchSheet: { src: pexels("6583367"), alt: "Paint colour swatch sheet used for choosing wall shades" },
-  rainbow: { src: pexels("8559022"), alt: "Rainbow of vivid paint colours" },
-  trays: { src: pexels("26736629"), alt: "Paint trays, rollers and tools in front of a freshly painted wall" },
-  muralBuckets: { src: pexels("26632166"), alt: "Paint buckets beside a freshly painted colourful wall" },
-  painterWindow: { src: pexels("5768187"), alt: "Professional painter preparing a window frame for painting" },
-  livingTeal: { src: pexels("7587828"), alt: "Bright living room with teal sofa and freshly painted walls" },
-  livingMoody: { src: pexels("30386991"), alt: "Cosy living room with a deep blue painted feature wall" },
-  livingWhite: { src: pexels("29012619"), alt: "Airy living room with clean white painted walls" },
-  apartment: { src: pexels("6588580"), alt: "Freshly painted rental apartment hallway" },
-  exteriorBlue: { src: pexels("20296321"), alt: "House exterior freshly painted in calm blue-grey" },
-  exteriorTerracotta: { src: pexels("8336130"), alt: "House with a warm terracotta exterior paint finish" },
+  swatchSheet: { src: pexels("6583367"), alt: "Hand leafing through a fan deck of neutral paint shade cards" },
+  rainbow: { src: pexels("8559022"), alt: "Fan of vividly coloured paper sheets in rainbow order" },
+  trays: { src: pexels("26736629"), alt: "Paint trays and a brush pot on floor paper in front of a wall painted pale blue and sage green" },
+  muralBuckets: { src: pexels("26632166"), alt: "Paint buckets on floor paper beside a large, colourful painted mural wall" },
+  painterWindow: { src: pexels("5768187"), alt: "Painter preparing a window sill for painting in a room with pale grey walls" },
+  livingTeal: { src: pexels("7587828"), alt: "Open-plan living room with teal sofas, white walls and exposed brick" },
+  livingMoody: { src: pexels("30386991"), alt: "Living room with warm white walls, a navy sofa and open shelving" },
+  livingWhite: { src: pexels("29012619"), alt: "Airy white living room with floor-to-ceiling sheer curtains and white sofas" },
+  apartment: { src: pexels("6588580"), alt: "Modern hallway with pale grey walls, flush doors and a wooden slat partition" },
+  exteriorBlue: { src: pexels("20296321"), alt: "Two-storey house with a pale blue-grey exterior behind a trimmed hedge" },
+  exteriorTerracotta: { src: pexels("8336130"), alt: "Large house with a warm terracotta-coloured exterior and a round corner turret" },
 } as const;
 
 export type SiteImage = (typeof images)[keyof typeof images];

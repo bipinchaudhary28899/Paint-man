@@ -3,19 +3,20 @@ import Link from "next/link";
 import { CtaBanner } from "@/components/CtaBanner";
 import { OutlineMarquee } from "@/components/Decor";
 import { FaqList } from "@/components/FaqList";
+import { AreaLinks } from "@/components/home/AreaLinks";
 import { ColourExplorer } from "@/components/home/ColourExplorer";
+import { HeroImage } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal } from "@/components/home/PinnedReveal";
-import { JsonLd } from "@/components/JsonLd";
 import { Tilt } from "@/components/Tilt";
 import { images } from "@/config/images";
 import { generalFaqs, services, site } from "@/config/site";
-import { faqJsonLd, pageMetadata } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: `House Painting Services in ${site.city} | ${site.name}`,
   absoluteTitle: true,
-  description: `Looking for painters in ${site.city}? ${site.name} manages your home painting end to end: site inspection, itemised quote, genuine paint, supervised work and cleanup. Get a free estimate.`,
+  description: `Looking for painters in ${site.city}? ${site.name} manages your house painting end to end, with an on-site inspection, an itemised quote and a supervised crew.`,
   path: "/",
 });
 
@@ -44,11 +45,13 @@ const serviceImage: Record<string, (typeof images)[keyof typeof images]> = {
   "rental-property-painting": images.livingWhite,
 };
 
-const projects = [
-  { image: images.exteriorBlue, kind: "Exterior · grey-blue", where: "Sikandra" },
-  { image: images.livingMoody, kind: "Living room · warm white", where: "Dayalbagh", raised: true },
-  { image: images.swatchSheet, kind: "Shade selection", where: "On site" },
-  { image: images.livingTeal, kind: "Open plan · teal accent", where: "Kamla Nagar", raised: true },
+// Example finishes (stock photos, see images.ts). No locality or "our job" claims until real,
+// consented photos of Paint Man jobs replace them.
+const finishes = [
+  { image: images.exteriorBlue, kind: "Exterior · grey-blue" },
+  { image: images.livingMoody, kind: "Living room · warm white", raised: true },
+  { image: images.swatchSheet, kind: "Shade selection" },
+  { image: images.livingTeal, kind: "Open plan · teal accent", raised: true },
 ];
 
 const diagnostics = ["Moisture reading", "Crack mapping", "Old-paint adhesion", "Wall measurement"];
@@ -56,15 +59,21 @@ const diagnostics = ["Moisture reading", "Crack mapping", "Old-paint adhesion", 
 export default function HomePage() {
   return (
     <div className="relative overflow-x-clip">
-      <JsonLd data={faqJsonLd(generalFaqs)} />
+      {/* General FAQs are marked up once site-wide, on /faq; this page only shows them. */}
       <ParallaxChips />
 
       {/* ---------- Hero ---------- */}
       <section id="top" className="container-page relative z-[1] flex flex-wrap items-center gap-10 pb-16 pt-10 md:pb-32 md:pt-[88px] lg:gap-[72px]">
         <div className="min-w-0 flex-[1_1_500px]">
-          <p className="eyebrow">Managed home painting · {site.city}</p>
-          <h1 className="mt-7 text-[clamp(48px,5.8vw,80px)] leading-[1.02] tracking-[-0.02em]">
-            Your space, painted beautifully. Managed <em>completely.</em>
+          {/* The eyebrow is part of the h1, so the heading carries the keyword and the city. Its box
+              matches the old eyebrow line (24px) and the tagline keeps its 28px gap below it. */}
+          <h1 className="text-[clamp(48px,5.8vw,80px)] leading-[1.02] tracking-[-0.02em]">
+            <span className="eyebrow flex h-6 items-center pt-[3px] font-sans leading-[1.5]">
+              House painting in {site.city}<span className="sr-only">: </span>
+            </span>
+            <span className="mt-7 block">
+              Your space, painted beautifully. Managed <em>completely.</em>
+            </span>
           </h1>
           <p className="mt-7 max-w-[500px] text-lg leading-[1.65] text-muted">
             Tell us what you need. We inspect, quote line by line, bring genuine branded paint and a supervised crew, and hand back a
@@ -85,11 +94,13 @@ export default function HomePage() {
         </div>
         <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
           <Tilt max={6} className="frame-shadow relative h-[420px] overflow-hidden rounded-3xl md:h-[640px]">
-            <Image src={images.livingMoody.src} alt={`Freshly painted living room with a deep teal sofa in Dayalbagh, ${site.city}`} fill priority sizes="(min-width: 1024px) 560px, 100vw" className="object-cover" />
+            <HeroImage image={images.livingMoody} />
+            {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
+            <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
           <p className="mx-1 mt-4 flex justify-between text-[13px] text-muted-2">
-            <span>Living room, Dayalbagh</span>
-            <span>Interior · 2 coats</span>
+            <span>Example finish</span>
+            <span>Warm white walls</span>
           </p>
         </div>
       </section>
@@ -106,7 +117,7 @@ export default function HomePage() {
       {/* ---------- We diagnose first ---------- */}
       <section aria-label="We diagnose first" className="relative z-[1] mt-16 px-5 md:mt-[120px] md:px-8">
         <div className="relative mx-auto h-[620px] max-w-[1200px] overflow-hidden rounded-[28px] bg-sand md:h-[760px]">
-          <Image src={images.painterWindow.src} alt={`${site.name} inspector checking a wall before painting`} fill sizes="(min-width: 1264px) 1200px, 100vw" className="object-cover object-[70%_center]" />
+          <Image src={images.painterWindow.src} alt={images.painterWindow.alt} fill sizes="(min-width: 1264px) 1200px, 100vw" className="object-cover object-[70%_center]" />
           <div aria-hidden className="absolute inset-0 bg-[linear-gradient(100deg,rgba(248,245,239,0.96)_0%,rgba(248,245,239,0.82)_38%,rgba(248,245,239,0)_68%)]" />
           <div className="relative max-w-[560px] p-6 pt-10 md:p-16 md:pt-[72px]">
             <p className="text-[22px] text-muted">We don&apos;t just paint.</p>
@@ -161,6 +172,10 @@ export default function HomePage() {
           <div>
             <p className="eyebrow">What we paint</p>
             <h2 id="services-heading" className="mt-6 text-[clamp(36px,4vw,56px)] leading-[1.06]">Every wall in the house.</h2>
+            <p className="mt-5 max-w-[460px] text-[17px] leading-[1.65] text-muted">
+              House painting inside and out, and quick repaints of rental homes, each starting with an on-site inspection and an
+              itemised quote.
+            </p>
           </div>
           <Link href="/services" className="link-arrow">All services <Arrow /></Link>
         </div>
@@ -229,22 +244,20 @@ export default function HomePage() {
       <section id="work" className="container-page relative z-[1] pb-24 md:pb-40" aria-labelledby="work-heading">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="eyebrow">Projects</p>
+            <p className="eyebrow">Finishes</p>
             <h2 id="work-heading" className="mt-6 text-[clamp(36px,4vw,56px)] leading-[1.06]">
-              Homes we&apos;ve <em>finished.</em>
+              The finish we <em>work to.</em>
             </h2>
           </div>
-          <p className="max-w-[340px] leading-[1.6] text-muted">Real before-and-afters from {site.city} homes, added as each job is handed over.</p>
+          <p className="max-w-[340px] leading-[1.6] text-muted">Example finishes. Photos of our own {site.city} jobs are added as each one is handed over.</p>
         </div>
         <div className="mt-14 grid grid-cols-2 gap-5 lg:grid-cols-4">
-          {projects.map((p) => (
+          {finishes.map((p) => (
             <figure key={p.kind} className={p.raised ? "lg:mt-10" : ""}>
               <div className="relative h-[220px] overflow-hidden rounded-[18px] md:h-[360px]">
                 <Image src={p.image.src} alt={p.image.alt} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
               </div>
-              <figcaption className="mt-3 flex justify-between gap-2 text-[13px] text-muted-2">
-                <span>{p.kind}</span><span>{p.where}</span>
-              </figcaption>
+              <figcaption className="mt-3 text-[13px] text-muted-2">{p.kind}</figcaption>
             </figure>
           ))}
         </div>
@@ -255,11 +268,11 @@ export default function HomePage() {
         <div className="flex flex-wrap items-start gap-12 border-t border-line pt-14">
           <div className="flex-[1_1_300px]">
             <h2 id="areas-heading" className="text-[34px] leading-[1.1]">Painting homes across {site.city}</h2>
-            <p className="mt-3 max-w-[360px] leading-[1.6] text-muted">Not on the list? Ask. We&apos;ll tell you honestly if we can supervise your job.</p>
+            <p className="mt-3 max-w-[360px] leading-[1.6] text-muted">
+              Need painters in {site.city} outside these localities? Ask. We&apos;ll tell you honestly if we can supervise your job.
+            </p>
           </div>
-          <ul className="grid flex-[2_1_480px] grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-x-6 gap-y-3.5 font-medium">
-            {site.areas.map((a) => <li key={a}>Painters in {a}</li>)}
-          </ul>
+          <AreaLinks areas={site.areas} />
         </div>
       </section>
 

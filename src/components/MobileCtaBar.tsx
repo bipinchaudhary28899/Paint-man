@@ -9,7 +9,8 @@ import { prefersReducedMotion, useScrollFrame } from "@/lib/scroll";
 // over the active tab, half above the bar, in a dip the bar makes for it. On a change the dab
 // hops along the bar in an arc to the new tab and the dip travels with it. On the home page the
 // active tab follows the section in view (passive, rAF-throttled); elsewhere it follows the
-// route. Booking is always one tap.
+// route. Booking is always one tap. Everything that moves does so by transform or mask (see
+// .bnav-* in globals.css), so a tab change never shifts layout.
 type Item = { label: string; hue: string; on: string; home: string; href: string; match: (p: string) => boolean };
 export const items: Item[] = [
   { label: "Home", hue: "#71856a", on: "#f8f5ef", home: "#top", href: "/", match: (p) => p === "/" },
@@ -72,14 +73,18 @@ export function MobileCtaBar() {
     >
       {/* The bar itself, masked with a dip under the dab */}
       <span aria-hidden className="bnav-bar absolute inset-0 rounded-full border border-white/10 bg-ink/95 shadow-[0_24px_48px_-16px_rgba(36,37,34,0.55)] backdrop-blur-xl" />
-      {/* The hairline continues around the dip (the lower half of a ring the size of the cut-out) */}
-      <span aria-hidden className="bnav-dip" />
-      {/* The dab: a disc of the active tab's colour, half above the bar, carrying the icon */}
-      <span aria-hidden className="bnav-dab" data-tab={active.label}>
-        <span key={hops} className={hops ? "bnav-dab-inner bnav-dab-hop" : "bnav-dab-inner"} style={{ background: active.hue, color: active.on }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-            {icons[active.label]}
-          </svg>
+      {/* A zero-height track as wide as the bar, slid by translateX(--nx): it carries the dip's
+          hairline and the dab over the active tab */}
+      <span aria-hidden className="bnav-slot">
+        {/* The hairline continues around the dip (the lower half of a ring the size of the cut-out) */}
+        <span className="bnav-dip" />
+        {/* The dab: a disc of the active tab's colour, half above the bar, carrying the icon */}
+        <span className="bnav-dab" data-tab={active.label}>
+          <span key={hops} className={hops ? "bnav-dab-inner bnav-dab-hop" : "bnav-dab-inner"} style={{ background: active.hue, color: active.on }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              {icons[active.label]}
+            </svg>
+          </span>
         </span>
       </span>
       <div className="relative flex h-full">
@@ -88,12 +93,9 @@ export function MobileCtaBar() {
           const href = onHome ? item.home : item.href;
           const hash = href.startsWith("#");
           const cls = "flex flex-1 items-end justify-center pb-[9px] text-[11px] font-semibold tracking-[0.04em] text-on-ink";
-          // the active tab's label drops under its dab; the others sit in a small hairline box
-          const content = on ? (
-            <span className="bnav-label-on">{item.label}</span>
-          ) : (
-            <span className="bnav-label mb-[11px]">{item.label}</span>
-          );
+          // the active tab's label drops under its dab (by transform); the others sit in a small
+          // hairline box. Both states share one box, so switching tabs moves no layout.
+          const content = <span className={on ? "bnav-label bnav-label-on" : "bnav-label"}>{item.label}</span>;
           // Same-page sections are plain anchors: the dab moves at once and the page glides to the section.
           if (hash) {
             return (

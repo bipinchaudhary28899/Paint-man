@@ -71,6 +71,15 @@ describe("Header and Footer", () => {
     const dab = container.querySelector(".bnav-dab") as HTMLElement;
     expect(dab).toHaveAttribute("data-tab", "Home");
     expect(container.querySelector(".bnav-dab-hop")).toBeNull();
+    // the dab and the dip ride one hidden, transform-only track (no `left`, so no layout shift)
+    const slot = container.querySelector(".bnav-slot") as HTMLElement;
+    expect(slot).toHaveAttribute("aria-hidden", "true");
+    expect(slot.contains(dab)).toBe(true);
+    expect(slot.querySelector(".bnav-dip")).not.toBeNull();
+    // both label states share one box; the active one only adds a modifier
+    expect(home.querySelector("span")).toHaveClass("bnav-label", "bnav-label-on");
+    expect(screen.getByRole("link", { name: "Services" }).querySelector("span")).toHaveClass("bnav-label");
+    expect(screen.getByRole("link", { name: "Services" }).querySelector("span")).not.toHaveClass("bnav-label-on");
     await user.click(screen.getByRole("link", { name: "Colours" }));
     const colours = screen.getByRole("link", { name: "Colours" });
     expect(colours).toHaveAttribute("aria-current", "page");

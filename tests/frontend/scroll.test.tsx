@@ -101,6 +101,7 @@ describe("home effects in a browser with CSS scroll timelines", () => {
     await act(async () => {});
     expect(container.querySelector("[data-js]")).toBeNull();
     expect((container.querySelector(".pin-after") as HTMLElement).style.clipPath).toBe("");
+    expect((container.querySelector(".pin-edge") as HTMLElement).style.transform).toBe("");
     expect((container.querySelector(".wheel") as HTMLElement).style.transform).toBe("");
     expect((container.querySelector(".chip-bg") as HTMLElement).style.transform).toBe("");
   });
@@ -131,6 +132,11 @@ describe("home effects in a browser with CSS scroll timelines", () => {
     // p = 1200 / 1600 = 0.75 → eased 0.875 → clip top 12.5%
     expect((container.querySelector(".pin-after") as HTMLElement).style.clipPath).toBe("inset(12.5% 0 0 0)");
     expect((container.querySelector(".pin-before") as HTMLElement).style.clipPath).toBe("inset(0 0 87.5% 0)");
+    // the wet edge follows the colour line by transform only, never `top` (no layout shift)
+    const edge = container.querySelector(".pin-edge") as HTMLElement;
+    expect(edge.style.transform).toBe("translateY(12.5%)");
+    expect(edge.style.top).toBe("");
+    expect(edge.style.opacity).toBe("1");
     expect(container.querySelector(".pin-pct")?.textContent).toBe("88%");
     expect((container.querySelector(".wheel") as HTMLElement).style.transform).toBe("rotate(90deg)");
     expect((container.querySelector(".chip-bg") as HTMLElement).style.transform).toContain("translateY(-60px)");

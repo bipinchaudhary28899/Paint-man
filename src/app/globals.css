@@ -28,7 +28,8 @@
   --pm-golden: #e9b949;
   --pm-sage: #71856a;
   --pm-sage-deep: #5b6e55;
-  --pm-on-sage: #e4e8df;
+  /* text on sage-deep: canvas cream reaches 5.07:1 on #5b6e55 (WCAG AA for body text) */
+  --pm-on-sage: #f8f5ef;
   --pm-blush: #ebc4be;
   --pm-fern: #4f6b4a;
   --pm-paprika: #b5473a;
@@ -54,7 +55,7 @@
   --pm-terracotta: #c76b4a;
   --pm-terracotta-hover: #d57a58;
   --pm-terracotta-light: #e08a66;
-  --pm-on-sage: #e4e8df;
+  --pm-on-sage: #f8f5ef;
   --pm-fern: #9fb8a8;
   --pm-paprika: #e8866a;
 
@@ -286,7 +287,10 @@ h1 em, h2 em, h3 em, .accent {
 .pin-before, .pin-after { mix-blend-mode: multiply; }
 .pin-before { clip-path: inset(0 0 100% 0); }
 .pin-after { clip-path: inset(0 0 0 0); }
-.pin-edge { top: 0; opacity: 0; }
+/* The wet edge is a 1px line at the top of a full-size, transform-only track: translateY(%) is
+   measured against the track's own height (the image's), so the line travels bottom to top
+   without ever changing layout (animating `top` caused scroll-time layout shifts). */
+.pin-edge { transform: translateY(0); opacity: 0; }
 .pin-bar { width: 100%; }
 .pin-pct::after { counter-reset: fill var(--fill); content: counter(fill) "%"; }
 .pin-stage { opacity: 0.55; transition: opacity 400ms ease; }
@@ -295,7 +299,7 @@ h1 em, h2 em, h3 em, .accent {
 .pin-label-3 { opacity: 1; }
 @keyframes pin-before { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
 @keyframes pin-after { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes pin-edge { from { top: 100%; } to { top: 0%; } }
+@keyframes pin-edge { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes pin-edge-show { 0%, 2% { opacity: 0; } 4%, 96% { opacity: 1; } 98%, 100% { opacity: 0; } }
 @keyframes pin-bar { from { width: 0%; } to { width: 100%; } }
 @keyframes pin-pct { from { --fill: 0; } to { --fill: 100; } }
@@ -353,23 +357,32 @@ h1 em, h2 em, h3 em, .accent {
   /* No fill mode on purpose: if the animation never starts (seen in some embedded viewports), the nav is simply visible. */
   .bnav { animation: rise-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s; }
 }
-/* --nx is the active tab's centre (a percentage of the bar); registering it lets the dip and the dab glide */
+/* --nx is the active tab's centre (a percentage of the bar); registering it lets the dip in the bar glide */
 @property --nx { syntax: "<percentage>"; inherits: true; initial-value: 12.5%; }
 .bnav { --nx: 12.5%; --dab: 56px; --dip: 34px; }
-/* The bar is masked with a disc cut out of its top edge, centred on --nx: that is the dip the dab sits in */
+/* The bar is masked with a disc cut out of its top edge, centred on --nx: that is the dip the dab sits in.
+   A mask change is paint only, never a layout shift. */
 .bnav-bar {
   -webkit-mask: radial-gradient(circle var(--dip) at var(--nx) 0, transparent calc(100% - 1px), #000 100%);
   mask: radial-gradient(circle var(--dip) at var(--nx) 0, transparent calc(100% - 1px), #000 100%);
   transition: --nx 0.45s linear;
 }
+/* The dab and the dip's hairline ride on a zero-height track as wide as the bar, moved only by
+   transform: translateX(%) is a share of the track's own width, i.e. of the bar, so translateX(--nx)
+   puts them over the active tab's centre exactly as left: --nx did, without shifting layout.
+   z-index keeps the dab above the tab labels. */
+.bnav-slot {
+  position: absolute; inset-inline: 0; top: 0; height: 0; pointer-events: none; z-index: 1;
+  transform: translateX(var(--nx)); transition: transform 0.45s linear;
+}
 .bnav-dab {
-  position: absolute; top: 0; left: var(--nx); width: var(--dab); height: var(--dab); margin-left: calc(var(--dab) / -2);
-  transform: translateY(-50%); pointer-events: none; z-index: 1; transition: --nx 0.45s linear;
+  position: absolute; top: 0; left: 0; width: var(--dab); height: var(--dab); margin-left: calc(var(--dab) / -2);
+  transform: translateY(-50%); pointer-events: none;
 }
 .bnav-dip {
-  position: absolute; top: 0; left: var(--nx); width: calc(var(--dip) * 2); height: calc(var(--dip) * 2); margin-left: calc(var(--dip) * -1);
+  position: absolute; top: 0; left: 0; width: calc(var(--dip) * 2); height: calc(var(--dip) * 2); margin-left: calc(var(--dip) * -1);
   transform: translateY(-50%); border-radius: 50%; border: 1px solid rgba(248, 245, 239, 0.12); clip-path: inset(50% 0 0 0);
-  pointer-events: none; transition: --nx 0.45s linear;
+  pointer-events: none;
 }
 .bnav-dab-inner {
   display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%;
@@ -383,11 +396,13 @@ h1 em, h2 em, h3 em, .accent {
   85% { transform: translateY(3px) scale(1.08, 0.9); }
   100% { transform: translateY(0) scale(1); }
 }
-/* charcoal bar: cream labels in a faint cream outline; the active label sits under its dab */
-.bnav-label { padding: 5px 10px; border: 1px solid rgba(248, 245, 239, 0.22); border-radius: 999px; line-height: 1; color: rgba(248, 245, 239, 0.92); }
-.bnav-label-on { line-height: 1; color: rgba(248, 245, 239, 0.7); }
+/* charcoal bar: cream labels in a faint cream outline; the active label sits under its dab.
+   Both states keep the same box (padding, border, 11px bottom margin) so a tab change never moves
+   layout: the active label drops 17px to its place under the dab by transform and hides its outline. */
+.bnav-label { margin-bottom: 11px; padding: 5px 10px; border: 1px solid rgba(248, 245, 239, 0.22); border-radius: 999px; line-height: 1; color: rgba(248, 245, 239, 0.92); }
+.bnav-label-on { border-color: transparent; color: rgba(248, 245, 239, 0.7); transform: translateY(17px); }
 @media (prefers-reduced-motion: reduce) {
-  .bnav-bar, .bnav-dab, .bnav-dip { transition: none; }
+  .bnav-bar, .bnav-slot { transition: none; }
   .bnav-dab-hop { animation: none; }
 }
 
