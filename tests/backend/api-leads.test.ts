@@ -3,7 +3,10 @@ import { postJson } from "../support/request";
 
 const saveLead = vi.fn();
 const warmLeadStorage = vi.fn();
-vi.mock("@/lib/leads/store", () => ({ saveLead, warmLeadStorage }));
+const ensureSheetHeader = vi.fn(() => Promise.resolve());
+vi.mock("@/lib/leads/store", () => ({ saveLead, warmLeadStorage, ensureSheetHeader }));
+// `after` needs a request scope; run the callback straight away in tests
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after: (fn: () => unknown) => { void fn(); } }));
 
 const URL_ = "http://localhost:3000/api/leads";
 const valid = {
@@ -13,6 +16,8 @@ const valid = {
   locality: "Kamla Nagar",
   propertyType: "Apartment / Flat",
   service: "Interior Painting",
+  floors: "2",
+  homeSize: "3 BHK",
 };
 
 async function loadRoute() {
@@ -40,6 +45,7 @@ describe("POST /api/leads", () => {
     const { POST } = await loadRoute();
     const res = await POST(postJson(URL_, { body: valid }));
     expect(warmLeadStorage).toHaveBeenCalled();
+    expect(ensureSheetHeader).toHaveBeenCalled(); // header kept current after the response
     expect(res.headers.get("server-timing")).toMatch(/^ratelimit;dur=[\d.]+, total;dur=[\d.]+$/);
     const logged = info.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(logged).toMatch(/Lead saved in .*"ratelimit"/);

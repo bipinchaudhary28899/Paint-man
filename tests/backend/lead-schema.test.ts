@@ -8,12 +8,34 @@ const booking = {
   locality: "Kamla Nagar",
   propertyType: "Apartment / Flat",
   service: "Interior Painting",
+  floors: "1",
+  homeSize: "2 BHK",
 };
 
 const errorFields = (input: unknown) => {
   const r = leadSchema.safeParse(input);
   return r.success ? [] : r.error.issues.map((i) => String(i.path[0]));
 };
+
+describe("lead schema: job size", () => {
+  it("requires floors and home size on a booking", () => {
+    const { floors: _f, homeSize: _h, ...rest } = booking;
+    expect(errorFields(rest)).toEqual(expect.arrayContaining(["floors", "homeSize"]));
+    expect(errorFields({ ...booking, floors: "9" })).toEqual(["floors"]);
+  });
+
+  it("takes an optional carpet area, with commas or spaces, in range", () => {
+    const parse = (carpetArea: unknown) => leadSchema.parse({ ...booking, carpetArea });
+    expect((parse("1,200") as { carpetArea?: number }).carpetArea).toBe(1200);
+    expect((parse(" 850 ") as { carpetArea?: number }).carpetArea).toBe(850);
+    expect((parse("") as { carpetArea?: number }).carpetArea).toBeUndefined();
+    expect((parse(undefined) as { carpetArea?: number }).carpetArea).toBeUndefined();
+    expect(errorFields({ ...booking, carpetArea: "50" })).toEqual(["carpetArea"]);
+    expect(errorFields({ ...booking, carpetArea: "25000" })).toEqual(["carpetArea"]);
+    expect(errorFields({ ...booking, carpetArea: "12.5" })).toEqual(["carpetArea"]);
+    expect(errorFields({ ...booking, carpetArea: "lots" })).toEqual(["carpetArea"]);
+  });
+});
 
 describe("lead schema: bookings", () => {
   it("accepts a valid booking", () => {

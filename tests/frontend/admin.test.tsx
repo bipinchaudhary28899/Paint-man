@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { filterLeads, LeadsTable } from "@/components/admin/LeadsTable";
+import { crew, filterLeads, jobSize, LeadsTable } from "@/components/admin/LeadsTable";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { LEAD_COLUMNS, type LeadRecord } from "@/lib/leads/store";
@@ -145,5 +145,28 @@ describe("LeadsTable", () => {
     expect(filterLeads(leads, "98765", "all").map((l) => l.Name)).toEqual(["Asha Verma"]);
     expect(filterLeads(leads, "shop", "all").map((l) => l.Name)).toEqual(["Ravi"]);
     expect(filterLeads(leads, "", "booking")).toHaveLength(2);
+  });
+});
+
+
+describe("job size in the leads table", () => {
+  it("summarises the job and suggests a crew from the estimated area", () => {
+    const big = lead({ Type: "booking", Floors: "2", "Home Size": "3 BHK", "Carpet Area per Floor (sq ft)": "1200", "Est. Paint Area (sq ft)": "8400" });
+    expect(jobSize(big)).toBe("2 floors · 3 BHK · 1,200 sq ft/floor");
+    expect(crew(big)).toBe("≈ 8,400 sq ft · 84 painter-days (8 × 11 days)");
+    const noArea = lead({ Type: "booking", Floors: "1", "Home Size": "2 BHK" });
+    expect(jobSize(noArea)).toBe("1 floor · 2 BHK");
+    expect(crew(noArea)).toBe("Measure on site");
+    const message = lead({ Type: "contact" });
+    expect(jobSize(message)).toBe("");
+    expect(crew(message)).toBe("");
+  });
+
+  it("shows the job-size columns in the table", () => {
+    render(<LeadsTable leads={[lead({ "Lead ID": "L9", Name: "Kiran", Type: "booking", Floors: "2", "Home Size": "3 BHK", "Est. Paint Area (sq ft)": "8400" })]} />);
+    expect(screen.getByRole("columnheader", { name: "Job size" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Est. area & crew" })).toBeInTheDocument();
+    expect(screen.getByText("2 floors · 3 BHK")).toBeInTheDocument();
+    expect(screen.getByText(/84 painter-days/)).toBeInTheDocument();
   });
 });

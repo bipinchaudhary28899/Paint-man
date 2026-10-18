@@ -1,6 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { leadSchema } from "@/lib/leads/schema";
-import { saveLead, warmLeadStorage } from "@/lib/leads/store";
+import { ensureSheetHeader, saveLead, warmLeadStorage } from "@/lib/leads/store";
 import { bodyTooLarge, clientIp, isSameOrigin, noStore } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { createTimer } from "@/lib/timing";
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
     await saveLead(parsed.data, timer);
     // Step durations only (no lead data): shows in the Vercel logs and the browser's network panel.
     console.info("Lead saved in", JSON.stringify(timer.summary()));
+    // After the response: keep the sheet's header row current (adds new columns once).
+    after(() => ensureSheetHeader().catch((e) => console.error("Sheet header check failed:", e instanceof Error ? e.message.slice(0, 120) : "unknown")));
     return NextResponse.json({ ok: true }, { headers: { ...noStore, "Server-Timing": timer.header() } });
   } catch (err) {
     // Log the error type only: never the submitted personal details.

@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { propertyTypes, serviceTypes } from "./options";
+import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "./options";
 
-export { propertyTypes, serviceTypes };
+export { floorOptions, homeSizes, propertyTypes, serviceTypes };
 
 const indianMobile = z
   .string()
@@ -45,6 +45,18 @@ export const bookingSchema = z.object({
     .optional()
     .or(z.literal("")),
   message: trimmed(1000).optional(),
+  // job size, so a crew can be planned before the visit
+  floors: z.enum(floorOptions, { message: "Choose how many floors" }),
+  homeSize: z.enum(homeSizes, { message: "Choose the size of the home" }),
+  carpetArea: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? Number(v.replace(/[,\s]/g, "")) : v),
+    z
+      .number({ message: `Enter the carpet area in sq ft (${CARPET_AREA_MIN}–${CARPET_AREA_MAX.toLocaleString("en-IN")}), or leave it blank` })
+      .int(`Enter a whole number of sq ft`)
+      .min(CARPET_AREA_MIN, `Enter the carpet area in sq ft (${CARPET_AREA_MIN}–${CARPET_AREA_MAX.toLocaleString("en-IN")}), or leave it blank`)
+      .max(CARPET_AREA_MAX, `Enter the carpet area in sq ft (${CARPET_AREA_MIN}–${CARPET_AREA_MAX.toLocaleString("en-IN")}), or leave it blank`)
+      .optional(),
+  ),
 });
 
 export const contactSchema = z.object({

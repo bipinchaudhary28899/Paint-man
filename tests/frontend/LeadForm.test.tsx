@@ -18,6 +18,8 @@ async function fillBooking() {
   await user.type(screen.getByLabelText(/Locality in/), "Kamla Nagar");
   await user.selectOptions(screen.getByLabelText("Property type"), "Apartment / Flat");
   await user.selectOptions(screen.getByLabelText("Service needed"), "Interior Painting");
+  await user.selectOptions(screen.getByLabelText("Floors to paint"), "2");
+  await user.selectOptions(screen.getByLabelText("Home size"), "3 BHK");
   return user;
 }
 
@@ -129,5 +131,34 @@ describe("LeadForm (contact)", () => {
     await user.type(screen.getByLabelText(/How can we help/), "Need a quote");
     await user.click(screen.getByRole("button", { name: "Send message" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/thank-you?type=contact"));
+  });
+});
+
+
+describe("job size fields", () => {
+  it("asks for floors and home size, and shows a live paint-area estimate from the carpet area", async () => {
+    render(<LeadForm type="booking" />);
+    const user = await fillBooking();
+    expect(screen.getByRole("group", { name: "Size of the job" })).toBeInTheDocument();
+    expect(screen.getByText(/sale deed or society papers/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Carpet area per floor/), "1,200");
+    expect(screen.getByText(/of walls and ceilings to paint/)).toHaveTextContent("About 8,400 sq ft");
+    await user.selectOptions(screen.getByLabelText("Service needed"), "Exterior Painting");
+    expect(screen.getByText("Exterior walls are measured on site.")).toBeInTheDocument();
+  });
+
+  it("sends the job size with the booking", async () => {
+    const fetchSpy = mockFetch(200, { ok: true });
+    render(<LeadForm type="booking" />);
+    const user = await fillBooking();
+    await user.type(screen.getByLabelText(/Carpet area per floor/), "950");
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(JSON.parse(String(fetchSpy.mock.calls[0][1]?.body))).toMatchObject({ floors: "2", homeSize: "3 BHK", carpetArea: "950" });
+  });
+
+  it("has no job-size fields on the contact form", () => {
+    render(<LeadForm type="contact" />);
+    expect(screen.queryByLabelText("Floors to paint")).toBeNull();
   });
 });

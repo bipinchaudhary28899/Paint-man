@@ -1,9 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { crewEstimate, formatSqft } from "@/lib/leads/estimate";
 import type { LeadRecord } from "@/lib/leads/store";
 
 type Filter = "all" | "booking" | "contact";
+
+/** "2 floors · 3 BHK · 1,200 sq ft/floor" from the job-size columns (blank for messages). */
+export function jobSize(l: LeadRecord): string {
+  const floors = l.Floors ? (l.Floors === "1" ? "1 floor" : `${l.Floors} floors`) : "";
+  const carpet = Number(l["Carpet Area per Floor (sq ft)"]) ? `${Number(l["Carpet Area per Floor (sq ft)"]).toLocaleString("en-IN")} sq ft/floor` : "";
+  return [floors, l["Home Size"], carpet].filter(Boolean).join(" · ");
+}
+
+/** "≈ 8,400 sq ft · 84 painter-days (8 × 11 days)" from the estimated paint area. */
+export function crew(l: LeadRecord): string {
+  const area = Number(l["Est. Paint Area (sq ft)"]);
+  if (!area) return l.Type === "booking" && l.Floors ? "Measure on site" : "";
+  const c = crewEstimate(area);
+  return `≈ ${formatSqft(area)} · ${c.painterDays} painter-days (${c.painters} × ${c.days} days)`;
+}
 
 export function filterLeads(leads: LeadRecord[], query: string, type: Filter): LeadRecord[] {
   const q = query.trim().toLowerCase();
@@ -65,7 +81,7 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-ink text-on-ink">
               <tr>
-                {["Received", "Name", "Phone", "Type", "Locality", "Property", "Service", "Preferred date", "Message", "Source", "Status"].map((h) => (
+                {["Received", "Name", "Phone", "Type", "Locality", "Property", "Service", "Job size", "Est. area & crew", "Preferred date", "Message", "Source", "Status"].map((h) => (
                   <th key={h} scope="col" className="px-4 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
@@ -82,6 +98,8 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
                   <td className="px-4 py-3">{l.Locality}</td>
                   <td className="px-4 py-3">{l["Property Type"]}</td>
                   <td className="px-4 py-3">{l.Service}</td>
+                  <td className="whitespace-nowrap px-4 py-3">{jobSize(l)}</td>
+                  <td className="whitespace-nowrap px-4 py-3">{crew(l)}</td>
                   <td className="whitespace-nowrap px-4 py-3">{l["Preferred Inspection Date"]}</td>
                   <td className="max-w-xs px-4 py-3 text-muted">{l.Message}</td>
                   <td className="px-4 py-3 text-muted">{[l["UTM Source"], l["UTM Campaign"]].filter(Boolean).join(" / ") || "Direct"}</td>

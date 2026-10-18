@@ -3,6 +3,7 @@ import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { JWT } from "google-auth-library";
 import type { Timer } from "@/lib/timing";
+import { estimatePaintArea } from "./estimate";
 import type { LeadInput } from "./schema";
 
 export const LEAD_COLUMNS = [
@@ -23,7 +24,20 @@ export const LEAD_COLUMNS = [
   "Landing Page",
   "Referrer",
   "Status",
+  // job size (added later, so kept at the end: existing rows stay aligned)
+  "Floors",
+  "Home Size",
+  "Carpet Area per Floor (sq ft)",
+  "Est. Paint Area (sq ft)",
 ] as const;
+
+/** Sheet column letter for a 1-based index (1 → A, 27 → AA). */
+export function columnLetter(n: number): string {
+  let s = "";
+  for (let i = n; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s;
+  return s;
+}
+const LAST_COLUMN = columnLetter(LEAD_COLUMNS.length);
 
 export function toRow(lead: LeadInput, id: string, submittedAt: Date): string[] {
   const t = lead.tracking ?? {};
@@ -46,6 +60,10 @@ export function toRow(lead: LeadInput, id: string, submittedAt: Date): string[] 
     t.landingPage ?? "",
     t.referrer ?? "",
     "New",
+    isBooking ? lead.floors : "",
+    isBooking ? lead.homeSize : "",
+    isBooking && lead.carpetArea ? String(lead.carpetArea) : "",
+    isBooking ? String(estimatePaintArea(lead.carpetArea, lead.floors, lead.service) ?? "") : "",
   ];
 }
 
@@ -146,6 +164,26 @@ async function appendToSheet(row: string[], cfg: NonNullable<ReturnType<typeof s
   }
 }
 
+let headerOk = false;
+
+/**
+ * Makes row 1 of the sheet the current header (once per server instance). Run after the
+ * response is sent, so it never slows a submission; it adds new columns to a sheet created
+ * before they existed. Never touches any other row.
+ */
+export async function ensureSheetHeader() {
+  const cfg = sheetsConfig();
+  if (!cfg || headerOk) return;
+  const base = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values`;
+  const tab = encodeURIComponent(cfg.tab);
+  const json = await sheetsRequest(`${base}/${tab}!A1:${LAST_COLUMN}1`, { method: "GET" }, cfg);
+  const current: string[] = json.values?.[0] ?? [];
+  if (LEAD_COLUMNS.some((c, i) => current[i] !== c)) {
+    await sheetsRequest(`${base}/${tab}!A1:${LAST_COLUMN}1?valueInputOption=RAW`, { method: "PUT", body: JSON.stringify({ values: [LEAD_COLUMNS] }) }, cfg);
+  }
+  headerOk = true;
+}
+
 // ---------- Local CSV (development fallback) ----------
 
 const csvPath = path.join(process.cwd(), "data", "leads.csv");
@@ -214,7 +252,7 @@ export async function readLeads(): Promise<LeadRecord[]> {
   if (cfg) {
     const tab = encodeURIComponent(cfg.tab);
     const json = await sheetsRequest(
-      `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values/${tab}!A1:Q5000`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values/${tab}!A1:${LAST_COLUMN}5000`,
       { method: "GET" },
       cfg,
     );

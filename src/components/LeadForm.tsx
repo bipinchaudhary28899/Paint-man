@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { site } from "@/config/site";
-import { propertyTypes, serviceTypes } from "@/lib/leads/options";
+import { estimatePaintArea, formatSqft } from "@/lib/leads/estimate";
+import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
 import { readTracking } from "./UtmCapture";
 
 type Props = { type: "booking" | "contact"; defaultService?: (typeof serviceTypes)[number]; defaultMessage?: string };
@@ -42,6 +43,17 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
+  // live rough size of the job, recomputed as floors, service or carpet area change
+  const [job, setJob] = useState<{ area: number | null; exterior: boolean; hasCarpet: boolean }>({ area: null, exterior: false, hasCarpet: false });
+  function onJobChange(e: React.FormEvent<HTMLFormElement>) {
+    if (type !== "booking") return;
+    const f = e.currentTarget;
+    const get = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | HTMLSelectElement | null)?.value ?? "";
+    const carpet = Number(get("carpetArea").replace(/[,\s]/g, ""));
+    const service = get("service");
+    const ok = Number.isInteger(carpet) && carpet >= CARPET_AREA_MIN && carpet <= CARPET_AREA_MAX;
+    setJob({ area: ok ? estimatePaintArea(carpet, get("floors") || "1", service) : null, exterior: service === "Exterior Painting", hasCarpet: ok });
+  }
   // The thank-you page is static: load it while the visitor fills the form, so it appears
   // the instant the lead is saved.
   useEffect(() => {
@@ -80,7 +92,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
     errors[name] ? { "aria-invalid": true as const, "aria-describedby": `${name}-error` } : {};
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form onSubmit={onSubmit} onChange={onJobChange} noValidate className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
         <Field id="name" label="Your name" error={errors.name}>
           <input id="name" name="name" autoComplete="name" required maxLength={80} className="field" {...aria("name")} />
@@ -143,6 +155,52 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
               <input id="preferredDate" name="preferredDate" type="date" min={today} className="field" {...aria("preferredDate")} />
             </Field>
           </div>
+
+          {/* Size of the job: lets the team plan a crew before the visit */}
+          <fieldset className="rounded-2xl border border-line bg-cream-wash/60 p-4 sm:p-5">
+            <legend className="px-1 text-sm font-bold">Size of the job</legend>
+            <p className="-mt-1 mb-4 text-xs text-muted">Helps us plan the right crew. The inspector measures exactly on site.</p>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field id="floors" label="Floors to paint" error={errors.floors}>
+                <select id="floors" name="floors" required defaultValue="" className="field" {...aria("floors")}>
+                  <option value="" disabled>Select</option>
+                  {floorOptions.map((f) => (
+                    <option key={f} value={f}>{f === "1" ? "1 floor" : `${f} floors`}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field id="homeSize" label="Home size" error={errors.homeSize}>
+                <select id="homeSize" name="homeSize" required defaultValue="" className="field" {...aria("homeSize")}>
+                  <option value="" disabled>Select</option>
+                  {homeSizes.map((h) => (
+                    <option key={h}>{h}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <div className="mt-5">
+              <Field id="carpetArea" label="Carpet area per floor (sq ft)" optional error={errors.carpetArea}>
+                <input
+                  id="carpetArea"
+                  name="carpetArea"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9, ]*"
+                  maxLength={7}
+                  placeholder="e.g. 1200"
+                  className="field"
+                  {...aria("carpetArea")}
+                />
+              </Field>
+              <p className="mt-1.5 text-xs text-muted" aria-live="polite">
+                {job.area !== null
+                  ? <>About <strong className="text-ink">{formatSqft(job.area)}</strong> of walls and ceilings to paint, all floors together.</>
+                  : job.hasCarpet && job.exterior
+                    ? "Exterior walls are measured on site."
+                    : "It's on your sale deed or society papers. Not sure? Leave it blank."}
+              </p>
+            </div>
+          </fieldset>
         </>
       )}
 
