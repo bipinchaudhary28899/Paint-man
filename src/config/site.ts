@@ -107,7 +107,8 @@ export type Service = {
  * reads "about a week"; only a job the crew rule cannot fit into about a week gets its own number.
  */
 export function jobDuration(days: number): string {
-  return days >= 5 && days <= 8 ? "about a week" : `about ${days} working days`;
+  if (days >= 5 && days <= 8) return "about a week";
+  return days === 1 ? "about 1 working day" : `about ${days} working days`;
 }
 
 /**
@@ -206,7 +207,7 @@ export const services: Service[] = [
       { title: "Extras", body: "Doors, window frames and grilles, if you want them painted, are listed as separate line items so you can include or leave them out." },
     ],
     timeline: [
-      `As a rule of thumb, the walls and ceilings inside a home add up to about 3 to 3.5 times its carpet area, and ${rule}. The crew is sized to the home, so a full repaint of one floor takes about a week: a bigger home gets more painters rather than more days, as the examples below show.`,
+      `As a rule of thumb, the walls and ceilings inside a home add up to about 3 to 3.5 times its carpet area, and ${rule}. The crew is sized to the home, so a full repaint of one floor in most homes takes about a week: a bigger home gets more painters (up to eight) rather than more days, as the examples below show.`,
       "Walls in good condition need less putty and go faster; heavy crack repair, damp patches or deep shades add time. Your quotation states the expected duration before you approve it, and you can usually keep living at home while rooms are done in turn.",
     ],
     sizeExamples: [

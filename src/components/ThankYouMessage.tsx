@@ -1,12 +1,13 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { site } from "@/config/site";
+import { useUrlQuery } from "./useUrlQuery";
 
 // The heading and line that depend on which form was sent (?type=booking|contact). Read in the
-// browser so the thank-you page itself can be static and served instantly from the CDN.
+// browser so the thank-you page itself can be static and served instantly from the CDN; the
+// server HTML shows the booking wording and hydrates in place (no client-render bailout).
 export function ThankYouMessage() {
-  const booking = useSearchParams().get("type") !== "contact";
+  const booking = useUrlQuery().get("type") !== "contact";
   return (
     <>
       <h1 className="mt-6 text-3xl font-normal text-brand-900">

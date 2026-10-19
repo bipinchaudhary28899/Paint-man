@@ -281,12 +281,13 @@ describe("UtmCapture", () => {
 describe("ThankYouMessage", () => {
   it("shows the booking wording by default and the message wording for contact", async () => {
     const { ThankYouMessage } = await import("@/components/ThankYouMessage");
-    searchParamsMock.mockReturnValue(new URLSearchParams("type=booking"));
+    window.history.replaceState(null, "", "/thank-you?type=booking");
     const { unmount } = render(<ThankYouMessage />);
     expect(screen.getByRole("heading", { name: "Your inspection request is in" })).toBeInTheDocument();
     unmount();
-    searchParamsMock.mockReturnValue(new URLSearchParams("type=contact"));
+    window.history.replaceState(null, "", "/thank-you?type=contact");
     render(<ThankYouMessage />);
     expect(screen.getByRole("heading", { name: "Thanks for your message" })).toBeInTheDocument();
+    window.history.replaceState(null, "", "/");
   });
 });

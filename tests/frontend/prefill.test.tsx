@@ -9,6 +9,9 @@ import { brandShadeUrl, parseShadeId, pickShade, useBrandShade, type BrandShadeS
 import { VisualizerFromParams, visualizerModel } from "@/components/visualizer/VisualizerFromParams";
 import { services } from "@/config/site";
 
+/** The map /book builds on the server from the service data. */
+const serviceBySlug = Object.fromEntries(services.map((s) => [s.slug, s.leadService]));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }),
 }));
@@ -98,7 +101,7 @@ describe("BookPrefill", () => {
   it("renders the plain booking form when the link carries no choice", () => {
     const fetchSpy = api([]);
     open("/book");
-    render(<BookPrefill />);
+    render(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(message().value).toBe("");
     expect(service().value).toBe("");
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -107,13 +110,13 @@ describe("BookPrefill", () => {
   it("pre-selects each service from its service page link and ignores unknown slugs", () => {
     for (const s of services) {
       open(`/book?service=${s.slug}`);
-      const { unmount } = render(<BookPrefill />);
+      const { unmount } = render(<BookPrefill serviceBySlug={serviceBySlug} />);
       expect(service().value).toBe(s.leadService);
       unmount();
     }
     for (const unknown of ["constructor", "painting", ""]) {
       open(`/book?service=${unknown}`);
-      const { unmount } = render(<BookPrefill />);
+      const { unmount } = render(<BookPrefill serviceBySlug={serviceBySlug} />);
       expect(service().value).toBe("");
       unmount();
     }
@@ -122,7 +125,7 @@ describe("BookPrefill", () => {
   it("asks for a palette's shade cards, and a palette wins over a brand shade", () => {
     const fetchSpy = api([mecca]);
     open("/book?palette=calm-bedroom&shade=asian-paints:7982&service=interior-painting");
-    render(<BookPrefill />);
+    render(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(message().value).toBe('Interested in the "Calm bedroom" palette (PM-502, PM-101, PM-204). Please bring the shade cards.');
     expect(service().value).toBe("Interior Painting");
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -131,7 +134,7 @@ describe("BookPrefill", () => {
   it("names a Paint Man shade from its code without any network call", () => {
     const fetchSpy = api([mecca]);
     open("/book?colour=502");
-    render(<BookPrefill />);
+    render(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(message().value).toBe("Interested in the shade Sage Mist (PM-502). Please bring the shade card.");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -139,7 +142,7 @@ describe("BookPrefill", () => {
   it("looks a brand shade up through the catalogue API and then fills the message", async () => {
     const fetchSpy = api([mecca]);
     open("/book?shade=asian-paints:7982");
-    render(<BookPrefill />);
+    render(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(message().value).toBe("");
     await waitFor(() => expect(message().value).toBe("Interested in Asian Paints 7982 Mecca Gold (#E7975B). Please bring the shade card."));
     expect(String(fetchSpy.mock.calls[0][0])).toBe("/api/v1/colours/paint?q=7982&brand=asian-paints&perPage=5");
@@ -148,21 +151,21 @@ describe("BookPrefill", () => {
   it("keeps the plain form when the shade is unknown, the API refuses or the network fails", async () => {
     open("/book?shade=nowhere");
     const fetchSpy = api([mecca]);
-    const { unmount } = render(<BookPrefill />);
+    const { unmount } = render(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(fetchSpy).not.toHaveBeenCalled();
     unmount();
 
     // an unknown brand: the API answers 400
     fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ apiVersion: "v1", kind: "error" }), { status: 400 }));
     open("/book?shade=made-up-brand:1");
-    const second = render(<BookPrefill />);
+    const second = render(<BookPrefill serviceBySlug={serviceBySlug} />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
     expect(message().value).toBe("");
     second.unmount();
 
     fetchSpy.mockRejectedValueOnce(new TypeError("offline"));
     open("/book?shade=asian-paints:7982");
-    render(<BookPrefill />);
+    render(<BookPrefill serviceBySlug={serviceBySlug} />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
     expect(message().value).toBe("");
   });
@@ -173,7 +176,7 @@ describe("BookPrefill", () => {
 
   it("follows back and forward to another choice", () => {
     open("/book?service=exterior-painting");
-    render(<BookPrefill />);
+    render(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(service().value).toBe("Exterior Painting");
     act(() => {
       window.history.pushState(null, "", "/book?service=rental-property-painting");
@@ -186,7 +189,7 @@ describe("BookPrefill", () => {
 describe("BookPrefill on the static /book page", () => {
   it("hydrates the prerendered form in place when the link has no choice: no remount, so typing before hydration is kept", async () => {
     open("/book?utm_source=google");
-    const page = await prerenderAndHydrate(<BookPrefill />);
+    const page = await prerenderAndHydrate(<BookPrefill serviceBySlug={serviceBySlug} />);
     expect(page.problems).toEqual([]);
     expect(page.before.form).not.toBeNull();
     expect(page.container.querySelector("form")).toBe(page.before.form);
@@ -196,7 +199,7 @@ describe("BookPrefill on the static /book page", () => {
 
   it("prerenders the plain form, then remounts it once with the choice from the link", async () => {
     open("/book?service=exterior-painting&colour=PM-502");
-    const page = await prerenderAndHydrate(<BookPrefill />);
+    const page = await prerenderAndHydrate(<BookPrefill serviceBySlug={serviceBySlug} />);
     // the static HTML never depends on the query
     expect(page.serverHtml).not.toContain("Sage Mist");
     expect(page.serverHtml).not.toMatch(/<option selected=""[^>]*>Exterior Painting/);

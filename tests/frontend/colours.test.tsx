@@ -46,6 +46,9 @@ const onDocumentClick = (e: MouseEvent) => {
   e.preventDefault();
 };
 
+/** Waits for steps that fetch several pages; the default 1 s is tight while the whole suite runs. */
+const SLOW = { timeout: 5000 };
+
 describe("ColourFinder", () => {
   beforeEach(() => {
     followed = 0;
@@ -295,26 +298,26 @@ describe("ColourFinder: brand shades", () => {
     const fetchSpy = servePages();
     const user = userEvent.setup();
     render(<ColourFinder {...props} initialCatalogue="brands" initialBrand="asian-paints" />);
-    await waitFor(() => expect(screen.getByText(/100 shades/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/100 shades/)).toBeInTheDocument(), SLOW);
     await act(async () => { observe?.([{ isIntersecting: true }]); });
-    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("listitem")).toHaveLength(96));
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("listitem")).toHaveLength(96), SLOW);
     // the last page through the button
     await user.click(screen.getByRole("button", { name: /Show more \(4 left\)/ }));
-    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("listitem")).toHaveLength(100));
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getAllByRole("listitem")).toHaveLength(100), SLOW);
     expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
     const calls = fetchSpy.mock.calls.length;
 
     // a colour family, then back to all colours: the first page comes from memory
     await user.click(screen.getByRole("button", { name: "Blue" }));
-    await waitFor(() => expect(fetchSpy.mock.calls.length).toBe(calls + 1));
+    await waitFor(() => expect(fetchSpy.mock.calls.length).toBe(calls + 1), SLOW);
     expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain("family=blue");
     await user.click(screen.getByRole("button", { name: "All colours" }));
-    await waitFor(() => expect(screen.getByText(/100 shades\. Tap/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/100 shades\. Tap/)).toBeInTheDocument(), SLOW);
     expect(fetchSpy.mock.calls.length).toBe(calls + 1);
 
     // a different order is its own request (and its own cache entry)
     await user.selectOptions(screen.getByLabelText("Sort"), "code");
-    await waitFor(() => expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain("sort=code"));
+    await waitFor(() => expect(String(fetchSpy.mock.calls.at(-1)![0])).toContain("sort=code"), SLOW);
 
     // back to the brands
     await user.click(screen.getByRole("button", { name: "← All brands" }));

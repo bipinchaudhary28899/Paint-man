@@ -7,6 +7,17 @@ import { images } from "@/config/images";
 import { getPalette } from "@/config/palettes";
 import { generalFaqs, getService, jobSize, services, site } from "@/config/site";
 
+// The shared next/image mock drops `preload` before it reaches the <img>, so record the props
+// PageHero actually passes: the hero (LCP) photo must ask Next to load it first.
+const imageProps = vi.hoisted(() => vi.fn());
+vi.mock("next/image", () => ({
+  default: ({ src, alt, fill: _fill, priority: _priority, preload: _preload, sizes: _sizes, ...rest }: Record<string, unknown>) => {
+    imageProps({ src, alt, priority: _priority, preload: _preload, sizes: _sizes, ...rest });
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={String(src)} alt={String(alt ?? "")} {...rest} />;
+  },
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/services",
   useSearchParams: () => new URLSearchParams(),
@@ -139,9 +150,12 @@ describe("PageHero image", () => {
     render(<PageHero title="Services" crumbs={[{ name: "Services", path: "/services" }]} image={images.livingTeal} />);
     const img = screen.getByAltText(images.livingTeal.alt);
     expect(img).toHaveAttribute("fetchpriority", "high");
-    // the LCP photo is never lazy-loaded, and next/image's own `preload` flag never reaches the <img>
-    expect(img).not.toHaveAttribute("loading", "lazy");
-    expect(img).not.toHaveAttribute("preload");
+    const props = imageProps.mock.calls.map(([p]) => p).find((p) => p.alt === images.livingTeal.alt);
+    // preloaded (Next 16's replacement for `priority`) or explicitly eager: never lazy
+    expect(props.preload === true || props.loading === "eager").toBe(true);
+    expect(props.loading).not.toBe("lazy");
+    expect(props.priority).toBeUndefined();
+    expect(props.sizes).toEqual(expect.any(String));
   });
 });
 

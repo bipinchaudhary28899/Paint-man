@@ -1,5 +1,5 @@
 import { act, render, renderHook, screen } from "@testing-library/react";
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, useInsertionEffect } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -58,16 +58,56 @@ describe("useUrlQuery", () => {
     expect(shown()).toBe("palette=calm-bedroom");
   });
 
-  it("follows same-page navigations where the browser reports them (Navigation API)", () => {
+  it("follows same-page navigations where the browser reports them (Navigation API)", async () => {
     const navigation = new EventTarget();
     Object.defineProperty(window, "navigation", { value: navigation, configurable: true });
     go("/book?service=interior-painting");
     render(<Probe />);
-    act(() => {
+    await act(async () => {
       go("/book");
       navigation.dispatchEvent(new Event("currententrychange"));
     });
     expect(shown()).toBe("");
+  });
+
+  it("ignores navigations to another page, which is about to replace this one", async () => {
+    const navigation = new EventTarget();
+    Object.defineProperty(window, "navigation", { value: navigation, configurable: true });
+    go("/book?service=interior-painting");
+    render(<Probe />);
+    await act(async () => {
+      go("/thank-you?type=booking");
+      navigation.dispatchEvent(new Event("currententrychange"));
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(shown()).toBe("service=interior-painting");
+  });
+
+  it("never updates state inside the insertion effect that writes the URL (as Next.js does)", async () => {
+    const navigation = new EventTarget();
+    Object.defineProperty(window, "navigation", { value: navigation, configurable: true });
+    go("/visualizer?colour=PM-502");
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    // Chrome dispatches currententrychange synchronously inside pushState
+    const push = window.history.pushState.bind(window.history);
+    const pushSpy = vi.spyOn(window.history, "pushState").mockImplementation((...a: Parameters<History["pushState"]>) => {
+      push(...a);
+      navigation.dispatchEvent(new Event("currententrychange"));
+    });
+    function Writer({ to }: { to: string | null }) {
+      useInsertionEffect(() => {
+        if (to) window.history.pushState(null, "", to);
+      }, [to]);
+      return null;
+    }
+    const { rerender } = render(<><Writer to={null} /><Probe /></>);
+    await act(async () => {
+      rerender(<><Writer to="/visualizer?colour=PM-101" /><Probe /></>);
+    });
+    expect(shown()).toBe("colour=PM-101");
+    expect(errors).not.toHaveBeenCalled();
+    pushSpy.mockRestore();
+    errors.mockRestore();
   });
 
   it("returns the same object until the query changes", () => {

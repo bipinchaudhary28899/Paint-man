@@ -43,15 +43,23 @@ export function useUrlQuery({ once = false }: UrlQueryOptions = {}): URLSearchPa
     // once-reader keeps its first answer.
     if (once && done.current) return;
     done.current = true;
-    const sync = () => setSearch(window.location.search);
-    sync();
+    setSearch(window.location.search);
     if (once) return;
+    // Only this page's own query changes count: a navigation to another path means this
+    // component is about to unmount, so it must not re-render with that page's query.
+    const path = window.location.pathname;
+    const sync = () => {
+      if (window.location.pathname === path) setSearch(window.location.search);
+    };
+    // Chrome fires currententrychange synchronously inside history.pushState, which Next.js
+    // calls from an insertion effect; updating state there is an error, so wait a microtask.
+    const syncSoon = () => queueMicrotask(sync);
     const nav = navigationApi();
     window.addEventListener("popstate", sync);
-    nav?.addEventListener("currententrychange", sync);
+    nav?.addEventListener("currententrychange", syncSoon);
     return () => {
       window.removeEventListener("popstate", sync);
-      nav?.removeEventListener("currententrychange", sync);
+      nav?.removeEventListener("currententrychange", syncSoon);
     };
   }, [once]);
   return useMemo(() => new URLSearchParams(search), [search]);

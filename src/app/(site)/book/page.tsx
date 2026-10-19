@@ -4,7 +4,7 @@ import { PhotoCrop } from "@/components/PhotoCrop";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Blob } from "@/components/Decor";
 import { images } from "@/config/images";
-import { site } from "@/config/site";
+import { services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -21,6 +21,9 @@ const next = [
 
 // Static page: ?service=, ?colour=, ?palette= and ?shade= are read in the browser by BookPrefill.
 // The prerendered HTML is the plain booking form, which hydrates in place (no Suspense bailout).
+// Service page slug -> the form's service choice; only this small map reaches the browser.
+const serviceBySlug = Object.fromEntries(services.map((s) => [s.slug, s.leadService]));
+
 export default function BookPage() {
   return (
     <div className="relative overflow-hidden">
@@ -34,7 +37,7 @@ export default function BookPage() {
             </h1>
             <p className="mt-4 text-lg text-muted">Share a few details. We&apos;ll call you to confirm a convenient time for the site visit.</p>
             <div className="card mt-10 p-6 md:p-8">
-              <BookPrefill />
+              <BookPrefill serviceBySlug={serviceBySlug} />
             </div>
           </div>
           <aside className="space-y-6">

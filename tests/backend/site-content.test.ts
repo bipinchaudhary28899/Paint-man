@@ -182,6 +182,7 @@ describe("job sizing examples", () => {
     for (const days of [5, 6, 7, 8]) expect(jobDuration(days)).toBe("about a week");
     expect(jobDuration(4)).toBe("about 4 working days");
     expect(jobDuration(12)).toBe("about 12 working days");
+    expect(jobDuration(1)).toBe("about 1 working day");
     // a small flat bottoms out at the minimum crew of two; a very large floor tops out at eight
     expect(jobSize(200).duration).toBe(`about ${jobSize(200).days} working days`);
     expect(jobSize(4000).painters).toBe(8);

@@ -23,12 +23,13 @@ function stockAltProblems(alt: string): string[] {
 }
 
 describe("images config", () => {
-  it("every photo has its own src: a canonical Pexels URL for stock, a local file or https URL for job photos", () => {
+  it("every photo has its own src: a canonical Pexels URL for stock, a local public/ file for job photos", () => {
     expect(all.length).toBeGreaterThan(0);
     expect(new Set(all.map(([, i]) => i.src)).size).toBe(all.length);
     for (const [key, img] of all) {
       if (isStock(img)) expect(img.src, key).toMatch(PEXELS);
-      else expect(img.src, key).toMatch(/^(\/[^/]|https:\/\/)/);
+      // job photos live in public/: next.config.ts only allows images.pexels.com as a remote host
+      else expect(img.src, key).toMatch(/^\/[^/]/);
     }
   });
 
