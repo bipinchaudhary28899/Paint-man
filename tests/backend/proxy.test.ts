@@ -31,7 +31,16 @@ describe("legacy Paint Man shade codes", () => {
     const [pm, code] = entries[0];
     expect(legacyShadeCode(pm)).toBe(code);
     expect(legacyShadeCode(pm.toLowerCase())).toBe(code);
-    for (const other of ["", "pm", "PM-", "PM-0", "PM-99999", "8386", "sage", "constructor", "__proto__", "toString"]) expect(legacyShadeCode(other), other).toBeUndefined();
+    for (const other of ["", "pm", "PM-", "PM-0", "PM-99999", "99999", "8386", "PM-502x", "sage", "constructor", "__proto__", "toString"]) expect(legacyShadeCode(other), other).toBeUndefined();
+  });
+
+  it("accepts the short forms the old shade pages took: no dash, a space, or the number alone", () => {
+    for (const [pm, code] of entries) {
+      const digits = pm.slice(3);
+      for (const variant of [digits, pm.replace("-", ""), pm.replace("-", "").toLowerCase(), pm.replace("-", " "), ` ${pm} `]) {
+        expect(legacyShadeCode(variant), variant).toBe(code);
+      }
+    }
   });
 });
 
@@ -54,6 +63,16 @@ describe("proxy: retired shade pages", () => {
     }
   });
 
+  it("redirects the short forms too, so old /colours/502-style links keep their home", () => {
+    for (const [pm, code] of Object.entries(legacyShades)) {
+      for (const variant of [pm.slice(3), pm.replace("-", "").toLowerCase(), pm.replace("-", "%20")]) {
+        const res = proxy(get(`/colours/${variant}`));
+        expect(res.status, variant).toBe(308);
+        expect(res.headers.get("location"), variant).toBe(finder(code));
+      }
+    }
+  });
+
   it("drops the old query string", () => {
     const [pm, code] = Object.entries(legacyShades)[0];
     const res = proxy(get(`/colours/${pm}?from=finder&ref=a%20b`));
@@ -62,7 +81,7 @@ describe("proxy: retired shade pages", () => {
   });
 
   it("lets every other /colours/<x> through untouched, for Next to 404", () => {
-    for (const path of ["/colours/502", "/colours/sage", "/colours/PM-9999", "/colours/asian-paints", "/colours/__proto__"]) {
+    for (const path of ["/colours/99999", "/colours/sage", "/colours/PM-9999", "/colours/asian-paints", "/colours/__proto__", "/colours/%E0%A4%A"]) {
       const res = proxy(get(path));
       expect(res.status, path).toBe(200);
       expect(res.headers.get("location"), path).toBeNull();

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getPalette, paletteBrands, type Palette, type PaletteShade } from "@/config/palettes";
+import { getPalette, paletteBrands, shadeDisplayName, type Palette, type PaletteShade } from "@/config/palettes";
 import { jobSize, site, type Service } from "@/config/site";
+import { PAINTDB } from "@/lib/colours/catalogue";
 
 // The long-form body of a service page: how the job runs, the paint system, what moves the
 // price, timing, aftercare and matching shades. All copy lives in src/config/site.ts so the
@@ -95,7 +96,7 @@ export function ServiceShades({ service }: { service: Service }) {
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-3 text-sm font-semibold transition hover:border-ink"
                   >
                     <span aria-hidden className="h-5 w-5 shrink-0 rounded-full border border-line" style={{ backgroundColor: s.hex }} />
-                    {s.name} <span className="font-normal text-muted">{s.code}</span>
+                    {shadeDisplayName(s.name)} <span className="font-normal text-muted">{s.code}</span>
                   </Link>
                 </li>
               ))}
@@ -103,6 +104,11 @@ export function ServiceShades({ service }: { service: Service }) {
           </li>
         ))}
       </ul>
+      <p className="mt-3 text-xs leading-relaxed text-muted">
+        Brand shades: <a href={PAINTDB.source} className="underline" rel="noopener" target="_blank">PaintDB</a>, licensed{" "}
+        <a href={PAINTDB.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>. On-screen colours approximate each
+        brand&apos;s published shade.
+      </p>
       <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm font-bold">
         <li>
           <Link href="/colours" className={`inline-flex min-h-11 items-center ${linkClass}`}>

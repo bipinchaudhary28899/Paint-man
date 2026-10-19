@@ -208,7 +208,7 @@ describe("BookPrefill on the static /book page", () => {
     expect(page.container.querySelector("form")).not.toBe(page.before.form);
     expect(page.container.querySelector<HTMLSelectElement>("#service")!.value).toBe("Exterior Painting");
     expect(page.container.querySelector<HTMLTextAreaElement>("#message")!.value).toBe(
-      'Interested in the "Agra stone exterior" palette (Asian Paints 8771 Cambridge, Asian Paints L146 Sonnet, Asian Paints 9937 Red Rust-n). Please bring the shade cards.',
+      'Interested in the "Agra stone exterior" palette (Asian Paints 8771 Cambridge, Asian Paints L146 Sonnet, Asian Paints 9937 Red Rust). Please bring the shade cards.',
     );
     page.done();
   });
@@ -223,7 +223,7 @@ describe("VisualizerFromParams", () => {
     open("/visualizer?colour=sage-mist");
     render(<VisualizerFromParams />);
     expect(screen.getByRole("link", { name: "Book an inspection with Pepper Leaf" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8386");
-    await screen.findByRole("button", { name: "Pure Red" }); // the picker has loaded
+    await screen.findByRole("button", { name: "Pure Red, Asian Paints 8093" }); // the picker has loaded
     expect(lookups(spy)).toEqual([]);
   });
 
@@ -242,7 +242,7 @@ describe("VisualizerFromParams", () => {
     const user = userEvent.setup();
     render(<VisualizerFromParams />);
     await waitFor(() => expect(lookups(spy)).toHaveLength(1));
-    await user.click(await screen.findByRole("button", { name: "Pure Red" }));
+    await user.click(await screen.findByRole("button", { name: "Pure Red, Asian Paints 8093" }));
     // the lookup lands after the pick
     await act(async () => {
       release();

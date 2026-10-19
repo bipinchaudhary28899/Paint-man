@@ -30,7 +30,7 @@ export default function VisualizerPage() {
           <div className="mt-5 max-w-3xl">
             <p className="eyebrow">Try it on your wall</p>
             <h1 className="mt-4 text-[clamp(40px,5vw,68px)] leading-[1.04] tracking-[-0.02em]">
-              Wall colour visualizer: see the shade on <em>your</em> walls
+              Wall colour visualizer for {site.city} homes: see the shade on <em>your</em> walls
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-[1.65] text-muted">
               Drop in a photo of the room. We find the wall surfaces, then only they change colour: the sofa, cupboards, windows and

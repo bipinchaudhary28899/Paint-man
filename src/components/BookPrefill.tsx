@@ -1,6 +1,6 @@
 "use client";
 
-import { getPalette, type PaletteShade } from "@/config/palettes";
+import { getPalette, shadeDisplayName, type PaletteShade } from "@/config/palettes";
 import type { serviceTypes } from "@/lib/leads/options";
 import { LeadForm } from "./LeadForm";
 import { useBrandShade, type BrandShadeSummary } from "./useBrandShade";
@@ -30,7 +30,7 @@ export function bookPrefill(
 ): { defaultService?: ServiceType; defaultMessage?: string } {
   const palette = query.palette ? getPalette(query.palette) : undefined;
   const defaultMessage = palette
-    ? `Interested in the "${palette.name}" palette (${palette.shades.map(shadeLabel).join(", ")}). Please bring the shade cards.`
+    ? `Interested in the "${palette.name}" palette (${palette.shades.map((s) => shadeLabel({ ...s, name: shadeDisplayName(s.name) })).join(", ")}). Please bring the shade cards.`
     : brandShade
       ? `Interested in ${shadeLabel(brandShade)} (${brandShade.hex.toUpperCase()}). Please bring the shade card.`
       : undefined;

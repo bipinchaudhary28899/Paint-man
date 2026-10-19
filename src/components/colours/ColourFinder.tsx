@@ -78,15 +78,26 @@ export const PER_PAGE = 48;
 export const AUTO_LOAD_PAGES = 20;
 type PageResp = { data: BrandShadeItem[]; meta: { total: number; page: number; pages: number } };
 
+// Hairline tiles; the selected one gets an ink ring (the design system has no hard offset shadows).
 const tileClass = (on: boolean) =>
-  `group block w-full overflow-hidden rounded-xl border bg-paper text-left transition hover:-translate-y-0.5 sm:rounded-[1.25rem] ${on ? "border-ink ring-2 ring-ink sm:ring-0 sm:shadow-[6px_6px_0_var(--pm-shadow-ink)]" : "border-line sm:shadow-[3px_3px_0_var(--pm-shadow-ink)]"}`;
+  `group block w-full overflow-hidden rounded-xl border bg-paper text-left transition hover:-translate-y-0.5 sm:rounded-[1.25rem] ${on ? "border-ink ring-2 ring-ink" : "border-line hover:border-line-strong"}`;
+
+/** The finder's state as its shareable /colours query: the family and order only inside a brand. */
+function finderSearch({ brand, q, family, sort }: { brand: string; q: string; family: string; sort: Sort }): string {
+  const sp = new URLSearchParams();
+  if (brand) sp.set("brand", brand);
+  if (q) sp.set("q", q);
+  if (brand && family) sp.set("family", family);
+  if (brand && sort !== "shade") sp.set("sort", sort);
+  return sp.size ? `?${sp}` : "";
+}
 
 /** A plain primary click, the kind a brand link turns into an in-page step; anything else (new tab, download) is left to the browser. */
 const isPlainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
 // Brand shades have no pages of their own, so their tiles are toggle buttons. Off-screen tiles
 // skip style and layout work (content-visibility) on the button itself: on the grid cell, its
-// paint containment would clip the tile's selected ring, offset shadow and hover lift, which
+// paint containment would clip the tile's selected ring and hover lift, which
 // paint outside the button's box. The reserved size is per breakpoint (phone tiles are shorter).
 // Memoised: a tap re-renders only the two tiles whose selected state flips.
 const BrandTile = memo(function BrandTile({ shade: s, selected, showBrand, onSelect }: { shade: BrandShadeItem; selected: boolean; showBrand: boolean; onSelect: (s: BrandShadeItem) => void }) {
@@ -139,15 +150,41 @@ export function ColourFinder({
   const [selected, setSelected] = useState<BrandShadeItem | null>(null);
   const showBrandGrid = !brand && !q.trim();
 
+  // Opening a brand, and going back to all brands, are steps a visitor expects Back to undo (the
+  // brand tiles are links), so each pushes one history entry; Back then restores the step from the
+  // URL. Typing, family chips and the order only replace the current entry.
   const chooseBrand = useCallback((slug: string) => {
+    window.history.pushState(null, "", `${window.location.pathname}${finderSearch({ brand: slug, q: "", family: "", sort })}`);
     setBrand(slug);
     setFamily("");
     setSelected(null);
-  }, []);
+  }, [sort]);
+  const allBrands = () => {
+    window.history.pushState(null, "", window.location.pathname);
+    setBrand("");
+    setFamily("");
+    setQ("");
+    setSelected(null);
+  };
+  useEffect(() => {
+    const onPopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const nextBrand = brands.some((b) => b.slug === sp.get("brand")) ? sp.get("brand")! : "";
+      const nextFamily = sp.get("family") ?? "";
+      const nextSort = sp.get("sort");
+      setBrand(nextBrand);
+      setFamily(nextBrand && brandFamilies.includes(nextFamily) ? nextFamily : "");
+      setQ(sp.get("q") ?? "");
+      setSort(isSort(nextSort) ? nextSort : "shade");
+      setSelected(null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [brands, brandFamilies]);
 
   // Every page already loaded stays in memory: scrolling back, or returning to a colour family
-  // or brand opened before, never asks the server again. (The server answers from memory and
-  // Vercel's edge caches each page, so a first load is one short trip.)
+  // or brand opened before, never asks the server again. (The server answers from memory, so a
+  // first load is one short trip.)
   const pageCache = useRef(new Map<string, Promise<PageResp>>());
   const fetchPage = useCallback((n: number) => {
     const sp = new URLSearchParams({ perPage: String(PER_PAGE), page: String(n) });
@@ -223,12 +260,7 @@ export function ColourFinder({
 
   // Keep the URL shareable without a navigation.
   useEffect(() => {
-    const sp = new URLSearchParams();
-    if (brand) sp.set("brand", brand);
-    if (q) sp.set("q", q);
-    if (family) sp.set("family", family);
-    if (brand && sort !== "shade") sp.set("sort", sort);
-    window.history.replaceState(null, "", `${window.location.pathname}${sp.size ? `?${sp}` : ""}`);
+    window.history.replaceState(null, "", `${window.location.pathname}${finderSearch({ brand, q, family, sort })}`);
   }, [brand, q, family, sort]);
 
   const active = selected && items.some((s) => s.id === selected.id) ? selected : items[0] ?? null;
@@ -266,7 +298,7 @@ export function ColourFinder({
         <div className="card p-4 md:p-7">
           {brandInfo && (
             <div className="mb-3 flex items-center gap-3">
-              <button type="button" onClick={() => { setBrand(""); setFamily(""); setQ(""); setSelected(null); }} className="inline-flex min-h-11 items-center text-sm font-semibold text-muted underline underline-offset-2">
+              <button type="button" onClick={allBrands} className="inline-flex min-h-11 items-center text-sm font-semibold text-muted underline underline-offset-2">
                 ← All brands
               </button>
               <p className="font-display text-lg">{brandInfo.name} <span className="font-sans text-sm text-muted">({brandInfo.count.toLocaleString("en-IN")} shades)</span></p>
@@ -275,20 +307,27 @@ export function ColourFinder({
           <label htmlFor="brand-q" className="block text-sm font-bold">
             {brandInfo ? `Search ${brandInfo.name} by code, name or hex` : "Search all brands by code, name or hex"}
           </label>
-          <input
-            id="brand-q"
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={brandInfo ? "e.g. 7982, Mecca Gold, #e7975b" : "e.g. Asian Paints 7982, Berger 3P0050, #b8c7b0"}
-            autoComplete="off"
-            className="field mt-2 w-full text-base"
-          />
+          <div className="mt-2 flex gap-2">
+            <input
+              id="brand-q"
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={brandInfo ? "e.g. 7982, Mecca Gold, #e7975b" : "e.g. Asian Paints 7982, Berger 3P0050, #bbc8b2"}
+              autoComplete="off"
+              className="field min-w-0 flex-1 text-base"
+            />
+            {(q || family) && (
+              <button type="button" onClick={() => { setQ(""); setFamily(""); }} className="btn-secondary !min-h-11 shrink-0 !px-4 text-sm">
+                Clear
+              </button>
+            )}
+          </div>
           {brandInfo && !q.trim() && (
-            <div className="mt-3 flex items-center gap-2 text-sm">
+            <div className="mt-3 flex min-w-0 items-center gap-2 text-sm">
               <label htmlFor="brand-sort" className="font-semibold text-muted">Sort</label>
-              <select id="brand-sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="field !w-auto !py-1.5 text-sm">
-                <option value="shade">Shade card (similar colours together, light → dark)</option>
+              <select id="brand-sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="field min-h-11 min-w-0 flex-1 !py-1.5 text-sm sm:!w-auto sm:flex-none">
+                <option value="shade">Shade card (light → dark)</option>
                 <option value="code">Shade code</option>
                 <option value="name">Name (A–Z)</option>
               </select>
@@ -297,7 +336,7 @@ export function ColourFinder({
           {brandInfo && (
             <div className={`${chipRow} mt-4`} role="group" aria-label="Primary colour">
               {["", ...brandFamilies].map((f) => (
-                <button key={f || "all"} type="button" aria-pressed={family === f} onClick={() => setFamily(f)} className={`flex shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm font-bold transition ${family === f ? "bg-ink text-on-ink" : "bg-paper hover:bg-cream-wash"}`}>
+                <button key={f || "all"} type="button" aria-pressed={family === f} onClick={() => setFamily(f)} className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-line px-3.5 py-1.5 text-sm font-bold transition ${family === f ? "bg-ink text-on-ink" : "bg-paper hover:bg-cream-wash"}`}>
                   {f && <span aria-hidden className="h-3 w-3 rounded-full border border-line" style={{ background: FAMILY_SWATCH[f] ?? "#ccc" }} />}
                   {f ? cap(f) : "All colours"}
                 </button>
@@ -340,7 +379,7 @@ export function ColourFinder({
                 : state === "loading" && items.length === 0
                   ? "Loading shades…"
                   : total === 0
-                    ? "No shade matches that. Try a code like 7982, a name, or a hex like #b8c7b0."
+                    ? "No shade matches that. Try a code like 7982, a name, or a hex like #bbc8b2."
                     : `${total.toLocaleString("en-IN")} shade${total === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}${family ? ` · ${cap(family)}` : ""}. Tap one to see it on the wall.`}
             </p>
             <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Brand shades">
@@ -373,8 +412,24 @@ export function ColourFinder({
 
       {!view && (
         <aside className="hidden rounded-[2rem] border border-dashed border-line-strong bg-paper p-8 text-center lg:sticky lg:top-24 lg:block">
-          <p className="font-display text-2xl">Pick a brand</p>
-          <p className="mt-2 text-sm text-muted">Then a primary colour, or scroll its whole shade card. Every shade you tap shows on the room here.</p>
+          {showBrandGrid ? (
+            <>
+              <p className="font-display text-2xl">Pick a brand</p>
+              <p className="mt-2 text-sm text-muted">Then a primary colour, or scroll its whole shade card. Every shade you tap shows on the room here.</p>
+            </>
+          ) : state === "loading" ? (
+            <p className="font-display text-2xl">Loading shades…</p>
+          ) : state === "error" ? (
+            <>
+              <p className="font-display text-2xl">Shades didn&apos;t load</p>
+              <p className="mt-2 text-sm text-muted">Try again in a minute. Every shade you tap shows on the room here.</p>
+            </>
+          ) : (
+            <>
+              <p className="font-display text-2xl">No shade to show yet</p>
+              <p className="mt-2 text-sm text-muted">Clear the search or pick another colour family. Every shade you tap shows on the room here.</p>
+            </>
+          )}
         </aside>
       )}
 

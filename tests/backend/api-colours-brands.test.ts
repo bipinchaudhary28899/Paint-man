@@ -28,6 +28,10 @@ describe("GET /api/v1/colours/paint", () => {
     expect(body.links.html).toBe("/colours?brand=asian-paints&family=blue");
     expect(byCode.links.html).toBe("/colours?brand=asian-paints&sort=code");
     expect((await (await get("/api/v1/colours/paint?perPage=1")).json()).links.html).toBe("/colours");
+    // the finder reads a family only inside a brand, so the human link leaves it out without one
+    const familyOnly = await (await get("/api/v1/colours/paint?family=blue&perPage=1")).json();
+    expect(familyOnly.meta.query.family).toBe("blue");
+    expect(familyOnly.links.html).toBe("/colours");
   });
 
   it("validates brand, family, page and perPage with hints", async () => {

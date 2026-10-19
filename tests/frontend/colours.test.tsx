@@ -146,6 +146,14 @@ describe("ColourFinder: the brands", () => {
       expect(t.closest("li")!.className).not.toContain("content-visibility");
     }
     expect(tiles[3].className).toContain("ring-2");
+    for (const t of tiles.slice(0, 4)) expect(t.className).not.toMatch(/shadow-\[/); // no hard offset shadows
+    // phone tap targets: the colour chips and the order select are at least 44px
+    for (const chip of within(screen.getByRole("group", { name: "Primary colour" })).getAllByRole("button")) expect(chip.className).toContain("min-h-11");
+    const sortSelect = screen.getByLabelText("Sort");
+    expect(sortSelect.className).toContain("min-h-11");
+    expect(sortSelect.className).toContain("min-w-0"); // shrinks to the card instead of scrolling the page sideways
+    expect(sortSelect.className.split(" ")).not.toContain("!w-auto"); // auto width only from sm up
+    expect(within(sortSelect).getByRole("option", { name: "Shade card (light → dark)" })).toBeInTheDocument();
 
     // back to the brands
     await user.click(screen.getByRole("button", { name: "← All brands" }));
@@ -181,13 +189,75 @@ describe("ColourFinder: the brands", () => {
     await waitFor(() => expect(screen.getByText(/unavailable right now/)).toBeInTheDocument());
   });
 
-  it("says so when nothing matches", async () => {
+  it("says so when nothing matches, and a Clear button undoes the search", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ data: [], meta: { total: 0, page: 1, pages: 1 } })));
     const user = userEvent.setup();
     render(<ColourFinder {...props} />);
+    expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
     await user.type(screen.getByLabelText("Search all brands by code, name or hex"), "zzzz");
     await waitFor(() => expect(screen.getByText(/No shade matches that/)).toBeInTheDocument());
+    expect(screen.getByText(/#bbc8b2/)).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: "Selected shade preview" })).toBeNull();
+    // the side panel follows what the visitor did instead of asking for a brand again
+    expect(screen.queryByText("Pick a brand")).toBeNull();
+    expect(screen.getByText("No shade to show yet")).toBeInTheDocument();
+    const clear = screen.getByRole("button", { name: "Clear" });
+    expect(clear.className).toContain("!min-h-11");
+    await user.click(clear);
+    expect(screen.getByLabelText("Search all brands by code, name or hex")).toHaveValue("");
+    expect(brandGrid()).toBeInTheDocument();
+    expect(screen.getByText("Pick a brand")).toBeInTheDocument();
+  });
+
+  it("tells the side panel when shades are loading or failed", async () => {
+    let fail!: () => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => new Promise((_, reject) => { fail = () => reject(new Error("offline")); }));
+    render(<ColourFinder {...props} initialBrand="asian-paints" />);
+    await waitFor(() => expect(screen.getByText("Loading shades…", { selector: "aside p" })).toBeInTheDocument());
+    await act(async () => fail());
+    await waitFor(() => expect(screen.getByText("Shades didn't load")).toBeInTheDocument());
+  });
+
+  it("puts each brand step in the history, so Back returns to the brand grid", async () => {
+    servePages();
+    const user = userEvent.setup();
+    open("/colours");
+    const before = window.history.length;
+    render(<ColourFinder {...props} />);
+    await user.click(within(brandGrid()).getByRole("link", { name: /Berger/ }));
+    expect(window.history.length).toBe(before + 1);
+    expect(window.location.search).toBe("?brand=berger");
+    await waitFor(() => expect(brandTiles()).toHaveLength(PER_PAGE));
+
+    // Back: the browser restores the previous address and fires popstate
+    act(() => {
+      window.history.replaceState(null, "", "/colours");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(brandGrid()).toBeInTheDocument();
+    // Forward to a brand, family, order and search: all restored from the URL; unknown values dropped
+    act(() => {
+      window.history.replaceState(null, "", "/colours?brand=asian-paints&family=blue&sort=code&q=7");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.getByLabelText("Search Asian Paints by code, name or hex")).toHaveValue("7");
+    act(() => {
+      window.history.replaceState(null, "", "/colours?brand=acme&family=blue&sort=random");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(brandGrid()).toBeInTheDocument();
+    act(() => {
+      window.history.replaceState(null, "", "/colours?brand=asian-paints&family=blue&sort=code");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(screen.getByRole("button", { name: "Blue" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Sort")).toHaveValue("code");
+
+    // ← All brands is a step too
+    const n = window.history.length;
+    await user.click(screen.getByRole("button", { name: "← All brands" }));
+    expect(window.history.length).toBe(n + 1);
+    expect(window.location.search).toBe("");
   });
 });
 

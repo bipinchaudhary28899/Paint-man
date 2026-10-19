@@ -4,7 +4,7 @@ import { FaqList } from "@/components/FaqList";
 import { PageHero } from "@/components/PageHero";
 import { accentCity, finderSearchHref, JobSizeTable, ServiceDetails, ServiceShades } from "@/components/services/ServiceDetails";
 import { images } from "@/config/images";
-import { getPalette } from "@/config/palettes";
+import { getPalette, shadeDisplayName } from "@/config/palettes";
 import { generalFaqs, getService, jobSize, services, site } from "@/config/site";
 
 // The shared next/image mock drops `preload` before it reaches the <img>, so record the props
@@ -115,12 +115,19 @@ describe("ServiceShades", () => {
         const href = `/colours?brand=${s.brand}&q=${s.code}`;
         expect(links).toContain(href);
         expect(finderSearchHref(s)).toBe(href);
-        expect(screen.getAllByRole("link", { name: `${s.name} ${s.code}` })[0]).toHaveAttribute("href", href);
+        expect(screen.getAllByRole("link", { name: `${shadeDisplayName(s.name)} ${s.code}` })[0]).toHaveAttribute("href", href);
       }
     }
     expect(links.some((h) => h?.startsWith("/colours/"))).toBe(false);
     expect(screen.getByRole("link", { name: "Browse every wall colour shade" })).toHaveAttribute("href", "/colours");
     expect(links).toEqual(expect.arrayContaining(["/palettes", "/visualizer"]));
+  });
+
+  it("credits PaintDB under the CC BY 4.0 licence wherever it shows brand shades", () => {
+    render(<ServiceShades service={exterior} />);
+    expect(screen.getByRole("link", { name: "PaintDB" })).toHaveAttribute("href", "https://paintdb.com");
+    expect(screen.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
+    expect(screen.getByRole("link", { name: "CC BY 4.0" }).getAttribute("rel")).toContain("license");
   });
 
   it("opens the plain finder for every service: there is no room filter any more", () => {

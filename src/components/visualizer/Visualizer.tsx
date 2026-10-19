@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { images } from "@/config/images";
+import { palettes } from "@/config/palettes";
 import { PAINTDB } from "@/lib/colours/catalogue";
 import { colourFamilies, type ColourFamily } from "@/lib/colours/families";
 import { fitWithin, validateImageFile } from "@/lib/visualizer/files";
@@ -50,11 +51,17 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
   // brand shade from ?shade= is looked up through the API. It replaces the current shade without
   // remounting, so a loaded photo is kept, but never a shade the visitor has already picked.
   // (Loading a photo is not a pick: the visitor came for the linked shade.)
+  // The picker opens on the linked shade's brand (?shade=berger:2P1857 → Berger), and follows a
+  // linked shade that arrives later on the same terms as the walls do.
   const initialKey = initialShade ? `${initialShade.hex}|${initialShade.name}|${initialShade.code ?? ""}|${initialShade.bookQuery ?? ""}` : "";
   const [appliedKey, setAppliedKey] = useState(initialKey);
+  const [pickerBrand, setPickerBrand] = useState(shadeBrand(initialShade));
   if (initialKey !== appliedKey) {
     setAppliedKey(initialKey);
-    if (initialShade && !userPicked) setShade(initialShade);
+    if (initialShade && !userPicked) {
+      setShade(initialShade);
+      setPickerBrand(shadeBrand(initialShade));
+    }
   }
   const [showOriginal, setShowOriginal] = useState(false);
   const [hint, setHint] = useState("");
@@ -230,8 +237,8 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
       </div>
 
       {/* ---------- shade picker ---------- */}
-      <aside>
-        <ShadePicker value={shade} onChange={pickShade} />
+      <aside className="min-w-0">
+        <ShadePicker value={shade} onChange={pickShade} startBrand={pickerBrand} />
         <div className="mt-6 rounded-2xl border border-line bg-paper p-4 text-sm leading-relaxed text-muted">
           <p className="font-semibold text-ink">How this works</p>
           <p className="mt-1">
@@ -281,7 +288,8 @@ type WebColour = { name: string; hex: string; family: ColourFamily; lrv: number 
 type BrandOption = { slug: string; name: string; count: number };
 /** The fields of an /api/v1/colours/paint item the picker uses. */
 type BrandPick = { id: string; brandName: string; code: string; name: string; hex: string };
-type BrandPage = { items: BrandPick[]; total: number; page: number; pages: number };
+/** Loaded pages of one brand query; `key` is the query's first-page URL. */
+type BrandPage = { key: string; items: BrandPick[]; total: number; page: number; pages: number };
 
 /** Brand shades per load in the picker; "Show more" adds the next page. */
 export const PICKER_PER_PAGE = 48;
@@ -291,24 +299,67 @@ const FIRST_BRAND: BrandOption = { slug: "asian-paints", name: "Asian Paints", c
 /** A brand shade as the visualizer holds it: named by brand and code, booked by its id. */
 export const brandShadePick = (s: BrandPick): Shade => ({ name: s.name, hex: s.hex, code: `${s.brandName} ${s.code}`, bookQuery: `shade=${encodeURIComponent(s.id)}` });
 
+/** The brand slug of a brand shade ("shade=berger%3A2P1857" → "berger"); undefined for a named colour. */
+export function shadeBrand(shade?: Shade): string | undefined {
+  const id = shade?.bookQuery ? new URLSearchParams(shade.bookQuery).get("shade") : null;
+  const slug = id?.split(":")[0];
+  return slug && /^[a-z0-9-]+$/.test(slug) ? slug : undefined;
+}
+
+/**
+ * The picker's first row while nothing is searched: every shade from our palettes (all Asian
+ * Paints, Pepper Leaf first), so the first view offers varied colours, not the shade card's
+ * opening run of near-identical whites. The palettes module is client-safe; no catalogue loads.
+ */
+export const STARTER_SHADES: Shade[] = [...new Map(palettes.flatMap((p) => p.shades).map((s) => [s.id, brandShadePick(s)])).values()];
+const STARTER_BRAND = palettes[0].shades[0].brand;
+
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const chipClass = (on: boolean) => `rounded-full border px-2.5 py-1 text-xs font-semibold ${on ? "border-ink bg-ink text-on-ink" : "border-line bg-paper hover:border-line-strong"}`;
+/** A readable name for a brand slug until the brand list arrives ("asian-paints" → "Asian Paints"). */
+const slugName = (slug: string) => slug.split("-").map(cap).join(" ");
+const chipClass = (on: boolean) => `inline-flex min-h-11 items-center rounded-full border px-3 text-xs font-semibold ${on ? "border-ink bg-ink text-on-ink" : "border-line bg-paper hover:border-line-strong"}`;
+const sameShade = (a: Shade, b: Shade) => a.hex === b.hex && a.name === b.name;
+
+/** One swatch: the name and its brand code are read out, the hex is in the tooltip. */
+function Swatch({ shade: s, selected, onPick, className }: { shade: Shade; selected: boolean; onPick: (s: Shade) => void; className: string }) {
+  return (
+    <button
+      type="button"
+      title={`${s.name}${s.code ? ` ${s.code}` : ""} ${s.hex.toUpperCase()}`}
+      aria-label={`${s.name}${s.code ? `, ${s.code}` : ""}`}
+      aria-pressed={selected}
+      onClick={() => onPick(s)}
+      className={`${className} rounded-xl border border-line-soft transition hover:-translate-y-0.5`}
+      style={{ background: s.hex, boxShadow: selected ? "0 0 0 2px #f8f5ef, 0 0 0 4px #242522" : undefined }}
+    />
+  );
+}
 
 // Two catalogues: brand shades (50,000+ shade-card codes from 25 brands, searched on the server
 // through /api/v1/colours/paint, a page at a time) and ~32,000 public named colours
 // (/api/v1/colours/web). The brand data is server-only, so the brand list, its colour families
 // and every page of shades arrive through the public API.
-function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) => void }) {
+function ShadePicker({ value, onChange, startBrand }: { value: Shade; onChange: (s: Shade) => void; startBrand?: string }) {
   const [tab, setTab] = useState<"brands" | "web">("brands");
   const [q, setQ] = useState("");
 
   // --- brand shades
   const [brands, setBrands] = useState<BrandOption[]>([FIRST_BRAND]);
   const [brandFamilies, setBrandFamilies] = useState<string[]>([]);
-  const [brand, setBrand] = useState(FIRST_BRAND.slug);
+  const [brand, setBrand] = useState(startBrand ?? FIRST_BRAND.slug);
   const [brandFamily, setBrandFamily] = useState("");
   const [brandPage, setBrandPage] = useState<BrandPage | null>(null);
   const [brandState, setBrandState] = useState<"idle" | "loading" | "error">("idle");
+  // a linked shade that arrives later moves the picker to its brand, unless the visitor chose one
+  const [brandChosen, setBrandChosen] = useState(false);
+  const [appliedStart, setAppliedStart] = useState(startBrand);
+  if (startBrand !== appliedStart) {
+    setAppliedStart(startBrand);
+    if (startBrand && !brandChosen) {
+      setBrand(startBrand);
+      setBrandFamily("");
+    }
+  }
 
   // --- named colours
   const [webFamily, setWebFamily] = useState<ColourFamily | undefined>();
@@ -337,28 +388,41 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
     if (brandFamily) sp.set("family", brandFamily);
     return `/api/v1/colours/paint?${sp}`;
   }, [brand, q, brandFamily]);
+  const currentKey = brandQuery(1);
+
+  // Every query's loaded pages stay in memory, so switching to named colours and back, or
+  // returning to a family or brand seen before, keeps the pages "Show more" already added.
+  const brandCache = useRef(new Map<string, BrandPage>());
 
   // the first page whenever the brand, search or family changes
   const brandKey = useRef("");
   useEffect(() => {
     if (tab !== "brands") return;
-    const url = brandQuery(1);
+    const url = currentKey;
     brandKey.current = url;
     const ctl = new AbortController();
     const t = setTimeout(async () => {
+      const cached = brandCache.current.get(url);
+      if (cached) {
+        setBrandPage(cached);
+        setBrandState("idle");
+        return;
+      }
       setBrandState("loading");
       try {
         const res = await fetch(url, { signal: ctl.signal });
         if (!res.ok) throw new Error(String(res.status));
         const json = (await res.json()) as { data: BrandPick[]; meta: { total: number; page: number; pages: number } };
-        setBrandPage({ items: json.data, total: json.meta.total, page: json.meta.page, pages: json.meta.pages });
+        const first: BrandPage = { key: url, items: json.data, total: json.meta.total, page: json.meta.page, pages: json.meta.pages };
+        brandCache.current.set(url, first);
+        setBrandPage(first);
         setBrandState("idle");
       } catch (err) {
         if ((err as Error).name !== "AbortError") setBrandState("error");
       }
-    }, q ? 250 : 0);
+    }, q && !brandCache.current.has(url) ? 250 : 0);
     return () => { clearTimeout(t); ctl.abort(); };
-  }, [tab, brandQuery, q]);
+  }, [tab, currentKey, q]);
 
   const showMore = async () => {
     if (!brandPage || brandPage.page >= brandPage.pages) return;
@@ -368,7 +432,12 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
       if (!res.ok) throw new Error(String(res.status));
       const json = (await res.json()) as { data: BrandPick[]; meta: { page: number; pages: number } };
       if (brandKey.current !== key) return; // the search changed while this page was loading
-      setBrandPage((p) => p && { ...p, items: [...p.items, ...json.data.filter((s) => !p.items.some((i) => i.id === s.id))], page: json.meta.page, pages: json.meta.pages });
+      setBrandPage((p) => {
+        if (!p) return p;
+        const next = { ...p, items: [...p.items, ...json.data.filter((s) => !p.items.some((i) => i.id === s.id))], page: json.meta.page, pages: json.meta.pages };
+        brandCache.current.set(p.key, next);
+        return next;
+      });
     } catch {
       setBrandState("error");
     }
@@ -395,15 +464,21 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
     return () => { clearTimeout(t); ctl.abort(); };
   }, [tab, q, webFamily]);
 
-  const brandName = brands.find((b) => b.slug === brand)?.name ?? brand;
+  // the shown page belongs to an earlier search, family or brand until the new one arrives
+  const brandStale = brandState === "loading" || !brandPage || brandPage.key !== currentKey;
+  const brandOptions = brands.some((b) => b.slug === brand) ? brands : [...brands, { slug: brand, name: slugName(brand), count: 0 }];
+  const brandName = brandOptions.find((b) => b.slug === brand)!.name;
+  const showStarter = tab === "brands" && brand === STARTER_BRAND && !q.trim() && !brandFamily;
   const list: Shade[] = tab === "brands" ? (brandPage?.items ?? []).map(brandShadePick) : (web?.items ?? []).map((c) => ({ name: c.name, hex: c.hex }));
   const status =
     tab === "brands"
       ? brandState === "error"
         ? "Brand shades are unavailable right now."
-        : !brandPage
+        : brandStale
           ? "Loading shades…"
-          : `${(brandPage?.total ?? 0).toLocaleString("en-IN")} ${brandName} shade${brandPage?.total === 1 ? "" : "s"}, showing ${brandPage?.items.length ?? 0}`
+          : brandPage.total === 0
+            ? `No ${brandName} shade matches that. Try a shade-card code, a name or a hex.`
+            : `${brandPage.total.toLocaleString("en-IN")} ${brandName} shade${brandPage.total === 1 ? "" : "s"}, showing ${brandPage.items.length}`
       : webState === "loading"
         ? "Searching named colours…"
         : webState === "error"
@@ -422,15 +497,15 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
       </div>
 
       <div role="group" aria-label="Catalogue" className="mt-5 inline-flex gap-1 rounded-full border border-line p-1 text-sm font-semibold">
-        <button type="button" aria-pressed={tab === "brands"} onClick={() => setTab("brands")} className={`rounded-full px-3.5 py-1.5 ${tab === "brands" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>Brand shades</button>
-        <button type="button" aria-pressed={tab === "web"} onClick={() => setTab("web")} className={`rounded-full px-3.5 py-1.5 ${tab === "web" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>All named colours</button>
+        <button type="button" aria-pressed={tab === "brands"} onClick={() => setTab("brands")} className={`min-h-11 rounded-full px-3.5 py-1.5 ${tab === "brands" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>Brand shades</button>
+        <button type="button" aria-pressed={tab === "web"} onClick={() => setTab("web")} className={`min-h-11 rounded-full px-3.5 py-1.5 ${tab === "web" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>All named colours</button>
       </div>
 
       {tab === "brands" && (
         <div className="mt-3 flex items-center gap-2 text-sm">
           <label htmlFor="picker-brand" className="font-semibold text-muted">Brand</label>
-          <select id="picker-brand" value={brand} onChange={(e) => { setBrand(e.target.value); setBrandFamily(""); setBrandPage(null); }} className="field !py-1.5 text-sm">
-            {brands.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
+          <select id="picker-brand" value={brand} onChange={(e) => { setBrand(e.target.value); setBrandFamily(""); setBrandChosen(true); }} className="field min-h-11 !py-1.5 text-sm">
+            {brandOptions.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
           </select>
         </div>
       )}
@@ -457,24 +532,28 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
             ))}
       </div>
 
+      {showStarter && (
+        <>
+          <p id="picker-starter" className="mt-3 text-xs font-semibold text-muted">From our palettes</p>
+          <ul className="-mx-1 mt-1.5 flex gap-2 overflow-x-auto px-1 pb-2 pt-1" aria-labelledby="picker-starter">
+            {STARTER_SHADES.map((s) => (
+              <li key={s.bookQuery} className="shrink-0">
+                <Swatch shade={s} selected={sameShade(s, value)} onPick={onChange} className="block h-11 w-11" />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <p className="mt-3 text-xs text-muted" aria-live="polite">{status}</p>
-      <ul className="mt-2 grid max-h-72 grid-cols-6 gap-2 overflow-y-auto pr-1" aria-label="Shades">
+      <ul className={`mt-2 grid max-h-72 grid-cols-6 gap-2 overflow-y-auto pr-1 transition-opacity ${tab === "brands" && brandStale && brandPage ? "opacity-60" : ""}`} aria-label="Shades" aria-busy={tab === "brands" ? brandStale : webState === "loading"}>
         {list.map((s) => (
           <li key={`${s.hex}-${s.name}-${s.code ?? ""}`}>
-            <button
-              type="button"
-              title={`${s.name}${s.code ? ` ${s.code}` : ""} ${s.hex.toUpperCase()}`}
-              aria-label={s.name}
-              aria-pressed={s.hex === value.hex && s.name === value.name}
-              onClick={() => onChange(s)}
-              className="block aspect-square w-full rounded-xl border border-line-soft transition hover:-translate-y-0.5"
-              style={{ background: s.hex, boxShadow: s.hex === value.hex && s.name === value.name ? "0 0 0 2px #f8f5ef, 0 0 0 4px #242522" : undefined }}
-            />
+            <Swatch shade={s} selected={sameShade(s, value)} onPick={onChange} className="block aspect-square w-full" />
           </li>
         ))}
       </ul>
-      {tab === "brands" && brandPage && brandPage.page < brandPage.pages && brandState !== "error" && (
-        <button type="button" onClick={() => void showMore()} className="btn-secondary mt-3 !min-h-[40px] w-full !px-4 text-sm">
+      {tab === "brands" && brandPage && !brandStale && brandPage.page < brandPage.pages && brandState !== "error" && (
+        <button type="button" onClick={() => void showMore()} className="btn-secondary mt-3 !min-h-11 w-full !px-4 text-sm">
           Show more ({(brandPage.total - brandPage.items.length).toLocaleString("en-IN")} left)
         </button>
       )}

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const html = new URLSearchParams();
   if (brand) html.set("brand", brand);
   if (q) html.set("q", q);
-  if (family) html.set("family", family);
+  if (brand && family) html.set("family", family); // the finder reads family only inside a brand
   if (sort !== "shade") html.set("sort", sort);
   return apiOk({
     kind: "paint-colour",

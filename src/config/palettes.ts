@@ -66,8 +66,8 @@ export const palettes: Palette[] = [
     rooms: ["Living room"],
     shades: [asian("7912", "Yellow Tulip", "#fee19d", "Washable"), asian("M0950", "Old Lace", "#fdf5e6", "Washable"), asian("9722", "Malibu Green-n", "#009188", "Silk / sheen")],
     scene: "Living room",
-    description: "Yellow Tulip (Asian Paints 7912) on the long walls, Old Lace (M0950) on the ceiling, one Malibu Green-n (9722) wall behind the TV or sofa.",
-    tip: "Put the Malibu Green-n wall opposite the window so it gets daylight and photographs well.",
+    description: "Yellow Tulip (Asian Paints 7912) on the long walls, Old Lace (M0950) on the ceiling, one Malibu Green (9722) wall behind the TV or sofa.",
+    tip: "Put the Malibu Green wall opposite the window so it gets daylight and photographs well.",
   },
   {
     slug: "pooja-corner",
@@ -96,7 +96,7 @@ export const palettes: Palette[] = [
     rooms: ["Bedroom"],
     shades: [asian("7273", "Scuba Blue", "#a2bfd9", "Washable"), asian("L107", "Virgin Lace", "#eee9e2", "Matt emulsion"), asian("9963", "Sunrise Ray-n", "#fac9ad", "Matt emulsion")],
     scene: "Bedroom",
-    description: "Scuba Blue (Asian Paints 7273) on the bed wall, Virgin Lace (L107) elsewhere, a Sunrise Ray-n (9963) niche or door for warmth.",
+    description: "Scuba Blue (Asian Paints 7273) on the bed wall, Virgin Lace (L107) elsewhere, a Sunrise Ray (9963) niche or door for warmth.",
     tip: "Best in west-facing bedrooms that heat up in the afternoon.",
   },
   {
@@ -106,7 +106,7 @@ export const palettes: Palette[] = [
     rooms: ["Living room", "Bedroom"],
     shades: [asian("9642", "Sharp Navy-n", "#3b4f7d", "Silk / sheen"), asian("L146", "Sonnet", "#f7f1e7", "Matt emulsion"), asian("X166", "Dhoop-i", "#f1bc47", "Matt emulsion")],
     scene: "Living room",
-    description: "Sharp Navy-n (Asian Paints 9642) on one wall in sheen finish, Sonnet (L146) on the rest, a Dhoop-i (X166) accent in a shelf niche or on a single door.",
+    description: "Sharp Navy (Asian Paints 9642) on one wall in sheen finish, Sonnet (L146) on the rest, a Dhoop (X166) accent in a shelf niche or on a single door.",
     tip: "Dark walls need two finish coats and a tinted primer: it is on the quotation, not a surprise.",
   },
   {
@@ -116,7 +116,7 @@ export const palettes: Palette[] = [
     rooms: ["Exterior"],
     shades: [asian("8771", "Cambridge", "#dacfc4", "Exterior weatherproof"), asian("L146", "Sonnet", "#f7f1e7", "Exterior weatherproof"), asian("9937", "Red Rust-n", "#c76944", "Exterior weatherproof")],
     scene: "House exterior",
-    description: "Cambridge (Asian Paints 8771) on the walls, Sonnet (L146) on the parapet and window bands, Red Rust-n (9937) on the gate pillars and boundary-wall cap.",
+    description: "Cambridge (Asian Paints 8771) on the walls, Sonnet (L146) on the parapet and window bands, Red Rust (9937) on the gate pillars and boundary-wall cap.",
     tip: "Weatherproof finish only; emulsion chalks in one summer.",
   },
   {
@@ -126,7 +126,7 @@ export const palettes: Palette[] = [
     rooms: ["Exterior", "Balcony"],
     shades: [asian("L146", "Sonnet", "#f7f1e7", "Exterior weatherproof"), asian("8771", "Cambridge", "#dacfc4", "Exterior weatherproof"), asian("9651", "Pangong Blue-n", "#407eb6", "Exterior weatherproof")],
     scene: "House exterior",
-    description: "Sonnet (Asian Paints L146) walls, Cambridge (8771) on the plinth and boundary wall, Pangong Blue-n (9651) on the front door, gate and grilles.",
+    description: "Sonnet (Asian Paints L146) walls, Cambridge (8771) on the plinth and boundary wall, Pangong Blue (9651) on the front door, gate and grilles.",
     tip: "Repaint the door every two years; it is the cheapest refresh for the whole front.",
   },
   {
@@ -146,7 +146,7 @@ export const palettes: Palette[] = [
     rooms: ["Living room"],
     shades: [asian("8504", "Wood Fence", "#bea57e", "Matt emulsion"), asian("L140", "Crushed Ice", "#f3ecde", "Matt emulsion"), asian("9937", "Red Rust-n", "#c76944", "Silk / sheen")],
     scene: "Living room",
-    description: "Wood Fence (Asian Paints 8504) on the walls, Crushed Ice (L140) ceiling, Red Rust-n (9937) on the wall behind the dining table.",
+    description: "Wood Fence (Asian Paints 8504) on the walls, Crushed Ice (L140) ceiling, Red Rust (9937) on the wall behind the dining table.",
     tip: "Works best with cane, teak or sheesham furniture; avoid with glossy white laminates.",
   },
 ];
@@ -159,6 +159,13 @@ export function getPalette(slug: string): Palette | undefined {
 export function palettesForRoom(room?: Room): Palette[] {
   return room ? palettes.filter((p) => p.rooms.includes(room)) : palettes;
 }
+
+/**
+ * A shade's name as visitors read it. PaintDB keeps a one-letter suffix on some Asian Paints names
+ * ("Malibu Green-n", "Dhoop-i"); that is how the catalogue stores them, so PaletteShade.name keeps it
+ * and lookups stay exact, but in copy it reads like a typo, so it is dropped: "Malibu Green".
+ */
+export const shadeDisplayName = (name: string): string => name.replace(/-[a-z]$/, "");
 
 /** The brand names in a palette, in order of first use ("Asian Paints"). */
 export const paletteBrands = (p: Pick<Palette, "shades">): string[] => [...new Set(p.shades.map((s) => s.brandName))];

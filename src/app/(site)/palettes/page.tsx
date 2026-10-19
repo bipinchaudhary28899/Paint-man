@@ -3,7 +3,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { WallPreview } from "@/components/colours/WallPreview";
 import { Emoji } from "@/components/Emoji";
-import { palettes, type PaletteShade } from "@/config/palettes";
+import { palettes, shadeDisplayName, type PaletteShade } from "@/config/palettes";
 import { site } from "@/config/site";
 import { getBrandShade, hasShadeCardCode, matchLabel, nearestBrandShades, paintdb } from "@/lib/colours/brands";
 import { pageMetadata } from "@/lib/seo";
@@ -19,7 +19,7 @@ const roles = ["Feature wall", "Other walls & ceiling", "Accent"] as const;
 const MATCH_BRANDS = ["berger", "nerolac"];
 
 /** The colour finder searching one shade, and the visualizer starting on it. */
-const finderHref = (s: PaletteShade) => `/colours?${new URLSearchParams({ brand: s.brand, q: s.code })}`;
+const finderHref = (s: Pick<PaletteShade, "brand" | "code">) => `/colours?${new URLSearchParams({ brand: s.brand, q: s.code })}`;
 const visualizerHref = (s: PaletteShade) => `/visualizer?shade=${encodeURIComponent(s.id)}`;
 
 /** A palette shade with its LRV from the catalogue and its closest Berger and Nerolac shades. */
@@ -40,7 +40,7 @@ export default function PalettesPage() {
           <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
               <h1 className="text-4xl font-normal leading-[1.05] md:text-6xl">
-                Wall colour combinations that <span className="brush">already work</span>
+                Wall colour combinations for {site.city} homes that <span className="brush">already work</span>
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
                 Ready-made colour combinations, three shades per room: the feature wall, the white around it and one accent. Each
@@ -81,7 +81,7 @@ export default function PalettesPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-[11px] font-bold uppercase tracking-wider text-muted">{roles[j]}</p>
                           <h3 className="mt-0.5 font-display text-lg font-normal leading-tight">
-                            {s.name} <span className="font-sans text-sm font-semibold text-muted">{s.brandName} {s.code}</span>
+                            {shadeDisplayName(s.name)} <span className="font-sans text-sm font-semibold text-muted">{s.brandName} {s.code}</span>
                           </h3>
                           <p className="mt-1 text-xs font-semibold text-muted">
                             {s.hex.toUpperCase()}{s.lrv !== undefined && ` · LRV ${s.lrv}`} · {s.finish}
@@ -92,18 +92,24 @@ export default function PalettesPage() {
                               {s.matches.map((m, k) => (
                                 <span key={m.id}>
                                   {k > 0 && "; "}
-                                  {m.brandName} {m.name}
-                                  {hasShadeCardCode(m) ? ` ${m.code}` : ""} ({matchLabel(m.distance).toLowerCase()})
+                                  {hasShadeCardCode(m) ? (
+                                    <Link href={finderHref(m)} prefetch={false} className="underline decoration-line-strong underline-offset-2 hover:text-terracotta">
+                                      {m.brandName} {m.name} {m.code}
+                                    </Link>
+                                  ) : (
+                                    `${m.brandName} ${m.name}`
+                                  )}{" "}
+                                  ({matchLabel(m.distance).toLowerCase()})
                                 </span>
                               ))}
                             </p>
                           )}
                           <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold">
                             <Link href={finderHref(s)} prefetch={false} className="inline-flex min-h-11 items-center underline decoration-terracotta underline-offset-4 hover:text-terracotta">
-                              Find {s.code} in the finder
+                              See {s.brandName} {s.code} in the finder
                             </Link>
                             <Link href={visualizerHref(s)} prefetch={false} className="inline-flex min-h-11 items-center underline decoration-terracotta underline-offset-4 hover:text-terracotta">
-                              Try {s.name} on your wall
+                              Try {shadeDisplayName(s.name)} on your wall
                             </Link>
                           </p>
                         </div>
@@ -123,7 +129,7 @@ export default function PalettesPage() {
                 {/* phones: the room preview comes first, so the palette is seen before it is read */}
                 <div className={`-order-1 border-b border-line bg-chalk p-3 lg:order-none lg:border-b-0 ${i % 2 ? "lg:border-r-2" : "lg:border-l-2"} md:p-8`}>
                   <WallPreview
-                    colour={{ name: feature.name, code: `${feature.brandName} ${feature.code}`, hex: feature.hex, lrv: feature.lrv }}
+                    colour={{ name: shadeDisplayName(feature.name), code: `${feature.brandName} ${feature.code}`, hex: feature.hex, lrv: feature.lrv }}
                     maxHeight="min(70vh, 620px)"
                     sizes="(min-width: 1024px) 520px, 100vw"
                   />

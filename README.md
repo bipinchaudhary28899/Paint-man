@@ -166,8 +166,9 @@ the third party). The visualizer opens on Asian Paints Pepper Leaf (8386).
 (`src/lib/colours/brands.ts`) and is the site's only shade catalogue. The colour finder (`/colours`)
 is built on it: pick a brand (each is a real link, `/colours?brand=berger`), then a primary colour or
 scroll, or search by code, name or hex; 48 shades per load with infinite scroll. Loaded pages stay in the
-browser's memory and each API page is cached at Vercel's edge for a day, so scrolling back or
-reopening a colour family never repeats a request. The attribution ("Brand shades: PaintDB,
+browser's memory, so scrolling back or reopening a colour family never repeats a request. (The
+catalogue routes send `publicCache`, but `src/proxy.ts` currently sets `Cache-Control: no-store` on
+every `/api` response, so in practice they are not cached at the edge.) The attribution ("Brand shades: PaintDB,
 CC BY 4.0") must stay wherever these shades are shown; hex values approximate each brand's
 published shade, and Paint Man is not affiliated with these brands.
 
@@ -179,11 +180,13 @@ retired: the brands' shade cards already cover them, and customers ask for shade
 - **Palettes** (`src/config/palettes.ts`) use real Asian Paints shades: each old palette colour became
   its nearest Asian Paints shade (OKLab). Tests check every one against the PaintDB data. The palettes
   page also names the closest Berger and Nerolac shade to each.
-- **Old URLs:** `src/proxy.ts` answers every old `/colours/PM-xxx` URL (any case) with a 308 to the
+- **Old URLs:** `src/proxy.ts` answers every old `/colours/PM-xxx` URL (any case, and the short
+  forms `/colours/pm502` and `/colours/502` the old pages accepted) with a 308 to the
   finder searching its nearest Asian Paints shade, from the map in `src/config/legacy-shades.ts`. Any
   other `/colours/<x>` is a 404. Never reuse a PM code.
 - **Old APIs:** `/api/v1/colours` and `/api/v1/colours/{code}` answer `410 Gone` (code `gone`) and
-  point to `/api/v1/colours/paint` and `/api/v1/colours/brands`. `/api/v1/palettes` keeps its fields
+  point to `/api/v1/colours/paint` and `/api/v1/colours/brands`; for an old code,
+  `error.details.replacement` names its nearest Asian Paints shade. `/api/v1/palettes` keeps its fields
   (`colours.featureWall.code` etc.) and adds `id`, `brand` and `brandName` to each shade.
 
 **Limitations** (measured on 14 hard room photos, see `docs/visualizer-eval/REPORT.md`). SegFormer-B0

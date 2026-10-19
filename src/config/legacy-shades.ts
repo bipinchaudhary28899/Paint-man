@@ -31,8 +31,12 @@ export const legacyShades: Readonly<Record<string, string>> = {
   "PM-2205": "8007", "PM-2206": "8607", "PM-2207": "8598", "PM-2208": "K201", "PM-2209": "9939", "PM-2210": "K218", "PM-2211": "8253",
 };
 
-/** The Asian Paints code for a legacy Paint Man code, any case ("pm-502" → "8386"); undefined for anything else. */
+/**
+ * The Asian Paints code for a legacy Paint Man code; undefined for anything else. Accepts every form
+ * the old shade pages did, in any case: "PM-502", "pm-502", "PM502", "PM 502" and the bare "502".
+ */
 export function legacyShadeCode(code: string): string | undefined {
-  const key = code.toUpperCase();
+  const m = /^(?:PM[\s-]*)?(\d{3,4})$/.exec(code.trim().toUpperCase());
+  const key = m ? `PM-${m[1]}` : "";
   return Object.hasOwn(legacyShades, key) ? legacyShades[key] : undefined;
 }

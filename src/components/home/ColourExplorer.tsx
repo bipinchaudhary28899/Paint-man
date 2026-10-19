@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
+import { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
 import { clamp01, useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
 // Wheel of 36 illustrative shades that turns only with the scroll: it starts the moment the
@@ -97,6 +97,8 @@ export function ColourExplorer() {
           </ul>
           <p className="mt-3.5 text-xs text-muted-2">
             Shades shown on screen are illustrative. Final colour depends on the paint range, finish and your room&apos;s light.
+            Brand shade data: <a href={PAINTDB.source} className="underline" rel="noopener" target="_blank">PaintDB</a>,{" "}
+            <a href={PAINTDB.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>.
           </p>
           <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2">
             <Link href="/book" className="link-arrow">

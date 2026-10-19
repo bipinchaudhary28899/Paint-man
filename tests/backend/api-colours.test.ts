@@ -33,16 +33,20 @@ describe("API envelope", () => {
 });
 
 /** What a client of a retired shade endpoint gets: 410, the error envelope and where to go instead. */
-async function expectGone(res: Response) {
+async function expectGone(res: Response, replacement?: unknown) {
   expect(res.status).toBe(410);
   expect(res.headers.get("cache-control")).toBe(publicCache["Cache-Control"]);
   const body = await res.json();
   expect(body).toMatchObject({ apiVersion: "v1", kind: "error", error: { code: "gone" } });
   expect(body.label).toBe(body.error.message);
   expect(body.error.message).toContain("/api/v1/colours/paint");
-  expect(body.error.details).toEqual({ search: "/api/v1/colours/paint", brands: "/api/v1/colours/brands", html: "/colours" });
+  const successors = { search: "/api/v1/colours/paint", brands: "/api/v1/colours/brands", html: "/colours" };
+  expect(body.error.details).toEqual(replacement ? { ...successors, replacement } : successors);
   expect(typeof body.meta.generatedAt).toBe("string");
+  return body;
 }
+
+const oneColourAt = (code: string) => oneColour(get(`/api/v1/colours/${encodeURIComponent(code)}`), { params: Promise.resolve({ code }) });
 
 describe("GET /api/v1/colours (retired)", () => {
   it("answers 410 Gone with the brand-shade endpoints, whatever the query", async () => {
@@ -51,9 +55,20 @@ describe("GET /api/v1/colours (retired)", () => {
 });
 
 describe("GET /api/v1/colours/{code} (retired)", () => {
-  it("answers 410 Gone for an old Paint Man code and for anything else", async () => {
-    await expectGone(oneColour());
-    expect(Object.keys(legacyShades).length).toBeGreaterThan(0); // old codes exist, and they too are gone
+  it("answers 410 Gone for an old Paint Man code, naming its nearest Asian Paints shade", async () => {
+    const [pm, code] = Object.entries(legacyShades)[0];
+    const replacement = { id: `asian-paints:${code}`, self: `/api/v1/colours/paint?brand=asian-paints&q=${code}`, html: `/colours?brand=asian-paints&q=${code}` };
+    const body = await expectGone(await oneColourAt(pm), replacement);
+    expect(body.error.message).toContain(`asian-paints:${code}`);
+    await expectGone(await oneColourAt(pm.toLowerCase().replace("-", "")), replacement); // short forms too
+    // and the replacement is a real shade the paint API finds
+    const { GET: searchPaint } = await import("@/app/api/v1/colours/paint/route");
+    const found = await (await searchPaint(get(replacement.self))).json();
+    expect(found.data.map((s: { id: string }) => s.id)).toContain(replacement.id);
+  });
+
+  it("answers the plain 410 for anything that was never a Paint Man code", async () => {
+    for (const code of ["sage", "99999", "asian-paints:8386", ""]) await expectGone(await oneColourAt(code));
   });
 });
 

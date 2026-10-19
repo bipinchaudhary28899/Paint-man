@@ -129,6 +129,9 @@ describe("ColourExplorer", () => {
     expect(screen.getByText("#C76B4A · Terracottas")).toBeInTheDocument();
     expect(screen.getByText(/Discuss this shade with us/)).toHaveAttribute("href", "/book");
     expect(screen.getByText("Search 50,000+ brand shades")).toHaveAttribute("href", "/colours");
+    // the home page names a PaintDB shade (the pinned reveal), so the credit sits with the shade links
+    expect(screen.getByRole("link", { name: "PaintDB" })).toHaveAttribute("href", "https://paintdb.com");
+    expect(screen.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
   });
 
   it("switches the selected shade card when a swatch is tapped", async () => {

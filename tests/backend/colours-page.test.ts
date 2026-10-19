@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ColoursPage, { metadata as finderMetadata } from "@/app/(site)/colours/page";
 import PalettesPage from "@/app/(site)/palettes/page";
-import { palettes } from "@/config/palettes";
+import { palettes, shadeDisplayName } from "@/config/palettes";
 import { decodeEntities, getBrandShade, hasShadeCardCode, nearestBrandShades } from "@/lib/colours/brands";
 
 // The routes themselves sit outside the coverage gate; these check the behaviour that matters for
@@ -57,7 +57,8 @@ describe("/palettes", () => {
       expect(text).toContain(p.description);
       expect(links).toContain(`/book?palette=${p.slug}`);
       for (const s of p.shades) {
-        expect(text, s.id).toContain(`${s.name} ${s.brandName} ${s.code}`);
+        expect(text, s.id).toContain(`${shadeDisplayName(s.name)} ${s.brandName} ${s.code}`);
+        expect(text, s.id).toContain(`See ${s.brandName} ${s.code} in the finder`);
         expect(text, s.id).toContain(`${s.hex.toUpperCase()} · LRV ${getBrandShade(s.id)!.lrv} · ${s.finish}`);
         expect(links, s.id).toContain(`/colours?brand=${s.brand}&q=${s.code}`);
         expect(links, s.id).toContain(`/visualizer?shade=${encodeURIComponent(s.id)}`);
@@ -70,6 +71,9 @@ describe("/palettes", () => {
       for (const m of nearestBrandShades(s.hex, ["berger", "nerolac"], 1)) {
         const best = m.shades[0];
         expect(text, `${s.id} → ${best.id}`).toContain(`${best.brandName} ${best.name}${hasShadeCardCode(best) ? ` ${best.code}` : ""} (`);
+        // a match with a real shade-card code opens in the finder, for visitors who prefer that brand
+        if (hasShadeCardCode(best)) expect(links, best.id).toContain(`/colours?brand=${best.brand}&q=${encodeURIComponent(best.code).replace(/%20/g, "+")}`);
+        else expect(links.some((h) => h.includes(`q=${encodeURIComponent(best.code)}`)), best.id).toBe(false);
       }
     }
   });
@@ -79,6 +83,7 @@ describe("/palettes", () => {
     expect(links).toEqual(expect.arrayContaining(["https://paintdb.com", "https://creativecommons.org/licenses/by/4.0/"]));
     const levels = [...html.matchAll(/<h([1-6])\b/g)].map((m) => Number(m[1]));
     expect(levels.filter((l) => l === 1)).toHaveLength(1);
+    expect(textOf(html.match(/<h1[\s\S]*?<\/h1>/)![0])).toContain("Wall colour combinations for Agra homes that already work");
     expect(levels[0]).toBe(1);
     for (let i = 1; i < levels.length; i++) expect(levels[i] - levels[i - 1]).toBeLessThanOrEqual(1);
     expect(text).not.toMatch(/PM-\d|Paint Man shade/);

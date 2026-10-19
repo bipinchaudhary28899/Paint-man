@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { finishes, getPalette, isRoom, paletteBrands, palettes, palettesForRoom, rooms } from "@/config/palettes";
+import { finishes, getPalette, isRoom, paletteBrands, palettes, palettesForRoom, rooms, shadeDisplayName } from "@/config/palettes";
 import { services } from "@/config/site";
 import { getBrandShade } from "@/lib/colours/brands";
 
@@ -44,12 +44,21 @@ describe("palettes", () => {
   it("name every one of their shades, with its shade-card code, in the description", () => {
     for (const p of palettes) {
       for (const s of p.shades) {
-        expect(p.description, `${p.slug}: ${s.name}`).toContain(`${s.name} (`);
+        expect(p.description, `${p.slug}: ${s.name}`).toContain(`${shadeDisplayName(s.name)} (`);
         expect(p.description, `${p.slug}: ${s.code}`).toContain(s.code);
       }
       // the first shade carries the brand, so the description reads on its own
-      expect(p.description, p.slug).toContain(`${p.shades[0].name} (${p.shades[0].brandName} ${p.shades[0].code})`);
+      expect(p.description, p.slug).toContain(`${shadeDisplayName(p.shades[0].name)} (${p.shades[0].brandName} ${p.shades[0].code})`);
     }
+  });
+
+  it("write shade names in their copy without PaintDB's one-letter suffixes", () => {
+    expect(shadeDisplayName("Malibu Green-n")).toBe("Malibu Green");
+    expect(shadeDisplayName("Dhoop-i")).toBe("Dhoop");
+    expect(shadeDisplayName("Pepper Leaf")).toBe("Pepper Leaf");
+    expect(shadeDisplayName("Off-White")).toBe("Off-White"); // a real hyphen stays
+    for (const p of palettes) for (const text of [p.description, p.tip]) expect(text, p.slug).not.toMatch(/\b[A-Z][a-z]+-[a-z]\b/);
+    expect(palettes.some((p) => p.shades.some((s) => s.name !== shadeDisplayName(s.name)))).toBe(true); // the catalogue names keep them
   });
 
   it("quote weatherproof paint outside and an interior finish inside, as their tips say", () => {
