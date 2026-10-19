@@ -61,7 +61,7 @@ const climate: { title: string; emoji: EmojiName; text: string; link?: { href: s
 ];
 
 const plan = [
-  { href: "/colours", title: "Colour finder", text: "Search shades by code, name or mood, including brand shade-card codes." },
+  { href: "/colours", title: "Colour finder", text: "Search the shade cards of Asian Paints, Berger, Nerolac and more by code, name or hex." },
   { href: "/palettes", title: "Wall colour combinations", text: "A feature wall, its matching white and an accent, shown on a room." },
   { href: "/visualizer", title: "Wall colour visualizer", text: "Try a shade on a photo of your own room. The photo stays on your device." },
 ];

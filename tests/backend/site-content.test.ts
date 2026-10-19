@@ -2,10 +2,9 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import sitemap from "@/app/sitemap";
-import { rooms } from "@/config/colours";
 import { getPalette } from "@/config/palettes";
 import { areaSlug, generalFaqs, getService, jobDuration, jobSize, services, site, type Service } from "@/config/site";
-import { getColour } from "@/lib/colours/search";
+import { getBrandShade } from "@/lib/colours/brands";
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import { serviceTypes } from "@/lib/leads/options";
 
@@ -130,16 +129,19 @@ describe("services", () => {
     }
   });
 
-  it("matching palettes, their shades and the shade-finder room all resolve", () => {
+  it("matching palettes and their brand shades all resolve", () => {
     for (const s of services) {
       expect(s.shades.palettes.length).toBeGreaterThan(0);
       for (const slug of s.shades.palettes) {
         const palette = getPalette(slug);
         expect(palette, `${s.slug} → ${slug}`).toBeDefined();
-        for (const code of palette!.codes) expect(getColour(code)).toBeDefined();
+        for (const shade of palette!.shades) expect(getBrandShade(shade.id), `${slug} → ${shade.id}`).toBeDefined();
       }
-      if (s.shades.room) expect(rooms).toContain(s.shades.room);
     }
+  });
+
+  it("never promises shade pages of our own: shades open in the brand finder", () => {
+    for (const s of services) expect(s.shades.intro, s.slug).not.toMatch(/open any shade for its|room photos|PM-\d/);
   });
 
   it("never states a price: no rupee figures or per-sq-ft rates in any copy", () => {

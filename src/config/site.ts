@@ -1,6 +1,5 @@
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import type { serviceTypes } from "@/lib/leads/options";
-import type { Room } from "./colours";
 import { images, type SiteImage } from "./images";
 
 // Central business details. Fill the TODO fields before launch: they feed the
@@ -96,8 +95,8 @@ export type Service = {
   sizeExamples?: { home: string; carpetArea: number }[];
   /** Aftercare and cleanup. */
   aftercare: string[];
-  /** Palette slugs from src/config/palettes.ts, and an optional room filter for the shade finder. */
-  shades: { intro: string; palettes: string[]; room?: Room };
+  /** Palette slugs from src/config/palettes.ts, shown with their brand shade-card codes. */
+  shades: { intro: string; palettes: string[] };
   faqs: FaqItem[];
 };
 
@@ -222,7 +221,7 @@ export const services: Service[] = [
     ],
     shades: {
       intro:
-        "Most rooms work best with one colour on a feature wall and a matching white on the other walls and ceiling. Start from a ready palette, open any shade for its code and room photos, or try it on a photo of your own room in the visualizer.",
+        "Most rooms work best with one colour on a feature wall and a matching white on the other walls and ceiling. Start from a ready palette, look any shade up by its Asian Paints code in the colour finder, or try it on a photo of your own room in the visualizer.",
       palettes: ["calm-bedroom", "sunny-living-room", "earthy-living-room", "kids-room-pista"],
     },
     faqs: [
@@ -338,9 +337,8 @@ export const services: Service[] = [
     ],
     shades: {
       intro:
-        "Outside walls face strong sun and plenty of dust. Stone and warm beige shades hide dust better than bright white, with a white or a deeper accent on bands, gates and doors. Each shade below opens with its code; browse the finder for every exterior shade.",
+        "Outside walls face strong sun and plenty of dust. Stone and warm beige shades hide dust better than bright white, with a white or a deeper accent on bands, gates and doors. Each shade below is an Asian Paints shade-card code that opens in the colour finder, beside the shade cards of Berger, Nerolac and other brands.",
       palettes: ["agra-stone-exterior", "blue-door-exterior"],
-      room: "Exterior",
     },
     faqs: [
       {
@@ -449,7 +447,6 @@ export const services: Service[] = [
       intro:
         "Neutral whites and light greys suit any tenant's furniture and make touch-ups between tenancies easy to match. Washable finishes in kitchens and passages keep the next refresh small.",
       palettes: ["rental-refresh"],
-      room: "Rental refresh",
     },
     faqs: [
       {

@@ -16,7 +16,7 @@ export function GET() {
     label: `${brands.length} paint brands, ${shadeCount().toLocaleString("en-IN")} shades in all`,
     data: brands,
     meta: { total: brands.length, shades: shadeCount(), families: shadeFamilies(), source: paintdb.source, license: paintdb.license, licenseUrl: paintdb.licenseUrl, attribution: paintdb.attribution, note: paintdb.note },
-    links: { self: "/api/v1/colours/brands", search: "/api/v1/colours/paint", html: "/colours?catalogue=brands" },
+    links: { self: "/api/v1/colours/brands", search: "/api/v1/colours/paint", html: "/colours" },
     headers: publicCache,
   });
 }

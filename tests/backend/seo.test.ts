@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import manifest from "@/app/manifest";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
-import { colours, curatedColours } from "@/config/colours";
 import { contentUpdated, sectionUpdated, SITE_UPDATED } from "@/config/seo-dates";
 import { services, site } from "@/config/site";
 import {
@@ -63,18 +62,18 @@ describe("pageMetadata", () => {
 
   it("lets a page supply its own share image, made absolute when root-relative", () => {
     const own = pageMetadata({
-      title: "Sage Mist",
+      title: "Calm bedroom",
       description: "d",
-      path: "/colours/PM-502",
-      image: { url: "/colours/PM-502/opengraph-image", alt: "Sage Mist swatch", width: 1200, height: 630 },
+      path: "/palettes",
+      image: { url: "/palettes/opengraph-image", alt: "Calm bedroom palette swatches", width: 1200, height: 630 },
     });
     expect((own.openGraph as { images: Json[] }).images[0]).toEqual({
-      url: `${site.url}/colours/PM-502/opengraph-image`,
-      alt: "Sage Mist swatch",
+      url: `${site.url}/palettes/opengraph-image`,
+      alt: "Calm bedroom palette swatches",
       width: 1200,
       height: 630,
     });
-    expect((own.twitter as { images: Json[] }).images[0]).toEqual({ url: `${site.url}/colours/PM-502/opengraph-image`, alt: "Sage Mist swatch" });
+    expect((own.twitter as { images: Json[] }).images[0]).toEqual({ url: `${site.url}/palettes/opengraph-image`, alt: "Calm bedroom palette swatches" });
 
     const remote = pageMetadata({ title: "t", description: "d", path: "/x", image: { url: "https://cdn.example.com/a.jpg", alt: "A room" } });
     expect((remote.openGraph as { images: Json[] }).images[0].url).toBe("https://cdn.example.com/a.jpg");
@@ -263,11 +262,11 @@ describe("content dates", () => {
   });
 
   it("uses the most specific section date and falls back to the site date", () => {
-    const sections = { "/colours": "2026-01-02", "/colours/PM-101": "2026-03-04", "/": "2026-05-06" };
-    expect(contentUpdated("/colours", sections)).toBe("2026-01-02");
-    expect(contentUpdated("/colours/PM-502", sections)).toBe("2026-01-02");
-    expect(contentUpdated("/colours/PM-101", sections)).toBe("2026-03-04");
-    expect(contentUpdated("/coloursx", sections)).toBe(SITE_UPDATED);
+    const sections = { "/services": "2026-01-02", "/services/exterior-painting": "2026-03-04", "/": "2026-05-06" };
+    expect(contentUpdated("/services", sections)).toBe("2026-01-02");
+    expect(contentUpdated("/services/interior-painting", sections)).toBe("2026-01-02");
+    expect(contentUpdated("/services/exterior-painting", sections)).toBe("2026-03-04");
+    expect(contentUpdated("/servicesx", sections)).toBe(SITE_UPDATED);
     expect(contentUpdated("/", sections)).toBe("2026-05-06");
     expect(contentUpdated("/faq", sections)).toBe(SITE_UPDATED);
     expect(contentUpdated("/terms")).toBe(sectionUpdated["/terms"]);
@@ -288,14 +287,10 @@ describe("sitemap", () => {
     for (const e of sitemap()) expect(e.url.startsWith(site.url)).toBe(true);
   });
 
-  it("lists the curated shades only, never the generated ladder", () => {
+  it("lists the colour finder and no /colours/<code> pages (the old shade URLs redirect)", () => {
     const urls = paths();
-    for (const c of curatedColours) expect(urls).toContain(`/colours/${c.code}`);
-    const curated = new Set(curatedColours.map((c) => c.code));
-    const generated = colours.filter((c) => !curated.has(c.code));
-    expect(generated.length).toBeGreaterThan(0);
-    for (const c of generated) expect(urls).not.toContain(`/colours/${c.code}`);
-    expect(urls.filter((u) => u.startsWith("/colours/"))).toHaveLength(curatedColours.length);
+    expect(urls).toContain("/colours");
+    expect(urls.filter((u) => u.startsWith("/colours/"))).toEqual([]);
   });
 
   it("dates entries from config, not from the build clock", () => {

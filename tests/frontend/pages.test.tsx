@@ -5,6 +5,7 @@ import { AreaLinks } from "@/components/home/AreaLinks";
 import AboutPage, { metadata as aboutMeta } from "@/app/(site)/about/page";
 import AreasPage, { metadata as areasMeta } from "@/app/(site)/areas/page";
 import BookPage, { metadata as bookMeta } from "@/app/(site)/book/page";
+import ColoursPage, { metadata as coloursMeta } from "@/app/(site)/colours/page";
 import ContactPage, { metadata as contactMeta } from "@/app/(site)/contact/page";
 import PalettesPage, { metadata as palettesMeta } from "@/app/(site)/palettes/page";
 import PrivacyPage, { metadata as privacyMeta } from "@/app/(site)/privacy-policy/page";
@@ -26,6 +27,7 @@ const pages: { path: string; Page: () => React.ReactNode; metadata: Metadata; h1
   { path: "/about", Page: AboutPage, metadata: aboutMeta, h1: new RegExp(`house painting in ${site.city}`, "i") },
   { path: "/areas", Page: AreasPage, metadata: areasMeta, h1: new RegExp(`^areas we serve in ${site.city}`, "i") },
   { path: "/book", Page: BookPage, metadata: bookMeta, h1: new RegExp(`painting inspection in ${site.city}`, "i") },
+  { path: "/colours", Page: ColoursPage, metadata: coloursMeta, h1: new RegExp(`find a wall colour in ${site.city}`, "i") },
   { path: "/contact", Page: ContactPage, metadata: contactMeta, h1: new RegExp(`house painters in ${site.city}`, "i") },
   { path: "/palettes", Page: PalettesPage, metadata: palettesMeta, h1: /wall colour combinations/i },
   { path: "/privacy-policy", Page: PrivacyPage, metadata: privacyMeta, h1: /privacy policy/i },
@@ -208,6 +210,7 @@ describe("static /book and /visualizer", () => {
   it("/visualizer renders the full visualizer", () => {
     render(<VisualizerPage />);
     expect(screen.getByLabelText("Choose a room photo")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Book an inspection with/ })).toHaveAttribute("href", expect.stringMatching(/^\/book\?colour=PM-/));
+    // the default shade is a brand shade, booked by its id
+    expect(screen.getByRole("link", { name: "Book an inspection with Pepper Leaf" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8386");
   });
 });

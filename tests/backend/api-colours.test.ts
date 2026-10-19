@@ -1,14 +1,13 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
-import { colours } from "@/config/colours";
-import { palettes } from "@/config/palettes";
-import { apiError, apiOk } from "@/lib/api";
+import { legacyShades } from "@/config/legacy-shades";
+import { palettes, rooms } from "@/config/palettes";
+import { apiError, apiOk, publicCache } from "@/lib/api";
 import { GET as listColours } from "@/app/api/v1/colours/route";
 import { GET as oneColour } from "@/app/api/v1/colours/[code]/route";
 import { GET as listPalettes } from "@/app/api/v1/palettes/route";
 
 const get = (url: string) => new NextRequest(`http://localhost:3000${url}`);
-const one = (code: string) => oneColour(get(`/api/v1/colours/${code}`), { params: Promise.resolve({ code }) });
 
 describe("API envelope", () => {
   it("wraps data with version, kind, label, meta and optional links", async () => {
@@ -21,103 +20,98 @@ describe("API envelope", () => {
     expect(plain).not.toHaveProperty("links");
   });
 
-  it("errors use the same envelope with an error object", async () => {
+  it("errors use the same envelope with an error object, uncached unless asked", async () => {
     const res = apiError(418, "teapot", "Short and stout.", ["detail"]);
     expect(res.status).toBe(418);
+    expect(res.headers.get("cache-control")).toBeNull();
     const body = await res.json();
     expect(body).toMatchObject({ apiVersion: "v1", kind: "error", label: "Short and stout.", error: { code: "teapot", message: "Short and stout.", details: ["detail"] } });
     const bare = await apiError(400, "x", "y").json();
     expect(bare.error).not.toHaveProperty("details");
+    expect(apiError(410, "gone", "Gone.", undefined, publicCache).headers.get("cache-control")).toBe(publicCache["Cache-Control"]);
   });
 });
 
-describe("GET /api/v1/colours", () => {
-  it("returns the whole catalogue with a readable label and per-item links", async () => {
-    const res = listColours(get("/api/v1/colours"));
-    expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toContain("public");
-    const body = await res.json();
-    expect(body.apiVersion).toBe("v1");
-    expect(body.kind).toBe("colour");
-    expect(body.label).toBe(`${colours.length} Paint Man wall colours`);
-    expect(body.data).toHaveLength(colours.length);
-    expect(body.data[0]).toMatchObject({ code: "PM-101", name: "Taj White", links: { self: "/api/v1/colours/PM-101", html: "/colours/PM-101" } });
-    expect(body.meta).toMatchObject({ total: colours.length, query: { q: "", family: null, room: null, limit: null } });
-    expect(body.meta.hints.families).toContain("Greens");
-    expect(body.links.html).toBe("/colours");
-  });
+/** What a client of a retired shade endpoint gets: 410, the error envelope and where to go instead. */
+async function expectGone(res: Response, replacement?: unknown) {
+  expect(res.status).toBe(410);
+  expect(res.headers.get("cache-control")).toBe(publicCache["Cache-Control"]);
+  const body = await res.json();
+  expect(body).toMatchObject({ apiVersion: "v1", kind: "error", error: { code: "gone" } });
+  expect(body.label).toBe(body.error.message);
+  expect(body.error.message).toContain("/api/v1/colours/paint");
+  const successors = { search: "/api/v1/colours/paint", brands: "/api/v1/colours/brands", html: "/colours" };
+  expect(body.error.details).toEqual(replacement ? { ...successors, replacement } : successors);
+  expect(typeof body.meta.generatedAt).toBe("string");
+  return body;
+}
 
-  it("searches and describes the query in the label", async () => {
-    const body = await listColours(get("/api/v1/colours?q=sage&family=Greens&room=Bedroom&limit=1")).json();
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].code).toBe("PM-502");
-    expect(body.label).toBe('1 Paint Man wall colour matching "sage", in Greens, for Bedroom');
-    expect(body.links.html).toBe("/colours?q=sage");
-  });
+const oneColourAt = (code: string) => oneColour(get(`/api/v1/colours/${encodeURIComponent(code)}`), { params: Promise.resolve({ code }) });
 
-  it("rejects unknown families and rooms and bad limits with hints", async () => {
-    const fam = listColours(get("/api/v1/colours?family=Neons"));
-    expect(fam.status).toBe(400);
-    const famBody = await fam.json();
-    expect(famBody.error.code).toBe("invalid_family");
-    expect(famBody.error.details).toContain("Greens");
-
-    const room = await listColours(get("/api/v1/colours?room=Garage"));
-    expect(room.status).toBe(400);
-    expect((await room.json()).error.code).toBe("invalid_room");
-
-    for (const bad of ["0", "101", "abc", "2.5"]) {
-      const res = listColours(get(`/api/v1/colours?limit=${bad}`));
-      expect(res.status).toBe(400);
-      expect((await res.json()).error.code).toBe("invalid_limit");
-    }
-  });
-
-  it("truncates absurdly long queries instead of failing", async () => {
-    const body = await listColours(get(`/api/v1/colours?q=${"a".repeat(500)}`)).json();
-    expect(body.meta.query.q).toHaveLength(80);
+describe("GET /api/v1/colours (retired)", () => {
+  it("answers 410 Gone with the brand-shade endpoints, whatever the query", async () => {
+    await expectGone(listColours());
   });
 });
 
-describe("GET /api/v1/colours/[code]", () => {
-  it("returns one shade with pairings, similar shades and a booking link", async () => {
-    const res = await one("pm502");
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.kind).toBe("colour");
-    expect(body.label).toContain("Sage Mist (PM-502)");
-    expect(body.data.code).toBe("PM-502");
-    expect(body.data.pairings.map((p: { code: string }) => p.code)).toEqual(["PM-102", "PM-204"]);
-    expect(body.data.similar.length).toBeGreaterThan(0);
-    expect(body.links).toEqual({ self: "/api/v1/colours/PM-502", html: "/colours/PM-502", book: "/book?colour=PM-502" });
+describe("GET /api/v1/colours/{code} (retired)", () => {
+  it("answers 410 Gone for an old Paint Man code, naming its nearest Asian Paints shade", async () => {
+    const [pm, code] = Object.entries(legacyShades)[0];
+    const replacement = { id: `asian-paints:${code}`, self: `/api/v1/colours/paint?brand=asian-paints&q=${code}`, html: `/colours?brand=asian-paints&q=${code}` };
+    const body = await expectGone(await oneColourAt(pm), replacement);
+    expect(body.error.message).toContain(`asian-paints:${code}`);
+    await expectGone(await oneColourAt(pm.toLowerCase().replace("-", "")), replacement); // short forms too
+    // and the replacement is a real shade the paint API finds
+    const { GET: searchPaint } = await import("@/app/api/v1/colours/paint/route");
+    const found = await (await searchPaint(get(replacement.self))).json();
+    expect(found.data.map((s: { id: string }) => s.id)).toContain(replacement.id);
   });
 
-  it("404s in the envelope for an unknown code", async () => {
-    const res = await one("PM-999");
-    expect(res.status).toBe(404);
-    const body = await res.json();
-    expect(body.kind).toBe("error");
-    expect(body.error.code).toBe("not_found");
+  it("answers the plain 410 for anything that was never a Paint Man code", async () => {
+    for (const code of ["sage", "99999", "asian-paints:8386", ""]) await expectGone(await oneColourAt(code));
   });
 });
 
 describe("GET /api/v1/palettes", () => {
-  it("lists palettes with the three shades resolved by role", async () => {
+  it("lists palettes with the three brand shades by role, field names unchanged", async () => {
     const res = listPalettes(get("/api/v1/palettes"));
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe(publicCache["Cache-Control"]);
     const body = await res.json();
     expect(body.kind).toBe("palette");
+    expect(body.label).toBe("10 wall colour palettes, each three brand paint shades: a feature wall, the other walls and an accent");
+    expect(body.label).not.toMatch(/Paint Man/);
     expect(body.data).toHaveLength(palettes.length);
-    expect(body.data[0].colours.featureWall).toMatchObject({ code: "PM-502", name: "Sage Mist", links: { html: "/colours/PM-502" } });
-    expect(body.data[0].links).toEqual({ html: "/palettes#calm-bedroom", book: "/book?palette=calm-bedroom" });
+    const calm = body.data[0];
+    expect(calm).toMatchObject({ slug: "calm-bedroom", name: "Calm bedroom", rooms: ["Bedroom"], description: palettes[0].description, tip: palettes[0].tip });
+    expect(Object.keys(calm.colours)).toEqual(["featureWall", "otherWalls", "accent"]);
+    expect(calm.colours.featureWall).toEqual({
+      code: "8386",
+      name: "Pepper Leaf",
+      hex: "#bbc8b2",
+      finish: "Matt emulsion",
+      id: "asian-paints:8386",
+      brand: "asian-paints",
+      brandName: "Asian Paints",
+      links: { self: "/api/v1/colours/paint?brand=asian-paints&q=8386", html: "/colours?brand=asian-paints&q=8386" },
+    });
+    expect(calm.links).toEqual({ html: "/palettes#calm-bedroom", book: "/book?palette=calm-bedroom" });
+    expect(body.meta).toMatchObject({ total: palettes.length, query: { room: null }, hints: { rooms: [...rooms] } });
+    expect(body.links).toEqual({ self: "/api/v1/palettes", html: "/palettes" });
   });
 
-  it("filters by room and rejects unknown rooms", async () => {
+  it("filters by room and rejects unknown rooms with the valid ones", async () => {
     const body = await listPalettes(get("/api/v1/palettes?room=Exterior")).json();
     expect(body.data.length).toBeGreaterThan(0);
     expect(body.data.every((p: { rooms: string[] }) => p.rooms.includes("Exterior"))).toBe(true);
     expect(body.label).toContain("for Exterior");
+    expect(body.meta.query).toEqual({ room: "Exterior" });
+    const one = await listPalettes(get("/api/v1/palettes?room=Pooja%20room")).json();
+    expect(one.label).toMatch(/^1 wall colour palette for Pooja room,/);
+
     const bad = listPalettes(get("/api/v1/palettes?room=Garage"));
     expect(bad.status).toBe(400);
+    const err = await bad.json();
+    expect(err.error).toMatchObject({ code: "invalid_room", details: [...rooms] });
   });
 });

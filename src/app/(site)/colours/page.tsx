@@ -4,22 +4,23 @@ import { CtaBanner } from "@/components/CtaBanner";
 import { ColourFinderFromUrl } from "@/components/colours/ColourFinder";
 import { Emoji } from "@/components/Emoji";
 import { JsonLd } from "@/components/JsonLd";
-import { colours } from "@/config/colours";
 import { brandList, paintdb, shadeCount, shadeFamilies } from "@/lib/colours/brands";
-import { finderDescription, finderTitle } from "@/lib/colours/seo";
+import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
 import { site } from "@/config/site";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
+// Counts in the metadata stay modest on purpose ("50,000+", three named brands): the data has
+// 50,762 shades from 25 brands, and tests/backend/colours-brands.test.ts keeps the rounding true.
 export const metadata = pageMetadata({
-  title: finderTitle(),
-  description: finderDescription(colours.length),
+  title: `Wall Colour Finder & Shade Codes in ${site.city}`,
+  description: `Search ${BRAND_SHADES_ROUNDED} paint shades from Asian Paints, Berger, Nerolac and more by code and see each on a room wall. We bring the shade card to your ${site.city} home.`,
   path: "/colours",
 });
 
 const colourFaqs = [
   {
     q: "Can I search Asian Paints, Berger or Nerolac shade codes?",
-    a: "Yes. Switch to Brand shades and type the code from the shade card, for example Asian Paints 7982 or Berger 3P0050: 50,000+ shades from 25 brands. PM codes are Paint Man's own short list; on the quotation we write the exact brand, range and code you approve.",
+    a: `Yes. Pick the brand and type the code from its shade card, for example Asian Paints 7982 or Berger 3P0050, or search all ${brandList().length} brands at once. On the quotation we write the exact brand, range and code you approve.`,
   },
   {
     q: "Will the wall look like the screen?",
@@ -32,12 +33,12 @@ const colourFaqs = [
 ];
 
 // Static: the page never reads searchParams on the server, so it is prerendered and served from
-// the CDN. The finder reads ?q, ?family, ?room, ?catalogue and ?brand in the browser after it
-// hydrates; the prerendered HTML crawlers read is the same finder with no filters, which carries
-// a link to every shade page.
+// the CDN. The finder reads ?brand, ?q, ?family and ?sort in the browser after it hydrates; the
+// prerendered HTML crawlers read is the finder with no filters, which links every brand's card.
 export default function ColoursPage() {
+  const brands = brandList();
   const finderProps = {
-    brands: brandList(),
+    brands,
     brandFamilies: shadeFamilies(),
     brandTotal: shadeCount(),
     attribution: { text: paintdb.attribution, source: paintdb.source, licenseUrl: paintdb.licenseUrl },
@@ -53,10 +54,10 @@ export default function ColoursPage() {
           <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
               <h1 className="text-4xl font-normal leading-[1.05] md:text-6xl">
-                Find a wall colour in {site.city} <span className="brush">by code</span>, name or mood
+                Find a wall colour in {site.city} <span className="brush">by shade code</span>, brand or name
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
-                {colours.length} Paint Man shades, plus {shadeCount().toLocaleString("en-IN")} brand shades from Asian Paints, Berger, Nerolac and 22 more brands, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
+                {shadeCount().toLocaleString("en-IN")} shades from Asian Paints, Berger, Nerolac and {brands.length - 3} more brands, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
                 Pick one and we bring the real shade card to your home in {site.city}. Want to see a shade on your own room?{" "}
                 <Link href="/visualizer" className="font-bold text-ink underline">Try the visualizer</Link>. Want combinations instead?{" "}
                 <Link href="/palettes" className="font-bold text-ink underline">See ready palettes</Link>.
@@ -68,7 +69,7 @@ export default function ColoursPage() {
       </section>
 
       <section className="container-page mt-12" aria-labelledby="finder-heading">
-        <h2 id="finder-heading" className="sr-only">Search shades</h2>
+        <h2 id="finder-heading" className="sr-only">Search brand shades</h2>
         <ColourFinderFromUrl {...finderProps} />
       </section>
 

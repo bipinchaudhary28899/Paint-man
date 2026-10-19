@@ -2,9 +2,9 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FaqList } from "@/components/FaqList";
 import { PageHero } from "@/components/PageHero";
-import { accentCity, JobSizeTable, ServiceDetails, ServiceShades } from "@/components/services/ServiceDetails";
+import { accentCity, finderSearchHref, JobSizeTable, ServiceDetails, ServiceShades } from "@/components/services/ServiceDetails";
 import { images } from "@/config/images";
-import { getPalette } from "@/config/palettes";
+import { getPalette, shadeDisplayName } from "@/config/palettes";
 import { generalFaqs, getService, jobSize, services, site } from "@/config/site";
 
 // The shared next/image mock drops `preload` before it reaches the <img>, so record the props
@@ -104,22 +104,39 @@ describe("ServiceDetails", () => {
 });
 
 describe("ServiceShades", () => {
-  it("links each matching palette and its shades", () => {
+  it("links each matching palette, and each of its brand shades to its search in the colour finder", () => {
     const { container } = render(<ServiceShades service={interior} />);
     const links = hrefs(container);
     for (const slug of interior.shades.palettes) {
-      expect(screen.getByRole("link", { name: getPalette(slug)!.name })).toHaveAttribute("href", `/palettes#${slug}`);
-      for (const code of getPalette(slug)!.codes) expect(links).toContain(`/colours/${code}`);
+      const palette = getPalette(slug)!;
+      expect(screen.getByRole("link", { name: palette.name })).toHaveAttribute("href", `/palettes#${slug}`);
+      expect(screen.getByText(`${palette.mood} · Asian Paints shades`)).toBeInTheDocument();
+      for (const s of palette.shades) {
+        const href = `/colours?brand=${s.brand}&q=${s.code}`;
+        expect(links).toContain(href);
+        expect(finderSearchHref(s)).toBe(href);
+        expect(screen.getAllByRole("link", { name: `${shadeDisplayName(s.name)} ${s.code}` })[0]).toHaveAttribute("href", href);
+      }
     }
+    expect(links.some((h) => h?.startsWith("/colours/"))).toBe(false);
     expect(screen.getByRole("link", { name: "Browse every wall colour shade" })).toHaveAttribute("href", "/colours");
     expect(links).toEqual(expect.arrayContaining(["/palettes", "/visualizer"]));
   });
 
-  it("opens the shade finder on the service's room when it has one", () => {
+  it("credits PaintDB under the CC BY 4.0 licence wherever it shows brand shades", () => {
     render(<ServiceShades service={exterior} />);
-    expect(screen.getByRole("link", { name: "Browse exterior shades" })).toHaveAttribute("href", "/colours?room=Exterior");
-    render(<ServiceShades service={rental} />);
-    expect(screen.getByRole("link", { name: "Browse rental refresh shades" })).toHaveAttribute("href", "/colours?room=Rental%20refresh");
+    expect(screen.getByRole("link", { name: "PaintDB" })).toHaveAttribute("href", "https://paintdb.com");
+    expect(screen.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
+    expect(screen.getByRole("link", { name: "CC BY 4.0" }).getAttribute("rel")).toContain("license");
+  });
+
+  it("opens the plain finder for every service: there is no room filter any more", () => {
+    for (const s of [exterior, rental]) {
+      const { container, unmount } = render(<ServiceShades service={s} />);
+      expect(screen.getByRole("link", { name: "Browse every wall colour shade" })).toHaveAttribute("href", "/colours");
+      expect(hrefs(container).some((h) => h?.includes("room="))).toBe(false);
+      unmount();
+    }
   });
 
   it("skips a palette slug that no longer exists", () => {

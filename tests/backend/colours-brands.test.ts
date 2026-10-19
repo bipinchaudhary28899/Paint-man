@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import raw from "@/data/paintdb.json";
-import { curatedColours } from "@/config/colours";
-import { brandList, decodeEntities, getBrandShade, isBrand, isShadeFamily, isShadeSort, nearestBrandShades, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
+import { palettes } from "@/config/palettes";
+import { brandList, decodeEntities, getBrandShade, hasShadeCardCode, isBrand, isShadeFamily, isShadeSort, matchLabel, nearestBrandShades, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
+import { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
 import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
 
 describe("brand shade data (PaintDB, vendored)", () => {
@@ -30,7 +31,7 @@ describe("brand shade data (PaintDB, vendored)", () => {
     const leaks = all.filter((s) => /&#|&amp;|&reg;|&quot;|&lt;|&gt;/.test(s.name)).map((s) => `${s.id}: ${s.name}`);
     expect(leaks).toEqual([]);
     expect(brandList().every((b) => !/&#|&amp;/.test(b.name))).toBe(true);
-    expect(getBrandShade("nerolac:152")?.name).toBe("Dove's Wing-w"); // was "Dove&#039;s Wing-w" on PM-104's page
+    expect(getBrandShade("nerolac:152")?.name).toBe("Dove's Wing-w"); // was "Dove&#039;s Wing-w" in the raw data
     expect(all.find((s) => s.code === "N7350G")?.name).toBe("Spick & Span");
     // decoded names are still searchable by their words
     expect(searchBrandShades({ q: "Dove's Wing", brand: "nerolac" }).items[0].code).toBe("152");
@@ -63,6 +64,15 @@ describe("brand shade data (PaintDB, vendored)", () => {
   it("carries the CC BY 4.0 attribution", () => {
     expect(paintdb).toMatchObject({ source: "https://paintdb.com", license: "CC BY 4.0", attribution: expect.stringContaining("PaintDB") });
     expect(paintdb.note).toMatch(/not affiliated/);
+    // the client-side copy of the attribution links (the visualizer's picker) matches the data
+    expect(PAINTDB).toEqual({ source: paintdb.source, licenseUrl: paintdb.licenseUrl });
+  });
+
+  it("keeps the rounded count in client copy true (\"50,000+ brand shades\")", () => {
+    const floor = Number(BRAND_SHADES_ROUNDED.replace(/[^0-9]/g, ""));
+    expect(BRAND_SHADES_ROUNDED).toMatch(/^\d{1,3}(,\d{3})*\+$/);
+    expect(shadeCount()).toBeGreaterThanOrEqual(floor);
+    expect(shadeCount() - floor).toBeLessThan(5000); // still a fair round-down, not a stale one
   });
 
   it("lists Indian brands first with their counts", () => {
@@ -167,7 +177,7 @@ describe("browse order", () => {
   });
 });
 
-describe("nearest brand shades to a Paint Man shade", () => {
+describe("nearest brand shades to a palette shade", () => {
   const indian = ["asian-paints", "berger", "nerolac"];
   const oklabDistance = (x: string, y: string) => {
     const [a, b] = [rgbToOklab(...hexToRgb(x)), rgbToOklab(...hexToRgb(y))];
@@ -195,12 +205,29 @@ describe("nearest brand shades to a Paint Man shade", () => {
     expect(nearestBrandShades("#e7975b", ["asian-paints"], 1)[0].shades[0]).toMatchObject({ hex: "#e7975b", distance: 0 });
   });
 
-  it("finds a close match for every curated shade in each Indian brand", () => {
-    for (const c of curatedColours) {
-      const m = nearestBrandShades(c.hex, indian, 2);
+  it("finds a close Berger and Nerolac match for every palette shade, and the shade itself in Asian Paints", () => {
+    for (const s of palettes.flatMap((p) => p.shades)) {
+      const m = nearestBrandShades(s.hex, indian, 2);
       expect(m).toHaveLength(3);
-      for (const b of m) expect(b.shades[0].distance).toBeLessThan(0.1);
+      for (const b of m) expect(b.shades[0].distance, `${s.id} in ${b.brand}`).toBeLessThan(0.1);
+      expect(m[0].shades[0]).toMatchObject({ hex: s.hex, distance: 0 });
     }
+  });
+
+  it("describes how close a match looks", () => {
+    expect(matchLabel(0)).toBe("Very close match");
+    expect(matchLabel(0.019)).toBe("Very close match");
+    expect(matchLabel(0.02)).toBe("Close match");
+    expect(matchLabel(0.049)).toBe("Close match");
+    expect(matchLabel(0.05)).toBe("Nearest in this range");
+  });
+
+  it("tells a real shade-card code from the name slug PaintDB fills in for a missing one", () => {
+    expect(hasShadeCardCode({ name: "Pepper Leaf", code: "8386" })).toBe(true);
+    expect(hasShadeCardCode({ name: "Dhoop-i", code: "X166" })).toBe(true);
+    expect(hasShadeCardCode({ name: "Greenery", code: "greenery" })).toBe(false);
+    expect(hasShadeCardCode({ name: "Sassy Pink!", code: "sassy-pink" })).toBe(false);
+    expect(hasShadeCardCode({ name: "Something else", code: "lower-case-only" })).toBe(false);
   });
 
   it("skips unknown brands and keeps n between 1 and 10", () => {

@@ -6,7 +6,6 @@ import { ColourExplorer, swatchIndices, wheelAngle, wheelShades } from "@/compon
 import { HeroImage, heroSideBySide, heroSizes } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal, reveal } from "@/components/home/PinnedReveal";
-import { colours } from "@/config/colours";
 import { images } from "@/config/images";
 import { areaSlug, site } from "@/config/site";
 import { clamp01, easeInOutQuad } from "@/lib/scroll";
@@ -81,12 +80,13 @@ describe("PinnedReveal", () => {
     expect(screen.getByRole("heading", { level: 2, name: /Watch the colour/ })).toBeInTheDocument();
     expect(container.querySelectorAll(".pin-stage")).toHaveLength(4);
     expect(screen.getByText("Prep & putty")).toBeInTheDocument();
-    expect(screen.getByAltText(/walls being painted Sage Mist/)).toBeInTheDocument();
+    expect(screen.getByAltText(/walls being painted Pepper Leaf/)).toBeInTheDocument();
+    expect(screen.getByText(/Walls in Pepper Leaf,/)).toHaveTextContent("Walls in Pepper Leaf, Asian Paints 8386");
     // the room stays in colour: only the traced walls carry a putty layer and a shade layer
     expect(container.querySelectorAll(".pin-before .tint")).toHaveLength(1);
     expect(container.querySelectorAll(".pin-after .tint")).toHaveLength(1);
     const after = container.querySelector(".pin-after .tint") as HTMLElement;
-    expect(after.style.background).toBe("rgb(184, 199, 176)");
+    expect(after.style.background).toBe("rgb(187, 200, 178)"); // #bbc8b2, Asian Paints Pepper Leaf 8386
     expect(after.style.maskImage).toContain("/scenes/living-moody-mask.png");
     expect(container.querySelectorAll(".pin-label")).toHaveLength(4);
     expect(container.querySelector(".pin-track")).not.toBeNull();
@@ -128,7 +128,10 @@ describe("ColourExplorer", () => {
     expect(screen.getByRole("button", { name: "Terracotta" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("#C76B4A · Terracottas")).toBeInTheDocument();
     expect(screen.getByText(/Discuss this shade with us/)).toHaveAttribute("href", "/book");
-    expect(screen.getByText(`Search all ${colours.length} shades`)).toHaveAttribute("href", "/colours");
+    expect(screen.getByText("Search 50,000+ brand shades")).toHaveAttribute("href", "/colours");
+    // the home page names a PaintDB shade (the pinned reveal), so the credit sits with the shade links
+    expect(screen.getByRole("link", { name: "PaintDB" })).toHaveAttribute("href", "https://paintdb.com");
+    expect(screen.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
   });
 
   it("switches the selected shade card when a swatch is tapped", async () => {

@@ -8,11 +8,11 @@ import { NextResponse } from "next/server";
  *
  * {
  *   "apiVersion": "v1",
- *   "kind": "colour",            // record type, singular
- *   "label": "Sage Mist (PM-502)", // human/LLM-readable summary of the payload
+ *   "kind": "paint-colour",      // record type, singular
+ *   "label": "1 brand paint shade matching \"8386\", from Asian Paints (page 1 of 1)", // human/LLM-readable summary
  *   "data": {...} | [...],
- *   "meta": { "total": 32, "query": {...}, "generatedAt": "..." },
- *   "links": { "self": "/api/v1/colours/PM-502", "html": "/colours/PM-502" }
+ *   "meta": { "total": 1, "query": {...}, "generatedAt": "..." },
+ *   "links": { "self": "/api/v1/colours/paint?brand=asian-paints&q=8386", "html": "/colours?brand=asian-paints&q=8386" }
  * }
  */
 export const API_VERSION = "v1" as const;
@@ -48,7 +48,8 @@ export function apiOk<T>({ kind, label, data, meta = {}, links, headers }: OkOpt
   return NextResponse.json(body, { headers });
 }
 
-export function apiError(status: number, code: string, message: string, details?: unknown) {
+/** An error in the envelope. `headers` is for the rare cacheable error, such as a 410 for a retired endpoint. */
+export function apiError(status: number, code: string, message: string, details?: unknown, headers?: HeadersInit) {
   const body: ApiErrorBody = {
     apiVersion: API_VERSION,
     kind: "error",
@@ -56,7 +57,7 @@ export function apiError(status: number, code: string, message: string, details?
     error: { code, message, ...(details !== undefined && { details }) },
     meta: { generatedAt: new Date().toISOString() },
   };
-  return NextResponse.json(body, { status });
+  return NextResponse.json(body, { status, headers });
 }
 
 /** Public, read-only catalogue data: cache at the edge for a day, serve stale while revalidating. */

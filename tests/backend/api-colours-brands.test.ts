@@ -15,7 +15,7 @@ describe("GET /api/v1/colours/paint", () => {
     expect(body.label).toMatch(/matching "7982", from Asian Paints/);
     expect(body.data[0]).toMatchObject({ id: "asian-paints:7982", code: "7982", name: "Mecca Gold", brandName: "Asian Paints" });
     expect(body.meta).toMatchObject({ query: { brand: "asian-paints" }, license: "CC BY 4.0", attribution: expect.stringContaining("PaintDB"), catalogueSize: 50762 });
-    expect(body.links.html).toBe("/colours?catalogue=brands&q=asian+paints+7982");
+    expect(body.links.html).toBe("/colours?q=asian+paints+7982"); // the finder reads the same query
   });
 
   it("filters by brand and family", async () => {
@@ -24,7 +24,14 @@ describe("GET /api/v1/colours/paint", () => {
     const byCode = await (await get("/api/v1/colours/paint?brand=asian-paints&sort=code&perPage=3")).json();
     expect(byCode.meta.query.sort).toBe("code");
     expect(body.data).toHaveLength(48);
-    expect(body.links.html).toContain("brand=asian-paints");
+    // the human page is the finder opened on the same brand, family and order
+    expect(body.links.html).toBe("/colours?brand=asian-paints&family=blue");
+    expect(byCode.links.html).toBe("/colours?brand=asian-paints&sort=code");
+    expect((await (await get("/api/v1/colours/paint?perPage=1")).json()).links.html).toBe("/colours");
+    // the finder reads a family only inside a brand, so the human link leaves it out without one
+    const familyOnly = await (await get("/api/v1/colours/paint?family=blue&perPage=1")).json();
+    expect(familyOnly.meta.query.family).toBe("blue");
+    expect(familyOnly.links.html).toBe("/colours");
   });
 
   it("validates brand, family, page and perPage with hints", async () => {
@@ -51,5 +58,6 @@ describe("GET /api/v1/colours/brands", () => {
     expect(body.meta.families).toContain("blue");
     expect(body.meta.license).toBe("CC BY 4.0");
     expect(res.headers.get("cache-control")).toContain("public");
+    expect(body.links).toEqual({ self: "/api/v1/colours/brands", search: "/api/v1/colours/paint", html: "/colours" });
   });
 });

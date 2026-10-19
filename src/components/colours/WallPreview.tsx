@@ -1,9 +1,8 @@
 import Image from "next/image";
-import type { Colour } from "@/config/colours";
 import { genericScene } from "@/config/scenes";
 
-/** Anything with a name, code, hex and LRV: a Paint Man shade or a brand shade. */
-export type PreviewShade = Pick<Colour, "name" | "code" | "hex" | "lrv">;
+/** The shade a preview shows: a name and hex, plus its shade-card code and LRV when known. */
+export type PreviewShade = { name: string; code?: string; hex: string; lrv?: number };
 
 // Every shade on the same ordinary room: the photo never changes, only the wall colour does,
 // so shades compare fairly. Tint layers in the shade's hex are masked by the scene's wall
@@ -49,8 +48,8 @@ export function WallPreview({
         ))}
       </div>
       <figcaption className={`${compact ? "hidden" : "flex"} items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-sm font-semibold`}>
-        <span>{colour.name} <span className="font-normal text-muted">{colour.code}</span></span>
-        <span className="text-xs font-medium text-muted">{colour.hex.toUpperCase()} · LRV {colour.lrv}</span>
+        <span>{colour.name}{colour.code && <> <span className="font-normal text-muted">{colour.code}</span></>}</span>
+        <span className="text-xs font-medium text-muted">{colour.hex.toUpperCase()}{colour.lrv !== undefined && ` · LRV ${colour.lrv}`}</span>
       </figcaption>
     </figure>
   );

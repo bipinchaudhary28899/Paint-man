@@ -119,7 +119,7 @@ describe("Header and LeadForm wiring", () => {
   });
 
   it("LeadForm pre-fills the message from a chosen shade", () => {
-    render(<LeadForm type="booking" defaultMessage="Interested in the shade Sage Mist (PM-502)." />);
-    expect(screen.getByLabelText(/Anything we should know/)).toHaveValue("Interested in the shade Sage Mist (PM-502).");
+    render(<LeadForm type="booking" defaultMessage="Interested in Asian Paints 8386 Pepper Leaf (#BBC8B2)." />);
+    expect(screen.getByLabelText(/Anything we should know/)).toHaveValue("Interested in Asian Paints 8386 Pepper Leaf (#BBC8B2).");
   });
 });

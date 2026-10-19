@@ -1,9 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Visualizer } from "@/components/visualizer/Visualizer";
+import { brandShadePick, DEFAULT_SHADE, PICKER_PER_PAGE, shadeBrand, STARTER_SHADES, Visualizer } from "@/components/visualizer/Visualizer";
+import { palettes } from "@/config/palettes";
 import type { SegmentResult } from "@/components/visualizer/segmenter";
 import { Segmenter } from "@/components/visualizer/segmenter";
+import { apiShade, sampleShades, serveColourApis } from "../support/catalogue-api";
 
 // jsdom has no canvas: give it just enough of a 2D context to load a 4×4 "photo" and paint.
 const W = 16, H = 4;
@@ -21,6 +23,7 @@ class FakeImageData {
 
 beforeEach(() => {
   painted = null;
+  serveColourApis(); // the shade picker's brand list and first page come from the public API
   vi.stubGlobal("ImageData", FakeImageData);
   vi.stubGlobal("createImageBitmap", vi.fn(async () => ({ width: W, height: H })));
   HTMLCanvasElement.prototype.getContext = vi.fn(function (this: HTMLCanvasElement) {
@@ -68,7 +71,7 @@ describe("Visualizer", () => {
   it("loads a photo, finds walls, repaints only the wall pixels and switches shades locally", async () => {
     const user = userEvent.setup();
     const factory = fakeSegmenter();
-    render(<Visualizer segmenterFactory={factory} initialShade={{ name: "Peacock", hex: "#1f8f85", code: "PM-803" }} />);
+    render(<Visualizer segmenterFactory={factory} initialShade={{ name: "Malibu Green-n", hex: "#009188", code: "Asian Paints 9722", bookQuery: "shade=asian-paints%3A9722" }} />);
     await user.upload(screen.getByLabelText("Choose a room photo"), file());
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/1 wall surface found/));
     expect(screen.getByRole("status")).toHaveTextContent("Detected in 42 ms");
@@ -80,9 +83,9 @@ describe("Visualizer", () => {
     expect([...p.slice(15 * 4, 16 * 4)]).toEqual([220, 220, 220, 255]);
 
     // switching shade repaints without asking the segmenter again
-    await user.click(screen.getByRole("button", { name: "Sindoor" }));
+    await user.click(await screen.findByRole("button", { name: "Pure Red, Asian Paints 8093" }));
     await waitFor(() => expect(painted![0]).toBeGreaterThan(painted![1])); // red now leads
-    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+    expect(screen.getByText(/After · Pure Red/)).toBeInTheDocument();
     const seg = factory();
     expect(seg.segment).toBeDefined();
   });
@@ -112,17 +115,17 @@ describe("Visualizer", () => {
     const factory = fakeSegmenter();
     const { rerender } = render(<Visualizer segmenterFactory={factory} />);
     // a swatch found through the search counts as a pick
-    await user.type(screen.getByLabelText("Search shades"), "sindoor");
-    await user.click(screen.getByRole("button", { name: "Sindoor" }));
+    await user.type(screen.getByLabelText("Search shades"), "red");
+    await user.click(await screen.findByRole("button", { name: "Pure Red, Asian Paints 8093" }));
     await user.upload(screen.getByLabelText("Choose a room photo"), file());
-    await waitFor(() => expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/After · Pure Red/)).toBeInTheDocument());
     // the brand shade from the link lands after the pick
     const brand = { name: "Mecca Gold", hex: "#e7975b", code: "Asian Paints 7982", bookQuery: "shade=asian-paints%3A7982" };
     rerender(<Visualizer segmenterFactory={factory} initialShade={brand} />);
-    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Book an inspection with Sindoor" })).toHaveAttribute("href", "/book?colour=PM-801");
+    expect(screen.getByText(/After · Pure Red/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with Pure Red" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8093");
     rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Dusty Rose", hex: "#c9a0a0" }} />);
-    expect(screen.getByText(/After · Sindoor/)).toBeInTheDocument();
+    expect(screen.getByText(/After · Pure Red/)).toBeInTheDocument();
   });
 
   it("still takes the linked shade when the visitor only loaded a photo before it arrived", async () => {
@@ -131,8 +134,8 @@ describe("Visualizer", () => {
     const { rerender } = render(<Visualizer segmenterFactory={factory} />);
     await user.upload(screen.getByLabelText("Choose a room photo"), file());
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/1 wall surface found/));
-    rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Peacock", hex: "#1f8f85", code: "PM-803" }} />);
-    expect(screen.getByText(/After · Peacock/)).toBeInTheDocument();
+    rerender(<Visualizer segmenterFactory={factory} initialShade={{ name: "Malibu Green-n", hex: "#009188", code: "Asian Paints 9722", bookQuery: "shade=asian-paints%3A9722" }} />);
+    expect(screen.getByText(/After · Malibu Green-n/)).toBeInTheDocument();
   });
 
   it("hold-to-compare shows the untouched photo; walls mode toggles a surface; reset restores it", async () => {
@@ -244,25 +247,174 @@ describe("Visualizer", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/couldn't find a wall confidently/));
   });
 
-  it("searches our shades and the named-colour catalogue through the API", async () => {
-    const user = userEvent.setup();
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ data: [{ name: "Sage Leaf", hex: "#9ba88d", family: "Olives", lrv: 36 }], meta: { total: 1 } }), { status: 200 }));
+  it("opens on Asian Paints Pepper Leaf, a brand shade booked by its id", async () => {
     render(<Visualizer segmenterFactory={fakeSegmenter()} />);
-    await user.type(screen.getByLabelText("Search shades"), "sage");
-    expect(screen.getByRole("button", { name: "Sage Mist" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Greens" }));
-    expect(screen.queryByRole("button", { name: "Taj White" })).toBeNull();
+    expect(DEFAULT_SHADE).toEqual({ name: "Pepper Leaf", hex: "#bbc8b2", code: "Asian Paints 8386", bookQuery: "shade=asian-paints%3A8386" });
+    expect(screen.getByText("#BBC8B2 · Asian Paints 8386")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with Pepper Leaf" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8386");
+    // the first row is every palette shade, varied colours with the default pressed
+    const starter = within(screen.getByRole("list", { name: "From our palettes" })).getAllByRole("button");
+    expect(starter).toHaveLength(new Set(palettes.flatMap((p) => p.shades.map((s) => s.id))).size);
+    expect(starter[0]).toHaveAccessibleName("Pepper Leaf, Asian Paints 8386");
+    expect(starter[0]).toHaveAttribute("aria-pressed", "true");
+    expect(starter[0].className).toContain("h-11");
+    expect(STARTER_SHADES[0]).toEqual(DEFAULT_SHADE);
+    expect(await within(screen.getByRole("list", { name: "Shades" })).findByRole("button", { name: "Pepper Leaf, Asian Paints 8386" })).toHaveAttribute("aria-pressed", "true");
+    expect(brandShadePick(sampleShades[1])).toEqual({ name: "Pure Red", hex: "#c73d3c", code: "Asian Paints 8093", bookQuery: "shade=asian-paints%3A8093" });
+  });
 
+  it("browses brand shades by brand, colour family and search, with Show more, then named colours, all through the API", async () => {
+    const tones = Array.from({ length: 60 }, (_, i) => apiShade("asian-paints", "Asian Paints", String(9000 + i), `Tone ${i}`, "#a0a0a0", "white"));
+    const { spy } = serveColourApis({ paint: [...sampleShades, ...tones], web: [{ name: "Sage Leaf", hex: "#9ba88d", family: "Olives", lrv: 36 }] });
+    const user = userEvent.setup();
+    render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    expect(screen.getByRole("button", { name: "Brand shades" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: /Our shades/ })).toBeNull();
+    // the brands arrive from the API, Indian brands first as it sends them
+    const select = screen.getByLabelText("Brand") as HTMLSelectElement;
+    await waitFor(() => expect([...select.options].map((o) => o.textContent)).toEqual(["Asian Paints", "Berger Paints"]));
+    await waitFor(() => expect(screen.getByText(`64 Asian Paints shades, showing ${PICKER_PER_PAGE}`)).toBeInTheDocument());
+    const urls = () => spy.mock.calls.map((c) => String(c[0]));
+    expect(urls()).toContain(`/api/v1/colours/paint?perPage=${PICKER_PER_PAGE}&page=1&brand=asian-paints`);
+    expect(screen.getByRole("link", { name: "PaintDB" })).toHaveAttribute("href", "https://paintdb.com");
+
+    // Show more adds the next page
+    await user.click(screen.getByRole("button", { name: "Show more (16 left)" }));
+    await waitFor(() => expect(screen.getByText("64 Asian Paints shades, showing 64")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
+
+    // a colour family from the brand data
+    await user.click(screen.getByRole("button", { name: "Red" }));
+    await waitFor(() => expect(screen.getByText("1 Asian Paints shade, showing 1")).toBeInTheDocument());
+    expect(urls().at(-1)).toContain("family=red");
+    await user.click(screen.getByRole("button", { name: "Pure Red, Asian Paints 8093" }));
+    expect(screen.getByText("#C73D3C · Asian Paints 8093")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book an inspection with Pure Red" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8093");
+    await user.click(screen.getByRole("button", { name: "Red" }));
+    expect(screen.getByRole("button", { name: "Red" })).toHaveAttribute("aria-pressed", "false");
+
+    // another brand, searched by name
+    await user.selectOptions(select, "berger");
+    expect(screen.getByLabelText("Search shades")).toHaveAttribute("placeholder", "Search Berger Paints by code, name or hex");
+    await user.type(screen.getByLabelText("Search shades"), "spring");
+    await waitFor(() => expect(urls().at(-1)).toContain("q=spring"));
+    expect(urls().at(-1)).toContain("brand=berger");
+    await user.click(await screen.findByRole("button", { name: "Spring Leaf, Berger Paints 3P0050" }));
+    expect(screen.getByText("#9FB98A · Berger Paints 3P0050")).toBeInTheDocument();
+
+    // the named-colour catalogue, with its own families
+    await user.clear(screen.getByLabelText("Search shades"));
+    await user.type(screen.getByLabelText("Search shades"), "sage");
     await user.click(screen.getByRole("button", { name: "All named colours" }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/colours/web?perPage=60&q=sage&family=Greens");
-    const leaf = await screen.findByRole("button", { name: "Sage Leaf" });
-    await user.click(leaf);
+    expect(screen.queryByLabelText("Brand")).toBeNull();
+    expect(screen.queryByRole("link", { name: "PaintDB" })).toBeNull(); // the attribution goes with the brand shades
+    await user.click(screen.getByRole("button", { name: "Greens" }));
+    await waitFor(() => expect(urls()).toContain("/api/v1/colours/web?perPage=60&q=sage&family=Greens"));
+    await user.click(await screen.findByRole("button", { name: "Sage Leaf" }));
     expect(screen.getByText("#9BA88D · named colour")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Book an inspection with Sage Leaf/ })).toHaveAttribute("href", "/book");
+    await user.click(screen.getByRole("button", { name: "Greens" }));
+    expect(screen.getByRole("button", { name: "Greens" })).toHaveAttribute("aria-pressed", "false");
 
-    fetchMock.mockResolvedValueOnce(new Response("x", { status: 503 }));
+    spy.mockResolvedValueOnce(new Response("x", { status: 503 }));
     await user.type(screen.getByLabelText("Search shades"), "x");
-    await waitFor(() => expect(screen.getByText(/unavailable right now/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Named colours are unavailable right now/)).toBeInTheDocument());
+  });
+
+  it("hides the palette row while searching, filtering or on another brand; a pick there is a pick", async () => {
+    const user = userEvent.setup();
+    render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    const starterList = () => screen.queryByRole("list", { name: "From our palettes" });
+    await user.click(within(starterList()!).getByRole("button", { name: "Scuba Blue, Asian Paints 7273" }));
+    expect(screen.getByText("#A2BFD9 · Asian Paints 7273")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Search shades"), "red");
+    expect(starterList()).toBeNull();
+    await user.clear(screen.getByLabelText("Search shades"));
+    expect(starterList()).not.toBeNull();
+    await user.click(await screen.findByRole("button", { name: "Red" }));
+    expect(starterList()).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Red" }));
+    await user.selectOptions(screen.getByLabelText("Brand"), "berger");
+    expect(starterList()).toBeNull();
+  });
+
+  it("shows loading while a new search is on its way, and a hint when nothing matches", async () => {
+    const user = userEvent.setup();
+    render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    await waitFor(() => expect(screen.getByText("4 Asian Paints shades, showing 4")).toBeInTheDocument());
+    await user.type(screen.getByLabelText("Search shades"), "zzz");
+    // the old count never describes the new search
+    expect(screen.getByText("Loading shades…")).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Shades" })).toHaveAttribute("aria-busy", "true");
+    await waitFor(() => expect(screen.getByText("No Asian Paints shade matches that. Try a shade-card code, a name or a hex.")).toBeInTheDocument());
+    expect(screen.getByRole("list", { name: "Shades" })).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("keeps the pages Show more added when the visitor visits named colours and comes back", async () => {
+    const tones = Array.from({ length: 60 }, (_, i) => apiShade("asian-paints", "Asian Paints", String(9000 + i), `Tone ${i}`, "#a0a0a0", "white"));
+    const { spy } = serveColourApis({ paint: tones });
+    const user = userEvent.setup();
+    render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    const more = await screen.findByRole("button", { name: "Show more (12 left)" });
+    // phone tap targets: 44px for the new controls
+    expect(more.className).toContain("!min-h-11");
+    expect(screen.getByLabelText("Brand").className).toContain("min-h-11");
+    for (const chip of within(screen.getByRole("group", { name: "Colour family" })).getAllByRole("button")) expect(chip.className).toContain("min-h-11");
+    await user.click(more);
+    await waitFor(() => expect(screen.getByText("60 Asian Paints shades, showing 60")).toBeInTheDocument());
+    const paintCalls = () => spy.mock.calls.filter((c) => String(c[0]).startsWith("/api/v1/colours/paint")).length;
+    const before = paintCalls();
+    await user.click(screen.getByRole("button", { name: "All named colours" }));
+    await user.click(screen.getByRole("button", { name: "Brand shades" }));
+    expect(screen.getByText("60 Asian Paints shades, showing 60")).toBeInTheDocument();
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Shades" })).getAllByRole("button")).toHaveLength(60));
+    expect(paintCalls()).toBe(before);
+  });
+
+  it("opens the picker on the brand of a linked shade, unless the visitor has chosen a brand", async () => {
+    expect(shadeBrand({ name: "Pale Ale", hex: "#e8d9a8", code: "Berger Paints 2P1857", bookQuery: "shade=berger%3A2P1857" })).toBe("berger");
+    expect(shadeBrand({ name: "Dusty Rose", hex: "#c9a0a0" })).toBeUndefined();
+    expect(shadeBrand({ name: "x", hex: "#000000", bookQuery: "shade=Bad%20Brand%3A1" })).toBeUndefined();
+    const { spy } = serveColourApis();
+    const user = userEvent.setup();
+    const berger = { name: "Spring Leaf", hex: "#9fb98a", code: "Berger Paints 3P0050", bookQuery: "shade=berger%3A3P0050" };
+    const { unmount } = render(<Visualizer segmenterFactory={fakeSegmenter()} initialShade={berger} />);
+    expect((screen.getByLabelText("Brand") as HTMLSelectElement).value).toBe("berger");
+    // named from its slug until the brand list arrives, then by the list
+    expect(screen.getByLabelText("Search shades")).toHaveAttribute("placeholder", "Search Berger by code, name or hex");
+    await waitFor(() => expect(screen.getByLabelText("Search shades")).toHaveAttribute("placeholder", "Search Berger Paints by code, name or hex"));
+    await waitFor(() => expect(spy.mock.calls.map((c) => String(c[0]))).toContain(`/api/v1/colours/paint?perPage=${PICKER_PER_PAGE}&page=1&brand=berger`));
+    expect(screen.queryByRole("list", { name: "From our palettes" })).toBeNull();
+    unmount();
+
+    // a link that resolves after mount moves the picker too, until the visitor picks a brand
+    const late = render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    expect((screen.getByLabelText("Brand") as HTMLSelectElement).value).toBe("asian-paints");
+    late.rerender(<Visualizer segmenterFactory={fakeSegmenter()} initialShade={berger} />);
+    expect((screen.getByLabelText("Brand") as HTMLSelectElement).value).toBe("berger");
+    await user.selectOptions(screen.getByLabelText("Brand"), "asian-paints");
+    late.rerender(<Visualizer segmenterFactory={fakeSegmenter()} initialShade={{ ...berger, name: "Other", bookQuery: "shade=nerolac%3A1" }} />);
+    expect((screen.getByLabelText("Brand") as HTMLSelectElement).value).toBe("asian-paints");
+  });
+
+  it("says so when brand shades cannot load, and keeps Asian Paints when the brand list cannot", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("down", { status: 503 }));
+    render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    expect(screen.getByText("Loading shades…")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Brand shades are unavailable right now.")).toBeInTheDocument());
+    expect([...(screen.getByLabelText("Brand") as HTMLSelectElement).options].map((o) => o.value)).toEqual(["asian-paints"]);
+    expect(within(screen.getByRole("group", { name: "Colour family" })).queryAllByRole("button")).toHaveLength(0);
+  });
+
+  it("stops offering more when the next page fails", async () => {
+    const tones = Array.from({ length: 60 }, (_, i) => apiShade("asian-paints", "Asian Paints", String(9000 + i), `Tone ${i}`, "#a0a0a0", "white"));
+    const { spy } = serveColourApis({ paint: tones });
+    const user = userEvent.setup();
+    render(<Visualizer segmenterFactory={fakeSegmenter()} />);
+    const more = await screen.findByRole("button", { name: "Show more (12 left)" });
+    spy.mockRejectedValueOnce(new TypeError("offline"));
+    await user.click(more);
+    await waitFor(() => expect(screen.getByText("Brand shades are unavailable right now.")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
   });
 });

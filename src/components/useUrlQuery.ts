@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
-// The page's query string (?service=, ?colour=, ?family= ...), read in the browser so the page
+// The page's query string (?service=, ?shade=, ?brand= ...), read in the browser so the page
 // that uses it can stay static.
 //
 // next/navigation's useSearchParams cannot do this on a prerendered page: it makes the nearest
