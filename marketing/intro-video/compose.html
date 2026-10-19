@@ -17,7 +17,7 @@
 // recorded with MediaRecorder together with the narration (macOS "say", Rishi en-IN).
 const W = 1080, H = 1920;
 const C = { canvas: "#f8f5ef", ink: "#242522", muted: "#5f5a52", terracotta: "#a8532f", accent: "#c76b4a", sand: "#e8d7c5", sage: "#71856a", golden: "#e9b949" };
-const SHOTS = { intro: ["intro"], problem: ["problem"], inspection: ["inspection"], interior: ["interior"], exterior: ["exterior"], rental: ["rental"], colours: ["colours-grid", "colours"], visualizer: ["visualizer"], supervised: ["supervised"], book: ["book"] };
+const SHOTS = { intro: ["intro"], problem: ["problem"], inspection: ["inspection"], interior: ["interior"], exterior: ["exterior"], rental: ["rental"], colours: ["colours-grid", "colours"], supervised: ["supervised"], book: ["book"] };
 const LEAD = 0.45, TAIL = 0.75, END_HOLD = 1.8, XFADE = 0.5;
 
 const cv = document.getElementById("c");
@@ -46,6 +46,7 @@ async function setup() {
     t += dur;
   }
   total = t;
+  LOGO = await loadImg("logo.png");
   return { total, scenes: scenes.map((s) => [s.id, +s.start.toFixed(2), +s.dur.toFixed(2)]) };
 }
 
@@ -76,19 +77,28 @@ function drawBackground(t) {
   blob(900 + Math.sin(t * 0.12) * 40, 1820, 300, C.golden, 0.12);
 }
 
+let LOGO = null;
+function drawLogo(scene, u) {
+  if (!LOGO || (scene.id !== "intro" && scene.id !== "book")) return;
+  const a = ease(u / 0.5) * clamp01((scene.dur - u) / 0.35);
+  const h = 76, w = (LOGO.width / LOGO.height) * h;
+  g.save(); g.globalAlpha = a; g.drawImage(LOGO, 70, 70, w, h); g.restore();
+}
+
 function drawText(scene, u) {
   const out = clamp01((scene.dur - u) / 0.35); // fade out at the end of a scene
   const left = 70, maxW = 940;
   // eyebrow
   const a1 = ease(u / 0.4) * out;
   g.save(); g.globalAlpha = a1; g.fillStyle = C.terracotta; g.font = '700 30px "Manrope"';
-  g.letterSpacing = "4px"; g.fillText(scene.eyebrow.toUpperCase(), left, 215 + (1 - a1) * 14); g.restore();
+  const lift = scene.id === "intro" || scene.id === "book" ? 30 : 0;
+  g.letterSpacing = "4px"; g.fillText(scene.eyebrow.toUpperCase(), left, 215 + lift + (1 - a1) * 14); g.restore();
   // title with one italic accent
   const a2 = ease((u - 0.12) / 0.5) * out;
   const runs = [{ text: scene.title, font: '400 96px "DM Serif Display"', color: C.ink }];
   if (scene.accent) runs.push({ text: scene.accent, font: 'italic 400 96px "DM Serif Display"', color: C.accent });
   const lines = wrapRuns(runs, maxW);
-  let y = 320;
+  let y = 320 + lift;
   g.save(); g.globalAlpha = a2;
   for (const line of lines) { for (const w of line) { g.font = w.font; g.fillStyle = w.color; g.fillText(w.word, left + w.x, y + (1 - a2) * 30); } y += 100; }
   g.restore();
@@ -179,6 +189,7 @@ function renderAt(t) {
   drawBackground(t);
   drawPhone(t, scene, u, scenes[i - 1]);
   // the text area sits above the phone; give it a calm backing so screens never show through
+  drawLogo(scene, u);
   const y = drawText(scene, u);
   drawCta(scene, u, y);
   // fade from and to cream at the very ends

@@ -49,22 +49,6 @@ const shots = [
       document.querySelector('button[aria-label^="See "]').click(); await new Promise((r) => setTimeout(r, 900)); await window.__waitImages(); })()`);
   }],
   ["colours-grid", async () => { await page("/colours?brand=asian-paints&family=green"); await b.evaluate(`window.__scrollToText('label', 'Search Asian Paints', 330)`); }],
-  ["visualizer", async () => {
-    await page("/visualizer");
-    const r = await b.evaluate(`(async () => {
-      const res = await fetch('/_next/image?url=' + encodeURIComponent('https://images.pexels.com/photos/7587828/pexels-photo-7587828.jpeg') + '&w=1080&q=75', { headers: { accept: 'image/jpeg' } });
-      const blob = await res.blob(); const file = new File([blob], 'room.jpg', { type: 'image/jpeg' });
-      const input = document.querySelector('input[type=file]'); const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      for (let i = 0; i < 120; i++) { if (/surface found|surfaces found/.test(document.body.innerText)) break; await new Promise((r) => setTimeout(r, 500)); }
-      const pick = [...document.querySelectorAll('button')].find((b) => /Malibu|Red Rust/i.test((b.getAttribute('aria-label') || '') + (b.title || '')));
-      pick?.click(); await new Promise((r) => setTimeout(r, 1200));
-      const c = document.querySelector('canvas'); window.scrollTo({ top: c.getBoundingClientRect().top + scrollY - 140, behavior: 'instant' });
-      await new Promise((r) => setTimeout(r, 1200));
-      return (document.body.innerText.match(/\\d+ wall surfaces? found/) || ['none'])[0];
-    })()`, 120000);
-    console.log("  visualizer:", r);
-  }],
   ["supervised", async () => { await page("/"); await b.evaluate(`window.__scrollToText('h3', 'A supervisor on site', 300)`); }],
   ["book", async () => { await page("/book"); await b.evaluate(`window.__scrollToText('label', 'Your name', 330)`); }],
 ];
