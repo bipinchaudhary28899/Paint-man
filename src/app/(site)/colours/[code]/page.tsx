@@ -7,7 +7,7 @@ import { WallPreview } from "@/components/colours/WallPreview";
 import { colours } from "@/config/colours";
 import { services } from "@/config/site";
 import { nearestBrandShades, paintdb } from "@/lib/colours/brands";
-import { finishSummary, lrvLabel, matchLabel, serviceSlugsFor, shadeGuide, undertone, undertoneFacts } from "@/lib/colours/guide";
+import { finishSummary, hasShadeCardCode, lrvLabel, matchLabel, serviceSlugsFor, shadeGuide, undertone, undertoneFacts } from "@/lib/colours/guide";
 import { paletteRole, palettesUsing } from "@/lib/colours/palettes";
 import { getColour, pairings, similar } from "@/lib/colours/search";
 import { colourDescription, colourTitle, isIndexableShade } from "@/lib/colours/seo";
@@ -77,7 +77,7 @@ export default async function ColourPage({ params }: { params: Promise<{ code: s
             <p className="mt-4 text-lg leading-relaxed text-ink">{colour.note}</p>
             <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
               <div><dt className="font-bold text-muted">Hex</dt><dd className="font-semibold">{colour.hex.toUpperCase()}</dd></div>
-              <div><dt className="font-bold text-muted">LRV</dt><dd className="font-semibold">{colour.lrv} ({lrvLabel(colour.lrv)})</dd></div>
+              <div><dt className="font-bold text-muted">LRV</dt><dd className="font-semibold">{colour.lrv} ({lrvLabel(colour)})</dd></div>
               <div><dt className="font-bold text-muted">Finish we quote</dt><dd className="font-semibold">{finishSummary(colour)}</dd></div>
               <div><dt className="font-bold text-muted">Good for</dt><dd className="font-semibold">{colour.rooms.join(", ")}</dd></div>
             </dl>
@@ -182,7 +182,8 @@ export default async function ColourPage({ params }: { params: Promise<{ code: s
                         <span aria-hidden className="h-12 w-12 shrink-0 rounded-xl border border-line" style={{ background: s.hex }} />
                         <span className="min-w-0">
                           <span className="block truncate font-display leading-tight">{s.name}</span>
-                          <span className="block text-xs font-semibold text-muted">{s.code} · {s.hex.toUpperCase()}</span>
+                          {/* PaintDB fills a missing code with the name's slug ("greenery"): show only real shade-card codes */}
+                          <span className="block text-xs font-semibold text-muted">{hasShadeCardCode(s) ? `${s.code} · ` : ""}{s.hex.toUpperCase()}</span>
                           <span className="block text-xs text-muted">{matchLabel(s.distance)}</span>
                         </span>
                       </Link>
