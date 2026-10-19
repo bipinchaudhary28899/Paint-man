@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -13,6 +13,7 @@ import { PhotoCrop } from "@/components/PhotoCrop";
 import { readTracking, TRACKING_KEY, UtmCapture } from "@/components/UtmCapture";
 import { images } from "@/config/images";
 import { services, site } from "@/config/site";
+import { fakeContact, withFilledSite } from "../support/filled-site";
 
 const usePathnameMock = vi.hoisted(() => vi.fn(() => "/services"));
 const searchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
@@ -30,6 +31,25 @@ describe("Header and Footer", () => {
       expect(main.querySelector(`a[href="${href}"]`)).not.toBeNull();
     }
     expect(screen.getByRole("link", { name: "Get a free estimate" })).toHaveAttribute("href", "/book");
+  });
+
+  it("header names the home page's example-finishes section 'Finishes', not 'Projects'", () => {
+    render(<Header />);
+    const main = screen.getByRole("navigation", { name: "Main" });
+    expect(within(main).getByRole("link", { name: "Finishes" })).toHaveAttribute("href", "/#work");
+    expect(within(main).queryByRole("link", { name: /projects/i })).toBeNull();
+  });
+
+  it("header shows the phone number once site.ts has one", async () => {
+    expect(Boolean(render(<Header />).container.querySelector('a[href^="tel:"]'))).toBe(Boolean(site.phone));
+    const FilledHeader = await withFilledSite(fakeContact, async () => (await import("@/components/Header")).Header);
+    const { unmount } = render(<FilledHeader />);
+    expect(screen.getByRole("link", { name: fakeContact.phoneDisplay })).toHaveAttribute("href", `tel:${fakeContact.phone}`);
+    unmount();
+    // without a display format the number itself is shown
+    const BareHeader = await withFilledSite({ phone: fakeContact.phone }, async () => (await import("@/components/Header")).Header);
+    render(<BareHeader />);
+    expect(screen.getByRole("link", { name: fakeContact.phone })).toHaveAttribute("href", `tel:${fakeContact.phone}`);
   });
 
   it("footer links every service page and the legal pages", () => {
@@ -139,6 +159,27 @@ describe("Header and Footer", () => {
     expect(Boolean(container.querySelector('a[href^="tel:"]'))).toBe(Boolean(site.phone));
     expect(Boolean(container.querySelector('a[href^="mailto:"]'))).toBe(Boolean(site.email));
     expect(screen.getByText(site.hoursDisplay)).toBeInTheDocument();
+  });
+
+  it("footer links the phone and email exactly and shows the street address once site.ts has them", async () => {
+    const FilledFooter = await withFilledSite(fakeContact, async () => (await import("@/components/Footer")).Footer);
+    const { container } = render(<FilledFooter />);
+    const { phone, phoneDisplay, email, street, postalCode } = fakeContact;
+    expect(screen.getByRole("link", { name: phoneDisplay })).toHaveAttribute("href", `tel:${phone}`);
+    expect(screen.getByRole("link", { name: email })).toHaveAttribute("href", `mailto:${email}`);
+    const address = container.querySelector("address")!;
+    expect(address).toHaveTextContent(`${street}, ${site.city} ${postalCode}`);
+    // the street line replaces the city-only fallback
+    expect(address).not.toHaveTextContent(`${site.city}, ${site.region}`);
+    expect(address).toHaveTextContent(site.hoursDisplay);
+  });
+
+  it("footer shows the bare phone number when there is no display format", async () => {
+    const FilledFooter = await withFilledSite({ phone: fakeContact.phone }, async () => (await import("@/components/Footer")).Footer);
+    const { container } = render(<FilledFooter />);
+    expect(screen.getByRole("link", { name: fakeContact.phone })).toHaveAttribute("href", "tel:+910000000001");
+    expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
+    expect(container.querySelector("address")).toHaveTextContent(`${site.city}, ${site.region}`);
   });
 
   it("call-to-action banner links to booking", () => {

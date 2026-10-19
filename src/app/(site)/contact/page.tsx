@@ -37,8 +37,9 @@ export default function ContactPage() {
       label: "Service area",
       tint: "bg-cream-wash",
       emoji: "house" as const,
+      // A 44px tall tap target on a 28px line: the 8px negative margins above and below keep the row's height.
       node: (
-        <Link href="/areas" className="hover:text-tangerine">
+        <Link href="/areas" className="-my-2 inline-flex min-h-11 items-center hover:text-tangerine">
           {site.city}, {site.region}
         </Link>
       ),
@@ -62,7 +63,7 @@ export default function ContactPage() {
           ) : site.whatsapp ? (
             <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="btn-secondary">Chat on WhatsApp</a>
           ) : (
-            <a href="#message" className="btn-secondary">Ask for a call back</a>
+            <a href="#send-message" className="btn-secondary">Ask for a call back</a>
           )}
         </div>
       </PageHero>
@@ -79,7 +80,8 @@ export default function ContactPage() {
             </div>
           ))}
         </dl>
-        <div id="message" className="card scroll-mt-28 p-6 md:p-8">
+        {/* Not id="message": that is LeadForm's textarea, whose label a duplicate id would break. */}
+        <div id="send-message" className="card scroll-mt-28 p-6 md:p-8">
           <h2 className="text-2xl font-normal">Send us a message</h2>
           <p className="mt-1 text-sm text-muted">
             Leave your mobile number and we call you back. Want a quote?{" "}

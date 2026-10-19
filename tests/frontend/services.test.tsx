@@ -64,8 +64,21 @@ describe("ServiceDetails", () => {
     expect(row).toHaveTextContent(`about ${j.paintArea.toLocaleString("en-IN")} sq ft`);
     expect(row).toHaveTextContent(`${j.painterDays} painter-days`);
     expect(row).toHaveTextContent(`${j.painters} painters`);
-    expect(row).toHaveTextContent(`about ${j.days} working days`);
+    expect(row).toHaveTextContent("for about a week");
     expect(within(table).getAllByRole("row")).toHaveLength(1 + interior.sizeExamples!.length);
+    // the crew grows with the home, so every example says the same job length as the FAQs
+    for (const e of interior.sizeExamples!) {
+      const r = within(table).getByRole("row", { name: new RegExp(e.home) });
+      expect(r).toHaveTextContent(`${jobSize(e.carpetArea).painters} painters`);
+      expect(r).toHaveTextContent("for about a week");
+    }
+    expect(table).not.toHaveTextContent(/working days/);
+  });
+
+  it("states a day count in the table only for a home the crew rule cannot fit into a week", () => {
+    render(<JobSizeTable examples={[{ home: "Large floor", carpetArea: 4000 }]} />);
+    const j = jobSize(4000);
+    expect(screen.getByRole("row", { name: /Large floor/ })).toHaveTextContent(`for about ${j.days} working days`);
   });
 
   it("leaves the table out for exterior work, which is measured on site", () => {
@@ -126,6 +139,9 @@ describe("PageHero image", () => {
     render(<PageHero title="Services" crumbs={[{ name: "Services", path: "/services" }]} image={images.livingTeal} />);
     const img = screen.getByAltText(images.livingTeal.alt);
     expect(img).toHaveAttribute("fetchpriority", "high");
+    // the LCP photo is never lazy-loaded, and next/image's own `preload` flag never reaches the <img>
+    expect(img).not.toHaveAttribute("loading", "lazy");
+    expect(img).not.toHaveAttribute("preload");
   });
 });
 

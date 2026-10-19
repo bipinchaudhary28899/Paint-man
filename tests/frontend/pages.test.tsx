@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import type { Metadata } from "next";
 import { describe, expect, it, vi } from "vitest";
+import { AreaLinks } from "@/components/home/AreaLinks";
 import AboutPage, { metadata as aboutMeta } from "@/app/(site)/about/page";
 import AreasPage, { metadata as areasMeta } from "@/app/(site)/areas/page";
 import BookPage, { metadata as bookMeta } from "@/app/(site)/book/page";
@@ -9,7 +10,8 @@ import PalettesPage, { metadata as palettesMeta } from "@/app/(site)/palettes/pa
 import PrivacyPage, { metadata as privacyMeta } from "@/app/(site)/privacy-policy/page";
 import TermsPage, { metadata as termsMeta } from "@/app/(site)/terms/page";
 import VisualizerPage, { metadata as visualizerMeta } from "@/app/(site)/visualizer/page";
-import { services, site } from "@/config/site";
+import { areaSlug, services, site } from "@/config/site";
+import { fakeContact, withFilledSite } from "../support/filled-site";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -22,7 +24,7 @@ vi.mock("next/navigation", () => ({
 // a heading outline without skipped levels, and alt text on every image.
 const pages: { path: string; Page: () => React.ReactNode; metadata: Metadata; h1: RegExp }[] = [
   { path: "/about", Page: AboutPage, metadata: aboutMeta, h1: new RegExp(`house painting in ${site.city}`, "i") },
-  { path: "/areas", Page: AreasPage, metadata: areasMeta, h1: new RegExp(`house painters in ${site.city}`, "i") },
+  { path: "/areas", Page: AreasPage, metadata: areasMeta, h1: new RegExp(`^areas we serve in ${site.city}`, "i") },
   { path: "/book", Page: BookPage, metadata: bookMeta, h1: new RegExp(`painting inspection in ${site.city}`, "i") },
   { path: "/contact", Page: ContactPage, metadata: contactMeta, h1: new RegExp(`house painters in ${site.city}`, "i") },
   { path: "/palettes", Page: PalettesPage, metadata: palettesMeta, h1: /wall colour combinations/i },
@@ -60,18 +62,45 @@ describe.each(pages)("$path", ({ path, Page, metadata, h1 }) => {
   });
 });
 
+/** Every id in the rendered page; a repeated id breaks label/anchor lookups. */
+const ids = (root: HTMLElement) => [...root.querySelectorAll("[id]")].map((el) => el.id);
+
 describe("/areas", () => {
-  it("gives every locality an anchored section and a booking link, linked from the jump list", () => {
+  it("gives every locality an anchored entry and a booking link, linked from the jump list", () => {
     const { container } = render(<AreasPage />);
     const jump = screen.getByRole("navigation", { name: "Jump to a locality" });
     for (const area of site.areas) {
-      const id = area.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      expect(id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
-      const section = container.querySelector(`section#${id}`) as HTMLElement;
-      expect(section).not.toBeNull();
-      expect(within(section).getByRole("heading", { level: 3, name: area })).toBeInTheDocument();
-      expect(within(section).getByRole("link", { name: `Book a slot in ${area}` })).toHaveAttribute("href", "/book");
+      const id = areaSlug(area);
+      const entry = container.querySelector(`#${id}`) as HTMLElement;
+      expect(entry, area).not.toBeNull();
+      expect(entry.tagName).toBe("LI");
+      expect(within(entry).getByRole("heading", { level: 3, name: area })).toBeInTheDocument();
+      expect(within(entry).getByRole("link", { name: `Book a slot in ${area}` })).toHaveAttribute("href", "/book");
       expect(within(jump).getByRole("link", { name: area })).toHaveAttribute("href", `#${id}`);
+    }
+    expect(new Set(ids(container)).size).toBe(ids(container).length);
+  });
+
+  it("states the shared process once, not once per locality, and has no landmark per locality", () => {
+    const { container } = render(<AreasPage />);
+    const text = container.textContent ?? "";
+    expect(text.match(/the same supervised crew as anywhere else/g)).toHaveLength(1);
+    // one list of localities, not ten labelled <section> regions
+    const list = container.querySelector(`#${areaSlug(site.areas[0])}`)!.closest("ul")!;
+    expect(within(list).getAllByRole("listitem")).toHaveLength(site.areas.length);
+    expect(container.querySelectorAll("section[aria-labelledby]").length).toBeLessThan(site.areas.length);
+  });
+
+  it("every home page 'Painters in {area}' link lands on an entry on the rendered /areas page", () => {
+    const { container: home } = render(<AreaLinks areas={site.areas} />);
+    const hrefs = [...home.querySelectorAll("a")].map((a) => a.getAttribute("href")!);
+    expect(hrefs).toHaveLength(site.areas.length);
+    const { container: areas } = render(<AreasPage />);
+    const pageIds = new Set(ids(areas));
+    for (const href of hrefs) {
+      const url = new URL(href, "http://site.test");
+      expect(url.pathname, href).toBe("/areas");
+      expect(pageIds.has(decodeURIComponent(url.hash.slice(1))), href).toBe(true);
     }
   });
 
@@ -80,6 +109,9 @@ describe("/areas", () => {
     for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}`);
     for (const href of ["/colours", "/palettes", "/visualizer"]) expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: /weather/ })).toBeInTheDocument();
+    // /colours can search and sort shades, not filter by washability: the link promises only light shades
+    expect(screen.getByRole("link", { name: /Find light shades/ })).toHaveAttribute("href", "/colours");
+    expect(screen.queryByRole("link", { name: /washable/i })).toBeNull();
     const words = (container.textContent ?? "").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThan(500);
   });
@@ -94,9 +126,30 @@ describe("/contact", () => {
     expect(Boolean(container.querySelector('a[href^="https://wa.me/"]'))).toBe(Boolean(site.whatsapp));
     expect(Boolean(container.querySelector('a[href^="mailto:"]'))).toBe(Boolean(site.email));
     expect(Boolean(container.querySelector("address"))).toBe(Boolean(site.address.street));
-    if (!site.phone && !site.whatsapp) expect(screen.getByRole("link", { name: "Ask for a call back" })).toHaveAttribute("href", "#message");
+    if (!site.phone && !site.whatsapp) {
+      const callBack = screen.getByRole("link", { name: "Ask for a call back" });
+      expect(callBack).toHaveAttribute("href", "#send-message");
+      expect(container.querySelector("#send-message form")).not.toBeNull();
+    }
     for (const dd of container.querySelectorAll("dd")) expect(dd.textContent?.trim()).not.toBe("");
-    expect(container.querySelector("#message form")).not.toBeNull();
+  });
+
+  it("keeps every id unique, so the message field keeps its 'How can we help?' label", () => {
+    const { container } = render(<ContactPage />);
+    const all = ids(container);
+    expect(new Set(all).size, all.join(", ")).toBe(all.length);
+    const field = screen.getByLabelText(/How can we help/);
+    expect(field.tagName).toBe("TEXTAREA");
+    expect(field).toBeRequired();
+    expect(container.querySelector("#send-message form")).toContainElement(field);
+  });
+
+  it("gives the service-area link a 44px tap target without changing the row height", () => {
+    render(<ContactPage />);
+    const link = screen.getByRole("link", { name: `${site.city}, ${site.region}` });
+    expect(link).toHaveAttribute("href", "/areas");
+    // min-h-11 is 44px on the 28px line; -my-2 takes the extra 16px back out of the row
+    expect(link).toHaveClass("inline-flex", "min-h-11", "items-center", "-my-2");
   });
 
   it("explains what happens next and links the localities and services", () => {
@@ -106,6 +159,43 @@ describe("/contact", () => {
     expect(screen.getByRole("heading", { level: 3, name: "You get an itemised quotation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: `Areas we serve in ${site.city}` })).toHaveAttribute("href", "/areas");
     for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}`);
+  });
+});
+
+describe("/contact once site.ts has contact details", () => {
+  const loadContact = (overrides: Parameters<typeof withFilledSite>[0]) =>
+    withFilledSite(overrides, async () => (await import("@/app/(site)/contact/page")).default);
+
+  it("links the phone, WhatsApp and email exactly, shows the street address, and the hero offers a call", async () => {
+    const Contact = await loadContact(fakeContact);
+    const { container } = render(<Contact />);
+    const { phone, phoneDisplay, whatsapp, email, street, postalCode } = fakeContact;
+    expect(screen.getByRole("link", { name: phoneDisplay })).toHaveAttribute("href", `tel:${phone}`);
+    expect(screen.getByRole("link", { name: `Call ${phoneDisplay}` })).toHaveAttribute("href", `tel:${phone}`);
+    for (const a of container.querySelectorAll('a[href^="tel:"]')) expect(a).toHaveAttribute("href", "tel:+910000000001");
+    // wa.me takes the number as digits only, with the country code
+    const chat = screen.getByRole("link", { name: "Chat on WhatsApp" });
+    expect(chat).toHaveAttribute("href", `https://wa.me/${whatsapp}`);
+    expect(chat.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/\d+$/);
+    expect(screen.getByRole("link", { name: email })).toHaveAttribute("href", `mailto:${email}`);
+    expect(container.querySelector("address")).toHaveTextContent(`${street}, ${site.city}, ${site.region} ${postalCode}`);
+    // with a phone number the hero's second button calls instead of scrolling to the form
+    expect(screen.queryByRole("link", { name: "Ask for a call back" })).toBeNull();
+    const rows = [...container.querySelectorAll("dt")].map((dt) => dt.textContent);
+    expect(rows).toEqual(["Phone", "WhatsApp", "Email", "Address", "Service area", "Hours"]);
+    expect(new Set(ids(container)).size).toBe(ids(container).length);
+  });
+
+  it("offers WhatsApp in the hero when there is no phone number", async () => {
+    const Contact = await loadContact({ whatsapp: fakeContact.whatsapp });
+    const { container } = render(<Contact />);
+    const chats = screen.getAllByRole("link", { name: "Chat on WhatsApp" });
+    expect(chats).toHaveLength(2); // the hero button and the WhatsApp row
+    for (const a of chats) expect(a).toHaveAttribute("href", "https://wa.me/910000000001");
+    expect(container.querySelector('a[href^="tel:"]')).toBeNull();
+    expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
+    expect(container.querySelector("address")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Ask for a call back" })).toBeNull();
   });
 });
 

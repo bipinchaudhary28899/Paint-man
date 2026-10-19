@@ -1,14 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { AreaLinks, areaSlug } from "@/components/home/AreaLinks";
+import { AreaLinks } from "@/components/home/AreaLinks";
 import { ColourExplorer, swatchIndices, wheelAngle, wheelShades } from "@/components/home/ColourExplorer";
 import { HeroImage, heroSideBySide, heroSizes } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal, reveal } from "@/components/home/PinnedReveal";
 import { colours } from "@/config/colours";
 import { images } from "@/config/images";
-import { site } from "@/config/site";
+import { areaSlug, site } from "@/config/site";
 import { clamp01, easeInOutQuad } from "@/lib/scroll";
 
 // The shared setup renders next/image as a bare <img>; here the real getImageProps is kept (the
@@ -30,7 +30,8 @@ describe("HeroImage", () => {
     render(<HeroImage image={images.livingMoody} />);
     const img = screen.getByAltText(images.livingMoody.alt);
     expect(img).toHaveAttribute("loading", "eager");
-    expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 560px, 100vw");
+    // side by side the photo column is at most 524px wide (see HeroImage); stacked it spans the screen
+    expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 524px, 100vw");
     // on phones the photo is far below the h1 (the LCP there): it must not jump the queue
     expect(img).not.toHaveAttribute("fetchpriority");
     expect(img).not.toHaveAttribute("data-priority");
@@ -39,14 +40,17 @@ describe("HeroImage", () => {
     expect(link).not.toBeNull();
     expect(link).toHaveAttribute("media", heroSideBySide);
     expect(link).toHaveAttribute("fetchpriority", "high");
+    // the preload and the <img> must ask for the same file, so their sizes match exactly
     expect(link).toHaveAttribute("imagesizes", heroSizes);
+    expect(link?.getAttribute("imagesizes")).toBe(img.getAttribute("sizes"));
+    expect(heroSizes.startsWith(`${heroSideBySide} `)).toBe(true);
     expect(link?.getAttribute("imagesrcset")).toContain("pexels-photo-30386991.jpeg");
     expect(link?.getAttribute("imagesrcset")).toMatch(/ 640w, .* 1200w/);
   });
 });
 
 describe("AreaLinks", () => {
-  it("links every locality to its own section on /areas", () => {
+  it("links every locality to its own entry on /areas, using the shared slug from site.ts", () => {
     render(<AreaLinks areas={site.areas} />);
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(site.areas.length);
@@ -54,15 +58,6 @@ describe("AreaLinks", () => {
       expect(screen.getByRole("link", { name: `Painters in ${a}` })).toHaveAttribute("href", `/areas#${areaSlug(a)}`);
     }
     expect(screen.getByRole("link", { name: "Painters in Fatehabad Road" })).toHaveAttribute("href", "/areas#fatehabad-road");
-  });
-
-  it("slugs are the lower-cased, hyphenated name and unique per locality", () => {
-    expect(areaSlug("Kamla Nagar")).toBe("kamla-nagar");
-    expect(areaSlug("Dayalbagh")).toBe("dayalbagh");
-    expect(areaSlug("  M.G. Road & Civil Lines ")).toBe("m-g-road-civil-lines");
-    const slugs = site.areas.map(areaSlug);
-    expect(new Set(slugs).size).toBe(site.areas.length);
-    for (const s of slugs) expect(s).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
   });
 });
 

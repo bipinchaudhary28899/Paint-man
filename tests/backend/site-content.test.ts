@@ -1,7 +1,10 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import sitemap from "@/app/sitemap";
 import { rooms } from "@/config/colours";
 import { getPalette } from "@/config/palettes";
-import { generalFaqs, getService, jobSize, services, site, type Service } from "@/config/site";
+import { areaSlug, generalFaqs, getService, jobDuration, jobSize, services, site, type Service } from "@/config/site";
 import { getColour } from "@/lib/colours/search";
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import { serviceTypes } from "@/lib/leads/options";
@@ -28,8 +31,55 @@ function specificCopy(s: Service): string[] {
 
 const allCopy = (s: Service) => [...specificCopy(s), s.title, s.description, ...s.faqs.flatMap((f) => [f.q, f.a])];
 
-// Routes a FAQ link may point to. /areas is the locality hub added alongside this change.
-const linkableRoutes = new Set(["/", "/book", "/contact", "/about", "/faq", "/services", "/colours", "/palettes", "/visualizer", "/areas"]);
+// Routes a link in site.ts may point to: every page in the real sitemap, plus the real pages kept
+// out of it on purpose (noindex). A link to anything else dangles, so a renamed or removed route
+// fails here instead of shipping a 404.
+const unlistedRoutes = ["/thank-you"];
+const knownRoutes = new Set([...sitemap().map((e) => e.url.replace(site.url, "") || "/"), ...unlistedRoutes]);
+
+/** Why an internal href would not land on a page (or a locality on /areas); undefined when it does. */
+function danglingReason(href: string): string | undefined {
+  if (!href.startsWith("/") || href.startsWith("//")) return "not a root-relative internal link";
+  const url = new URL(href, "http://site.test");
+  if (!knownRoutes.has(url.pathname)) return `no page at ${url.pathname}`;
+  if (url.pathname === "/areas" && url.hash && !site.areas.some((a) => `#${areaSlug(a)}` === url.hash)) return `no locality ${url.hash} on /areas`;
+  return undefined;
+}
+
+describe("areas", () => {
+  it("are unique, and each has its own valid anchor slug (the id on /areas)", () => {
+    expect(new Set(site.areas).size).toBe(site.areas.length);
+    const slugs = site.areas.map(areaSlug);
+    expect(new Set(slugs).size).toBe(site.areas.length);
+    for (const s of slugs) expect(s).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+
+  it("slugs are the lower-cased name with each run of other characters as one hyphen", () => {
+    expect(areaSlug("Kamla Nagar")).toBe("kamla-nagar");
+    expect(areaSlug("Dayalbagh")).toBe("dayalbagh");
+    expect(areaSlug("  M.G. Road & Civil Lines ")).toBe("m-g-road-civil-lines");
+  });
+});
+
+describe("known routes", () => {
+  it("come from the sitemap, plus unlisted pages that exist", () => {
+    for (const path of ["/", "/book", "/areas", "/faq", "/contact", ...services.map((s) => `/services/${s.slug}`)]) {
+      expect(knownRoutes.has(path), path).toBe(true);
+    }
+    for (const path of unlistedRoutes) {
+      expect(existsSync(fileURLToPath(new URL(`../../src/app/(site)${path}/page.tsx`, import.meta.url))), path).toBe(true);
+    }
+  });
+
+  it("accept query strings and locality anchors, and reject anything that dangles", () => {
+    expect(danglingReason("/book?service=interior-painting")).toBeUndefined();
+    expect(danglingReason(`/areas#${areaSlug(site.areas[0])}`)).toBeUndefined();
+    expect(danglingReason("/areas#nowhere")).toBe("no locality #nowhere on /areas");
+    expect(danglingReason("/areas/kamla-nagar")).toBe("no page at /areas/kamla-nagar");
+    expect(danglingReason("/projects")).toBe("no page at /projects");
+    expect(danglingReason("https://example.com/")).toBe("not a root-relative internal link");
+  });
+});
 
 describe("services", () => {
   it("have unique slugs, names and lead form service types", () => {
@@ -109,7 +159,8 @@ describe("job sizing examples", () => {
   it("uses the booking form's rule of thumb", () => {
     const j = jobSize(900);
     expect(j.paintArea).toBe(Math.round((900 * PAINT_AREA_PER_CARPET_SQFT) / 10) * 10);
-    expect(j).toEqual({ carpetArea: 900, paintArea: j.paintArea, ...crewEstimate(j.paintArea) });
+    const crew = crewEstimate(j.paintArea);
+    expect(j).toEqual({ carpetArea: 900, paintArea: j.paintArea, ...crew, duration: jobDuration(crew.days) });
     expect(j.painterDays).toBe(Math.ceil(j.paintArea / SQFT_PER_PAINTER_DAY));
   });
 
@@ -121,9 +172,41 @@ describe("job sizing examples", () => {
       expect(j.painters).toBeGreaterThanOrEqual(2);
       expect(j.painters).toBeLessThanOrEqual(8);
       expect(j.days).toBeLessThanOrEqual(10);
+      expect(j.duration, e.home).toBe("about a week");
     }
     // exterior area is measured on site, never estimated from carpet area
     expect(getService("exterior-painting")?.sizeExamples).toBeUndefined();
+  });
+
+  it("names a day count only for a job the crew rule cannot fit into about a week", () => {
+    for (const days of [5, 6, 7, 8]) expect(jobDuration(days)).toBe("about a week");
+    expect(jobDuration(4)).toBe("about 4 working days");
+    expect(jobDuration(12)).toBe("about 12 working days");
+    // a small flat bottoms out at the minimum crew of two; a very large floor tops out at eight
+    expect(jobSize(200).duration).toBe(`about ${jobSize(200).days} working days`);
+    expect(jobSize(4000).painters).toBe(8);
+    expect(jobSize(4000).duration).toBe(`about ${jobSize(4000).days} working days`);
+  });
+});
+
+describe("job lengths", () => {
+  const copy = [...services.flatMap(allCopy), ...generalFaqs.flatMap((f) => [f.q, f.a])];
+
+  it("say one thing everywhere: a crew sized to the home, for about a week", () => {
+    const j = jobSize(900);
+    const interior = getService("interior-painting")!.faqs.find((f) => f.q.startsWith("How long"))!;
+    expect(interior.a).toContain(`takes ${j.duration} with a crew sized to the job, usually ${j.painters} painters`);
+    expect(interior.a).toContain("less when the walls need little putty work");
+    const price = generalFaqs.find((f) => f.q === "How is the price calculated?")!;
+    expect(price.a).toContain(`crew of ${j.painters} for ${j.duration}`);
+    expect(getService("interior-painting")!.timeline.join(" ")).toContain("about a week");
+  });
+
+  it("never gives a range of days or a day count that disagrees with the crew rule", () => {
+    for (const text of copy) {
+      expect(text).not.toMatch(/\d+\s*(to|-|–)\s*\d+\s*(working\s+)?days/i);
+      expect(text).not.toMatch(/\d+\s+working days/i);
+    }
   });
 });
 
@@ -142,7 +225,7 @@ describe("FAQs", () => {
     const links = all.flatMap((f) => (f.link ? [f.link] : []));
     expect(links.length).toBeGreaterThan(0);
     for (const { href, label } of links) {
-      expect(linkableRoutes.has(href), href).toBe(true);
+      expect(danglingReason(href), href).toBeUndefined();
       expect(label.length).toBeGreaterThan(3);
     }
   });

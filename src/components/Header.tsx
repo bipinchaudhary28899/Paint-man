@@ -6,7 +6,8 @@ const nav = [
   { href: "/services", label: "Services" },
   { href: "/#how", label: "How it works" },
   { href: "/colours", label: "Colours" },
-  { href: "/#work", label: "Projects" },
+  // The home page's example finishes (stock photos, not our jobs), so not "Projects".
+  { href: "/#work", label: "Finishes" },
   { href: "/faq", label: "FAQ" },
 ];
 
