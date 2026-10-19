@@ -1,5 +1,5 @@
-import { curatedColours, type Colour, type ColourFamily, type Finish, type Room } from "@/config/colours";
-import { familySingular, familySpecs, interiorFinishFor, isOutdoor, lrvBand, type LrvBand } from "@/config/shades";
+import { curatedColours, type Colour, type ColourFamily, type Finish, type Room, type WallUse } from "@/config/colours";
+import { familySingular, familySpecs, interiorFinishFor, isOutdoor, lrvBand, wallsFor, type LrvBand } from "@/config/shades";
 import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
 import { paletteRole, palettesUsing } from "./palettes";
 import { neighbours, pairings } from "./search";
@@ -11,14 +11,23 @@ import { neighbours, pairings } from "./search";
 // never contradicts its own note or finish line. Client-safe: config only, no server data (brand
 // matches come in as an argument).
 
-const LRV_LABELS: Record<LrvBand, string> = {
-  light: "light, opens a room",
-  mid: "mid, easy to live with",
-  deep: "deep, feature wall",
+// The band says how much light the wall gives back; the walls advice says how much of the room
+// it goes on. A mid shade curated as one wall (Marigold, Gulabi, Kesar) is "mid, one wall", never
+// "easy to live with", so the label agrees with a note like "One wall is plenty".
+const LRV_LABELS: Record<LrvBand, Record<WallUse, string>> = {
+  light: { all: "light, opens a room", feature: "light, one wall" },
+  mid: { all: "mid, easy to live with", feature: "mid, one wall" },
+  deep: { all: "deep, needs good daylight", feature: "deep, feature wall" },
 };
 
-/** Short label next to the LRV number, from the same bands as the notes and tags. */
-export const lrvLabel = (lrv: number) => LRV_LABELS[lrvBand(lrv)];
+/**
+ * Short label next to the LRV number: the LRV band, worded for the shade's walls advice. Pass the
+ * shade; a bare LRV is read with the walls advice its band would get (as for a generated shade).
+ */
+export function lrvLabel(shade: number | Pick<Colour, "lrv" | "walls">): string {
+  const { lrv, walls } = typeof shade === "number" ? { lrv: shade, walls: wallsFor(shade) } : shade;
+  return LRV_LABELS[lrvBand(lrv)][walls];
+}
 
 /** The finish we quote for this shade on an inside wall: its headline finish, or the interior one when that is weatherproof. */
 const insideFinish = (c: Pick<Colour, "finish" | "lrv">): Finish => (c.finish === "Exterior weatherproof" ? interiorFinishFor(c.lrv) : c.finish);
@@ -40,7 +49,11 @@ export function finishSummary(c: Pick<Colour, "finish" | "rooms" | "lrv">): stri
 // --- Undertone, read from the hex -------------------------------------------------------------
 
 export type Warmth = "warm" | "cool" | "neutral";
-export type Strength = "near-neutral" | "pastel" | "greyed" | "soft" | "rich" | "strong";
+/**
+ * "near-neutral" is a white or grey, described by its cast; "muted" is a shade of a colour family
+ * with almost no colour (a very pale tint, or a greyed one), described by its family.
+ */
+export type Strength = "near-neutral" | "muted" | "pastel" | "greyed" | "soft" | "rich" | "strong";
 export type Undertone = {
   /** OKLab a (green − / red +) and b (blue − / yellow +), rounded to three places. */
   a: number;
@@ -52,13 +65,16 @@ export type Undertone = {
   /** The hue the shade leans to within its family ("yellow" for a sage green), if it leans at all. */
   lean?: string;
   warmth: Warmth;
-  /** "a greyed green with a slight yellow lean", "a white with a faint warm, creamy cast". */
+  /** "a greyed green with a slight yellow lean", "a white with a faint warm cast", "a muted red, so pale it reads as a tinted white". */
   phrase: string;
-  /** The same in a few words, for use inside a sentence: "yellow lean", "cool, blue cast", "strong colour". */
+  /** The same in a few words, for use inside a sentence: "yellow lean", "cool, blue cast", "hint of red", "strong colour". */
   short: string;
-  /** Whites, greys and other near-neutrals: the cast ("warm, creamy", "cool, blue", "none"). */
+  /** Whites and greys only: the cast ("warm", "warm, creamy", "warm, greige", "cool, blue", "none"). */
   cast?: string;
 };
+
+/** Whites and greys (and muted shades of any family) carry so little colour that their cast, not a hue, is what shows. */
+const isNeutralish = (u: Pick<Undertone, "strength">) => u.strength === "near-neutral" || u.strength === "muted";
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -88,9 +104,25 @@ const WARM_LEANS = new Set(["yellow", "orange", "red", "pink", "peach"]);
 const r3 = (x: number) => Math.round(x * 1000) / 1000;
 
 /**
+ * The cast of a white or grey, from OKLab a and b. Only a clear yellow cast (b above 0.018, with no
+ * pink in it) is "creamy", and only on a white: a faint one is just "warm" (Cotton, whose note says
+ * cream is too yellow), and a grey's warmth is "greige" (Dove, Pebble). A pink (a > 0) or green
+ * (a < 0) tint gives a cast of its own.
+ */
+function castOf(family: ColourFamily, warmth: Warmth, a: number, b: number): { cast: string; amount: "clear" | "faint" } {
+  if (warmth === "neutral") return { cast: "", amount: "faint" };
+  if (warmth === "cool") return { cast: a < -0.008 ? "green-grey" : "cool, blue", amount: "faint" };
+  if (a > 0.008) return { cast: "pink-beige", amount: "faint" };
+  const amount = b > 0.018 ? "clear" : "faint";
+  if (family === "Greys") return { cast: "warm, greige", amount };
+  return { cast: amount === "clear" ? "warm, creamy" : "warm", amount };
+}
+
+/**
  * The shade's undertone from its hex, in OKLab: how much colour it carries for its lightness, which
- * way it leans from the middle of its family, and whether it reads warm or cool. Whites, greys and
- * shades with almost no colour get a cast (warm, cool or none) from the yellow–blue axis instead.
+ * way it leans from the middle of its family, and whether it reads warm or cool. Whites and greys
+ * get a cast (warm, cool or none) from the yellow–blue axis instead; a shade of a colour family with
+ * almost no colour is "muted", named by its family rather than given a cast.
  */
 export function undertone(c: Pick<Colour, "hex" | "family">): Undertone {
   const [L, a, b] = rgbToOklab(...hexToRgb(c.hex));
@@ -102,11 +134,14 @@ export function undertone(c: Pick<Colour, "hex" | "family">): Undertone {
   const leans = LEANS[c.family];
 
   if (!leans || relative < 0.025) {
-    // yellow (b) decides first; with almost no yellow or blue, a pink (a > 0) or green (a < 0) tint still gives a cast
+    // yellow (b) decides first; with almost no yellow or blue, a pink (a > 0) or green (a < 0) tint still decides
     const warmth: Warmth = b > 0.006 || (b >= -0.006 && a > 0.008) ? "warm" : b < -0.006 || a < -0.008 ? "cool" : "neutral";
-    const cast =
-      warmth === "warm" ? (a > 0.008 ? "pink-beige" : "warm, creamy") : warmth === "cool" ? (a < -0.008 ? "green-grey" : "cool, blue") : "";
-    const amount = warmth === "warm" && a <= 0.008 && b > 0.018 ? "clear" : "faint";
+    if (leans) {
+      // a pale or greyed shade of a colour family: too little colour to lean, but still that colour
+      const phrase = L >= 0.88 ? `a muted ${noun}, so pale it reads as a tinted white` : `a muted, greyed ${noun}`;
+      return { ...base, strength: "muted", warmth, phrase, short: `hint of ${noun}` };
+    }
+    const { cast, amount } = castOf(c.family, warmth, a, b);
     return {
       ...base,
       strength: "near-neutral",
@@ -164,24 +199,57 @@ const ROOM_SHORT: Record<Room, string> = {
 const list = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 const named = (c: Pick<Colour, "name" | "code">) => `${c.name} (${c.code})`;
 
-/** Its pairings split into the lightest one that is lighter than the shade (for ceilings and the walls around it) and the other (an accent). */
+/**
+ * A paired shade in a few words, so the reader knows what it is without opening it: "a deep brown",
+ * "a pale grey", or for a white, lighter or deeper than the shade it is paired with.
+ */
+function describe(x: Pick<Colour, "family" | "lrv">, of: Pick<Colour, "lrv">): string {
+  if (x.family === "Whites") return `a ${x.lrv > of.lrv ? "lighter" : "deeper"} white`;
+  const band = lrvBand(x.lrv);
+  return `a ${band === "light" ? "pale" : band} ${familySingular[x.family]}`;
+}
+
+/**
+ * Its pairings split into the light one (for ceilings and the walls around it: the lightest pairing
+ * lighter than the shade, or a white at least as light) and the accent (another pairing, a colour
+ * before a white, since a white makes no contrast against a pale shade).
+ */
 function partners(c: Colour): { light?: Colour; accent?: Colour } {
   const ps = pairings(c);
-  const light = ps.filter((p) => p.lrv > c.lrv).sort((x, y) => y.lrv - x.lrv)[0];
-  return { light, accent: ps.find((p) => p !== light) };
+  const light = ps.filter((p) => p.lrv > c.lrv || (p.family === "Whites" && p.lrv >= c.lrv)).sort((x, y) => y.lrv - x.lrv)[0];
+  const rest = ps.filter((p) => p !== light);
+  return { light, accent: rest.find((p) => p.family !== "Whites") ?? rest[0] };
 }
 
 // --- The colour itself (the "what colour is it" section) ---------------------------------------
 
-/** For a white or grey: which of the other curated shades of its family are warmer and cooler, by OKLab b. */
+/** Two casts differ when OKLab b differs by more than this (about the smallest step the eye picks out on a wall). */
+const CAST_STEP = 0.002;
+const ORDINAL = ["", "", "second", "third", "fourth", "fifth", "sixth"];
+
+/**
+ * For a white or grey: where its cast sits among the curated shades of its family, by OKLab b. A
+ * curated shade gets its rank among them; a generated one is placed against them.
+ */
 function castComparison(c: Colour, u: Undertone): string {
   if (u.strength !== "near-neutral") return "";
+  const curated = curatedColours.some((x) => x.code === c.code);
   const siblings = curatedColours.filter((x) => x.family === c.family && x.code !== c.code).map((x) => ({ x, b: undertone(x).b }));
-  const warmer = siblings.filter((s) => s.b > u.b + 0.002).sort((p, q) => p.b - q.b)[0];
-  const cooler = siblings.filter((s) => s.b < u.b - 0.002).sort((p, q) => q.b - p.b)[0];
-  if (warmer && cooler) return `: cooler than ${warmer.x.name} and warmer than ${cooler.x.name}`;
-  if (warmer) return `, the coolest of the curated ${familyPlural(c.family)}, with ${warmer.x.name} the next warmer`;
-  if (cooler) return `, the warmest of the curated ${familyPlural(c.family)}, with ${cooler.x.name} the next cooler`;
+  const warmers = siblings.filter((s) => s.b > u.b + CAST_STEP).sort((p, q) => p.b - q.b);
+  const coolers = siblings.filter((s) => s.b < u.b - CAST_STEP).sort((p, q) => q.b - p.b);
+  const [warmer, cooler] = [warmers[0], coolers[0]];
+  const fam = familyPlural(c.family);
+  const same = siblings.filter((s) => Math.abs(s.b - u.b) <= CAST_STEP).sort((p, q) => Math.abs(p.b - u.b) - Math.abs(q.b - u.b))[0];
+  if (same) return `, much like ${same.x.name}'s`;
+  if (warmer && cooler) {
+    // counted from the nearer end: "the second warmest", "the second coolest"
+    const rank = warmers.length <= coolers.length ? `${ORDINAL[warmers.length + 1]} warmest` : `${ORDINAL[coolers.length + 1]} coolest`;
+    return `${curated ? `, the ${rank} of the curated ${fam}` : ""}: cooler than ${warmer.x.name} and warmer than ${cooler.x.name}`;
+  }
+  if (warmer)
+    return curated ? `, the coolest of the curated ${fam}, with ${warmer.x.name} the next warmer` : `, cooler than any of the curated ${fam}, with ${warmer.x.name} the nearest`;
+  if (cooler)
+    return curated ? `, the warmest of the curated ${fam}, with ${cooler.x.name} the next cooler` : `, warmer than any of the curated ${fam}, with ${cooler.x.name} the nearest`;
   return "";
 }
 
@@ -212,20 +280,42 @@ export function colourFacts(c: Colour): string[] {
 
 // --- Light and depth (the LRV section) --------------------------------------------------------
 
+/**
+ * How a white or grey's cast compares with its lighter and darker neighbours, so a reader who
+ * wants a step lighter or darker knows whether it gets warmer or cooler on the way.
+ */
+function castNote(c: Colour, u: Undertone, lighter?: Colour, darker?: Colour): string {
+  const vs = (x: Colour) => {
+    const d = u.b - undertone(x).b;
+    return d > CAST_STEP ? "warmer" : d < -CAST_STEP ? "cooler" : "same";
+  };
+  const [up, down] = [lighter && vs(lighter), darker && vs(darker)];
+  if (!up || !down) {
+    const one = up ?? down;
+    return !one ? "" : one === "same" ? ", with much the same cast" : `, and ${c.name} is the ${one} of the two`;
+  }
+  if (up === down) return up === "same" ? ", with much the same cast as both" : `, and it is ${up} than either`;
+  const side = (rel: string, step: string) => (rel === "same" ? `close in cast to the ${step}` : `${rel} than the ${step}`);
+  return `; it is ${side(up, "lighter step")} and ${side(down, "darker one")}`;
+}
+
 /** The LRV, what it means, and how it compares with the next lighter and darker shades of its family. */
 function lrvSentence(c: Colour, u: Undertone): string {
   const { lighter, darker } = neighbours(c);
   const fam = familyPlural(c.family);
   const near = [lighter, darker].filter((x): x is Colour => Boolean(x));
   const chromas = near.map((x) => undertone(x).chroma);
-  const either = near.length > 1 ? "either" : "it";
-  const colourNote = !near.length
-    ? ""
-    : chromas.every((k) => k > u.chroma + 0.01)
-      ? `, and it carries less colour than ${either}`
-      : chromas.every((k) => k < u.chroma - 0.01)
-        ? `, and it carries more colour than ${either}`
-        : "";
+  const either = near.length > 1 ? "either" : near[0]?.name;
+  const colourNote =
+    u.strength === "near-neutral"
+      ? castNote(c, u, lighter, darker)
+      : !near.length
+        ? ""
+        : chromas.every((k) => k > u.chroma + 0.01)
+          ? `, and it carries less colour than ${either}`
+          : chromas.every((k) => k < u.chroma - 0.01)
+            ? `, and it carries more colour than ${either}`
+            : "";
   const opening = `At LRV ${c.lrv}, ${c.name} reflects roughly ${c.lrv}% of the light that hits it`;
   if (lighter && darker)
     return `${opening}, between ${named(lighter)} at LRV ${lighter.lrv}, the next step lighter among the ${fam}, and ${named(darker)} at LRV ${darker.lrv}, the next step darker${colourNote}.`;
@@ -237,7 +327,7 @@ function lrvSentence(c: Colour, u: Undertone): string {
 const DEEP_COATS = "; as a deep shade it needs a tinted primer and two finish coats, which we list on the quotation";
 
 /** What to paint: every wall or one, in its main room, with its paired shades around it. Follows `walls`, never the band alone. */
-function wallsSentence(c: Colour): string {
+function wallsSentence(c: Colour, u: Undertone): string {
   const main = c.rooms[0];
   const room = main ? ROOM_NOUN[main] : "a room";
   const { light, accent } = partners(c);
@@ -245,16 +335,22 @@ function wallsSentence(c: Colour): string {
   const coats = band === "deep" ? DEEP_COATS : "";
   if (main && isOutdoor(main)) {
     if (c.walls === "all")
-      return `Outside, ${c.name} is light enough for the whole of the house walls${light ? `, with ${light.name} on the trim and parapet` : ""}${accent ? ` and ${accent.name} on the gate or pillars` : ""}${coats}.`;
+      return `On a house front, ${c.name} is light enough for all the outside walls${light ? `, with ${light.name} on the trim and parapet` : ""}${accent ? ` and ${accent.name}, ${describe(accent, c)}, on the gate or pillars` : ""}${coats}.`;
     return `Outside, keep ${c.name} to a door, gate pillars, a boundary wall or trim rather than the whole house, since at LRV ${c.lrv} it soaks up about ${100 - c.lrv}% of the light that hits it${light ? `, with ${light.name} on the walls around it` : ""}${coats}.`;
   }
   if (c.walls === "all") {
     const ceiling = light ? `, with ${light.name} on the ceiling` : " and on the ceiling";
-    const lead = band === "light" ? "It bounces daylight back into the room, so it is comfortable on" : "It shows real colour yet stays light enough for";
-    return `${lead} all four walls of ${room}${band === "light" ? "" : " with a decent window"}${ceiling}${accent ? `, and ${accent.name} makes the contrast on a niche or door` : ""}${coats}.`;
+    const lead =
+      band === "light"
+        ? "It bounces daylight back into the room, so it is comfortable on"
+        : isNeutralish(u)
+          ? "It reads as a soft neutral rather than a colour, and stays light enough for"
+          : "It shows real colour yet stays light enough for";
+    return `${lead} all four walls of ${room}${band === "light" ? "" : " with a decent window"}${ceiling}${accent ? `, and ${accent.name}, ${describe(accent, c)}, makes the contrast on a niche or door` : ""}${coats}.`;
   }
   const around = light ? `, with ${light.name} on the walls around it and the ceiling` : "";
-  const small = accent ? ` and ${accent.name} as a small accent` : "";
+  // a pale accent next to a pale surround adds nothing on a one-wall scheme, so it is left out
+  const small = accent && lrvBand(accent.lrv) !== "light" ? ` and ${accent.name}, ${describe(accent, c)}, as a small accent` : "";
   if (band === "deep") return `Keep it to one wall of ${room} that gets daylight${around}${small}${coats}.`;
   return `Its colour is strong enough that one wall of ${room} carries it${around}${small}.`;
 }
@@ -280,7 +376,7 @@ const LIGHT_COPY: Record<LrvBand, Record<Warmth, (short: string) => string>> = {
 /** What the shade's LRV means on the wall, in three short paragraphs: the number against its neighbours, how many walls, and how it changes with the light. */
 export function lrvExplanation(c: Colour): string[] {
   const u = undertone(c);
-  return [lrvSentence(c, u), wallsSentence(c), LIGHT_COPY[lrvBand(c.lrv)][u.warmth](u.short)];
+  return [lrvSentence(c, u), wallsSentence(c, u), LIGHT_COPY[lrvBand(c.lrv)][u.warmth](u.short)];
 }
 
 // --- Rooms (the "where it works" section) -----------------------------------------------------
@@ -334,6 +430,18 @@ const ROOM_WHY: Record<Room, Record<RoomMode, string>> = {
   },
 };
 
+/**
+ * The room's general line for this shade: ROOM_WHY, except where the undertone changes what is
+ * true. A cool kitchen shade is not "warm"; and fading in full sun is a strong colour's problem, so
+ * a near-neutral kept off whole outside walls is kept off them for a lighter, cooler house instead.
+ */
+function roomWhy(room: Room, mode: RoomMode, u: Undertone): string {
+  if (room === "Kitchen" && mode === "mid") return `${u.warmth === "cool" ? "Fresh" : u.warmth === "neutral" ? "Calm" : "Warm"} without showing every mark`;
+  if (room === "Exterior" && mode === "feature" && isNeutralish(u))
+    return "On gate pillars, a door or trim rather than whole walls, so the main walls can take a lighter shade that keeps the house cooler in the sun";
+  return ROOM_WHY[room][mode];
+}
+
 /** The finish we quote for this room, said only where it matters to the room (splashes, crayon, diya smoke, weather). */
 function finishClause(c: Colour, room: Room): string {
   const f = roomFinish(c, room);
@@ -348,11 +456,12 @@ function finishClause(c: Colour, room: Room): string {
 }
 
 // The paired shades are already named in the walls sentence, so the room cards draw on the
-// family neighbours and the palettes instead; the order says which fact each room reaches for first.
+// palettes and the family neighbours instead; the order says which fact each room reaches for first.
+// A ready palette for the room is the most specific fact, so most rooms try it first.
 type DetailKind = "lighter" | "darker" | "palette";
 const DETAIL_ORDER: Record<Room, Record<"all" | "feature", DetailKind[]>> = {
   "Living room": { all: ["palette", "darker", "lighter"], feature: ["palette", "lighter", "darker"] },
-  Bedroom: { all: ["lighter", "palette", "darker"], feature: ["lighter", "palette", "darker"] },
+  Bedroom: { all: ["palette", "lighter", "darker"], feature: ["lighter", "palette", "darker"] },
   Kitchen: { all: ["darker", "palette", "lighter"], feature: ["lighter", "palette", "darker"] },
   "Kids room": { all: ["palette", "lighter", "darker"], feature: ["palette", "lighter", "darker"] },
   "Pooja room": { all: ["palette", "lighter", "darker"], feature: ["palette", "lighter", "darker"] },
@@ -362,47 +471,111 @@ const DETAIL_ORDER: Record<Room, Record<"all" | "feature", DetailKind[]>> = {
 };
 
 /**
- * One data-led line per room card, each from a different fact so no two cards on a page repeat:
- * the next lighter or deeper shade of its family, or a ready palette for that room. A room left
- * without a fact keeps its general line only.
+ * What changes besides lightness on a step to a neighbour: for a white or grey its cast (by OKLab
+ * b), for a colour how much colour it carries (by chroma).
  */
-function roomDetails(c: Colour): Map<Room, string> {
+function stepChange(u: Undertone, x: Colour): string {
+  const t = undertone(x);
+  if (u.strength === "near-neutral") {
+    const d = t.b - u.b;
+    return d > CAST_STEP ? "and a little warmer" : d < -CAST_STEP ? "and a little cooler" : "with much the same cast";
+  }
+  const d = t.chroma - u.chroma;
+  return d > 0.01 ? "with more colour in it" : d < -0.01 ? "with less colour in it" : "with about as much colour";
+}
+
+// How the undertone plays in a room, for a card the palettes and neighbours have not reached. Never
+// used for the main room, whose undertone the line above the cards already covers.
+const ROOM_TONE: Record<Room, Record<Warmth, (short: string) => string>> = {
+  "Living room": {
+    warm: (s) => `Its ${s} sits well with wood and brass.`,
+    cool: (s) => `Its ${s} keeps a sunny living room feeling calm.`,
+    neutral: () => "Neither warm nor cool, it lets cushions and art carry the colour.",
+  },
+  Bedroom: {
+    warm: (s) => `Its ${s} stays gentle under a bedside lamp.`,
+    cool: (s) => `Its ${s} keeps a bedroom feeling fresh on summer nights.`,
+    neutral: () => "Neither warm nor cool, it leaves the colour to bedding and curtains.",
+  },
+  Kitchen: {
+    warm: (s) => `Its ${s} sits well with wooden cabinets.`,
+    cool: (s) => `Its ${s} looks clean next to steel and white tiles.`,
+    neutral: () => "Neither warm nor cool, it goes with any counter or cabinet colour.",
+  },
+  "Kids room": {
+    warm: (s) => `Its ${s} keeps the room cheerful.`,
+    cool: (s) => `Its ${s} looks fresh beside bright toys and books.`,
+    neutral: () => "Neither warm nor cool, it lets toys and posters bring the colour.",
+  },
+  "Pooja room": {
+    warm: (s) => `Its ${s} glows in diya and lamp light.`,
+    cool: (s) => `Its ${s} gives brass and marigolds a cool backdrop.`,
+    neutral: () => "Neither warm nor cool, it lets brass and flowers stand out.",
+  },
+  Exterior: {
+    warm: (s) => `Its ${s} suits brick and sandstone.`,
+    cool: (s) => `Its ${s} stands out against brick and sandstone.`,
+    neutral: () => "Neither warm nor cool, it sits with any trim colour.",
+  },
+  Balcony: {
+    warm: (s) => `Its ${s} sits well with terracotta pots.`,
+    cool: (s) => `Its ${s} sets off green plants.`,
+    neutral: () => "Neither warm nor cool, it lets the plants bring the colour.",
+  },
+  "Rental refresh": {
+    warm: (s) => `Its ${s} goes with most furniture a tenant brings.`,
+    cool: (s) => `Its ${s} reads clean in an empty flat.`,
+    neutral: () => "Neither warm nor cool, it goes with whatever furniture a tenant brings.",
+  },
+};
+
+/**
+ * One data-led line per room card, each from a different fact so no two cards on a page repeat:
+ * a ready palette for that room, or the next lighter or deeper shade of its family and what else
+ * changes on that step. A room the facts do not reach gets how its undertone plays there, unless
+ * it is the main room.
+ */
+function roomDetails(c: Colour, u: Undertone): Map<Room, string> {
   const { lighter, darker } = neighbours(c);
+  const noun = familySingular[c.family];
   const ps = palettesUsing(c.code);
   const mode = modeOf(c);
   const used = new Set<string>();
   const out = new Map<Room, string>();
   const render = (kind: DetailKind, room: Room): string | undefined => {
     const where = ROOM_SHORT[room];
-    if (kind === "lighter") return lighter && `For a softer ${where}, ${named(lighter)} is a step lighter at LRV ${lighter.lrv}.`;
-    if (kind === "darker") return darker && `If you want more colour ${isOutdoor(room) ? "on" : "in"} the ${where}, ${named(darker)} is a step deeper at LRV ${darker.lrv}.`;
+    if (kind === "lighter") return lighter && `For a lighter ${where}, ${named(lighter)} is the next lighter ${noun}, at LRV ${lighter.lrv}, ${stepChange(u, lighter)}.`;
+    if (kind === "darker")
+      return darker && `For more depth ${isOutdoor(room) ? "on" : "in"} the ${where}, ${named(darker)} is the next deeper ${noun}, at LRV ${darker.lrv}, ${stepChange(u, darker)}.`;
     // a palette for this room, unless its role only repeats the card ("the back panel behind the deities")
-    const base = ROOM_WHY[room][mode].toLowerCase();
+    const base = roomWhy(room, mode, u).toLowerCase();
     const p = ps.find((x) => !used.has(x.slug) && x.rooms.includes(room) && !base.includes(paletteRole(x, c.code)!.replace(/^the /, "")));
     if (!p) return undefined;
     used.add(p.slug);
     return `In the “${p.name}” palette it is ${paletteRole(p, c.code)}.`;
   };
-  for (const room of c.rooms) {
+  c.rooms.forEach((room, i) => {
     for (const kind of DETAIL_ORDER[room][c.walls]) {
       if (kind !== "palette" && used.has(kind)) continue;
       const text = render(kind, room);
       if (!text) continue;
       used.add(kind);
       out.set(room, text);
-      break;
+      return;
     }
-  }
+    if (i > 0) out.set(room, ROOM_TONE[room][u.warmth](u.short));
+  });
   return out;
 }
 
 /** Each room the shade suits, with why: for its walls advice and depth, one fact of its own, and the finish we quote for that room where it matters. */
 export function roomGuidance(c: Colour): { room: Room; why: string }[] {
   const mode = modeOf(c);
-  const details = roomDetails(c);
+  const u = undertone(c);
+  const details = roomDetails(c, u);
   return c.rooms.map((room) => {
     const finish = finishClause(c, room);
-    const why = `${ROOM_WHY[room][mode]}${finish ? `, ${finish}` : ""}.`;
+    const why = `${roomWhy(room, mode, u)}${finish ? `, ${finish}` : ""}.`;
     return { room, why: [why, details.get(room)].filter(Boolean).join(" ") };
   });
 }
@@ -441,11 +614,20 @@ export const finishLine = (c: Pick<Colour, "finish" | "rooms" | "lrv">) =>
 /** The minimum a brand match needs here, so this module stays client-safe (brands.ts is server-only). */
 export type BrandMatchLike = { brandName: string; shades: { name: string; code: string; distance: number }[] };
 
+const slugOf = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/**
+ * Whether a brand shade's code is a real shade-card code. PaintDB fills a missing code with the
+ * slug of the name ("greenery", "sassy-pink"); printing that as a code would pass it off as one, so
+ * the brand sentence (and any list of brand matches) shows the name alone for these.
+ */
+export const hasShadeCardCode = (s: { name: string; code: string }) => s.code !== slugOf(s.name) && !/^[a-z-]+$/.test(s.code);
+
 /** "The nearest brand shades on screen are Asian Paints Pepper Leaf (8386), …", from the closest shade of each brand. */
 export function brandSentence(c: Pick<Colour, "name">, matches: readonly BrandMatchLike[]): string {
   const best = matches.filter((m) => m.shades.length > 0).map((m) => ({ ...m.shades[0], brandName: m.brandName }));
   if (!best.length) return "";
-  const labels = best.map((s) => `${s.brandName} ${s.name} (${s.code})`);
+  const labels = best.map((s) => `${s.brandName} ${s.name}${hasShadeCardCode(s) ? ` (${s.code})` : ""}`);
   const closest = [...best].sort((x, y) => x.distance - y.distance)[0];
   const close =
     best.length > 1 && best.every((s) => s.distance < 0.02)

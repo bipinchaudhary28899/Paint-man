@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
+import { sessionCookieName } from "@/lib/auth/session";
 import { canonicalColourPath, config, proxy } from "@/proxy";
 
 // The proxy runs before the route cache. Shade URLs: case variants get a 308 to the canonical
@@ -64,8 +65,13 @@ describe("proxy: /admin and /api unchanged", () => {
     expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
   });
 
+  it("looks for the session cookie by its own name", () => {
+    expect(proxy(get("/admin/leads", "some_other_cookie=x")).headers.get("location")).toBe("http://localhost:3000/admin/login");
+    expect(proxy(get("/admin/leads", `${sessionCookieName()}=`)).headers.get("location")).toBe("http://localhost:3000/admin/login");
+  });
+
   it("passes /admin/login and /admin with a cookie through, noindex and no-store", () => {
-    for (const res of [proxy(get("/admin/login")), proxy(get("/admin/leads", "pm_admin=x"))]) {
+    for (const res of [proxy(get("/admin/login")), proxy(get("/admin/leads", `${sessionCookieName()}=x`))]) {
       expect(res.headers.get("location")).toBeNull();
       expect(res.headers.get("x-robots-tag")).toBe("noindex, nofollow");
       expect(res.headers.get("cache-control")).toBe("no-store, max-age=0");

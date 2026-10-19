@@ -34,7 +34,8 @@ function parseCsv(text) {
   return rows;
 }
 
-const NAMED_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", reg: "®", copy: "©", trade: "™" };
+// A Map, not a plain object: a lookup on an object would also find inherited names ("&constructor;").
+const NAMED_ENTITIES = new Map(Object.entries({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", reg: "®", copy: "©", trade: "™" }));
 
 /**
  * PaintDB names arrive HTML-escaped from its source sites ("Dove&#039;s Wing-w", "Spick &amp; Span").
@@ -43,7 +44,7 @@ const NAMED_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp:
  */
 function decodeEntities(s) {
   return s.replace(/&(#\d{1,7}|#x[0-9a-f]{1,6}|[a-z]+);/gi, (whole, body) => {
-    if (body[0] !== "#") return NAMED_ENTITIES[body.toLowerCase()] ?? whole;
+    if (body[0] !== "#") return NAMED_ENTITIES.get(body.toLowerCase()) ?? whole;
     const n = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
     return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : whole;
   });
