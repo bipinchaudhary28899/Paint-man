@@ -78,7 +78,8 @@ describe("GET /api/v1/colours/web", () => {
     expect(body.label).toBe('3 named colours matching "sage" (page 1 of 2)');
     expect(body.data.map((c: { name: string }) => c.name)).toEqual(["Sage", "Sage Leaf"]);
     expect(body.meta).toMatchObject({ total: 3, pages: 2, perPage: 2, source: expect.stringContaining("color.pizza") });
-    expect(body.links.html).toBe("/colours?catalogue=web&q=sage");
+    expect(body.links.html).toBe("/visualizer"); // named colours are a tab of the visualizer
+    expect(body.meta.hints.families).toContain("Greens");
   });
 
   it("validates family, page and perPage", async () => {

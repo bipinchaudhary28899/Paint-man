@@ -26,9 +26,9 @@ describe("useUrlQuery", () => {
   });
 
   it("reads the address bar once mounted in the browser", () => {
-    go("/book?service=interior-painting&colour=PM-502");
+    go("/book?service=interior-painting&shade=asian-paints:8386");
     render(<Probe />);
-    expect(shown()).toBe("service=interior-painting&colour=PM-502");
+    expect(shown()).toBe("service=interior-painting&shade=asian-paints%3A8386");
   });
 
   it("hydrates the server HTML in place, with no mismatch, then shows the real query", async () => {
@@ -49,7 +49,7 @@ describe("useUrlQuery", () => {
   });
 
   it("follows back and forward (popstate)", () => {
-    go("/book?colour=PM-502");
+    go("/book?shade=asian-paints:8386");
     render(<Probe />);
     act(() => {
       go("/book?palette=calm-bedroom");
@@ -86,7 +86,7 @@ describe("useUrlQuery", () => {
   it("never updates state inside the insertion effect that writes the URL (as Next.js does)", async () => {
     const navigation = new EventTarget();
     Object.defineProperty(window, "navigation", { value: navigation, configurable: true });
-    go("/visualizer?colour=PM-502");
+    go("/visualizer?shade=asian-paints:8386");
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     // Chrome dispatches currententrychange synchronously inside pushState
     const push = window.history.pushState.bind(window.history);
@@ -102,36 +102,36 @@ describe("useUrlQuery", () => {
     }
     const { rerender } = render(<><Writer to={null} /><Probe /></>);
     await act(async () => {
-      rerender(<><Writer to="/visualizer?colour=PM-101" /><Probe /></>);
+      rerender(<><Writer to="/visualizer?shade=asian-paints:L146" /><Probe /></>);
     });
-    expect(shown()).toBe("colour=PM-101");
+    expect(shown()).toBe("shade=asian-paints%3AL146");
     expect(errors).not.toHaveBeenCalled();
     pushSpy.mockRestore();
     errors.mockRestore();
   });
 
   it("returns the same object until the query changes", () => {
-    go("/visualizer?colour=PM-502");
+    go("/visualizer?shade=asian-paints:8386");
     const { result, rerender } = renderHook(() => useUrlQuery());
     const first = result.current;
     rerender();
     expect(result.current).toBe(first);
     act(() => {
-      go("/visualizer?colour=PM-101");
+      go("/visualizer?shade=asian-paints:L146");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
     expect(result.current).not.toBe(first);
-    expect(result.current.get("colour")).toBe("PM-101");
+    expect(result.current.get("shade")).toBe("asian-paints:L146");
   });
 
   it("with once, keeps the first query and ignores later changes", () => {
-    go("/colours?family=Greens");
+    go("/colours?brand=berger");
     render(<Probe once />);
     act(() => {
-      go("/colours?family=Blues");
+      go("/colours?brand=nerolac");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
-    expect(shown()).toBe("family=Greens");
+    expect(shown()).toBe("brand=berger");
   });
 
   it("with once, reads before a component rewrites the URL, even when Strict Mode runs effects twice", () => {
@@ -140,7 +140,7 @@ describe("useUrlQuery", () => {
       useEffect(() => window.history.replaceState(null, "", "/colours"), []);
       return null;
     }
-    go("/colours?family=Greens");
+    go("/colours?brand=berger");
     render(
       <StrictMode>
         <Probe once />
@@ -148,6 +148,6 @@ describe("useUrlQuery", () => {
       </StrictMode>,
     );
     expect(window.location.search).toBe("");
-    expect(shown()).toBe("family=Greens");
+    expect(shown()).toBe("brand=berger");
   });
 });

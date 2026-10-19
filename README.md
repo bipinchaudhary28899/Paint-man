@@ -7,7 +7,10 @@ A Next.js website for a managed painting service in Agra. It collects inspection
 | Path | Purpose |
 |---|---|
 | `/` | Home: services, process, reasons to choose us, service areas, FAQs |
-| `/book` | Inspection booking form (`?service=interior-painting` pre-selects a service) |
+| `/book` | Inspection booking form (`?service=interior-painting` pre-selects a service; `?palette=` and `?shade=asian-paints:8386` fill in the message) |
+| `/colours` | Colour finder over 50,000+ brand shades (`?brand=`, `?q=`, `?family=`, `?sort=`); old `/colours/PM-xxx` links redirect here |
+| `/palettes` | Ready three-shade palettes of Asian Paints shades, with the closest Berger and Nerolac shades |
+| `/visualizer` | Wall colour visualizer (`?shade=` starts on a brand shade) |
 | `/services`, `/services/[slug]` | Service overview plus interior, exterior and rental property pages |
 | `/about`, `/faq`, `/contact` | Supporting SEO pages (the contact page has its own form) |
 | `/privacy-policy`, `/terms` | Starter legal text (get it reviewed before launch) |
@@ -149,22 +152,39 @@ is a local repaint (no inference); hold-to-compare shows the original; Download 
 the image), the page says so and suggests a better photo; nothing is painted.
 Nothing is ever recoloured silently across the whole image.
 
-**Shade sources.** Our catalogue (167 shades, `/api/v1/colours`); **50,762 brand shades** from 25 paint
-brands (Asian Paints, Berger, Nerolac, Dulux, Sherwin-Williams…) via `/api/v1/colours/paint` and
-`/api/v1/colours/brands`; and ~32,000 public named colours from color.pizza via `/api/v1/colours/web`
-(proxied and cached server-side for a day; the browser never calls the third party).
+**Shade sources.** **50,762 brand shades** from 25 paint brands (Asian Paints, Berger, Nerolac, Dulux,
+Sherwin-Williams…) via `/api/v1/colours/paint` and `/api/v1/colours/brands` (the picker's "Brand shades"
+tab: pick a brand, a colour family or search, 48 at a time); and ~32,000 public named colours from
+color.pizza via `/api/v1/colours/web` (proxied and cached server-side for a day; the browser never calls
+the third party). The visualizer opens on Asian Paints Pepper Leaf (8386).
 
 ### Brand shades (PaintDB, CC BY 4.0)
 
 `src/data/paintdb.json` is a compact copy of [PaintDB](https://paintdb.com)'s open dataset
 (CC BY 4.0): brand, shade code, name, hex, LRV, colour family, undertone. Refresh it with
 `npm run data:paintdb` (downloads the CSV and rewrites the file). It is searched in server memory
-(`src/lib/colours/brands.ts`); the colour finder shows it as Brand shades: pick a brand, then a
-primary colour or scroll, 48 shades per load with infinite scroll. Loaded pages stay in the
+(`src/lib/colours/brands.ts`) and is the site's only shade catalogue. The colour finder (`/colours`)
+is built on it: pick a brand (each is a real link, `/colours?brand=berger`), then a primary colour or
+scroll, or search by code, name or hex; 48 shades per load with infinite scroll. Loaded pages stay in the
 browser's memory and each API page is cached at Vercel's edge for a day, so scrolling back or
 reopening a colour family never repeats a request. The attribution ("Brand shades: PaintDB,
 CC BY 4.0") must stay wherever these shades are shown; hex values approximate each brand's
 published shade, and Paint Man is not affiliated with these brands.
+
+### No Paint Man shade codes
+
+Paint Man used to publish 167 shades of its own (PM-xxx codes, `/colours/PM-502` pages). They were
+retired: the brands' shade cards already cover them, and customers ask for shades by the brand's code.
+
+- **Palettes** (`src/config/palettes.ts`) use real Asian Paints shades: each old palette colour became
+  its nearest Asian Paints shade (OKLab). Tests check every one against the PaintDB data. The palettes
+  page also names the closest Berger and Nerolac shade to each.
+- **Old URLs:** `src/proxy.ts` answers every old `/colours/PM-xxx` URL (any case) with a 308 to the
+  finder searching its nearest Asian Paints shade, from the map in `src/config/legacy-shades.ts`. Any
+  other `/colours/<x>` is a 404. Never reuse a PM code.
+- **Old APIs:** `/api/v1/colours` and `/api/v1/colours/{code}` answer `410 Gone` (code `gone`) and
+  point to `/api/v1/colours/paint` and `/api/v1/colours/brands`. `/api/v1/palettes` keeps its fields
+  (`colours.featureWall.code` etc.) and adds `id`, `brand` and `brandName` to each shade.
 
 **Limitations** (measured on 14 hard room photos, see `docs/visualizer-eval/REPORT.md`). SegFormer-B0
 is small: on the eval set 8/14 photos needed no correction, 3 needed a brush stroke, and 3 failed —

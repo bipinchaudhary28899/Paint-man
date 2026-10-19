@@ -1,8 +1,6 @@
 import Link from "next/link";
-import type { Colour } from "@/config/colours";
-import { getPalette, type Palette } from "@/config/palettes";
+import { getPalette, paletteBrands, type Palette, type PaletteShade } from "@/config/palettes";
 import { jobSize, site, type Service } from "@/config/site";
-import { getColour } from "@/lib/colours/search";
 
 // The long-form body of a service page: how the job runs, the paint system, what moves the
 // price, timing, aftercare and matching shades. All copy lives in src/config/site.ts so the
@@ -65,10 +63,12 @@ export function JobSizeTable({ examples }: { examples: { home: string; carpetAre
   );
 }
 
-/** Palettes and shades that suit the service, linked to /palettes and each shade's page. */
+/** The colour finder searching one brand shade by its shade-card code. */
+export const finderSearchHref = (s: Pick<PaletteShade, "brand" | "code">) => `/colours?${new URLSearchParams({ brand: s.brand, q: s.code })}`;
+
+/** Palettes that suit the service, linked to /palettes, with each shade linked to its search in the colour finder. */
 export function ServiceShades({ service }: { service: Service }) {
   const palettes = service.shades.palettes.map(getPalette).filter((p): p is Palette => p !== undefined);
-  const room = service.shades.room;
   return (
     <section className="mt-14">
       <h2 className="text-3xl font-normal">
@@ -83,30 +83,30 @@ export function ServiceShades({ service }: { service: Service }) {
                 {p.name}
               </Link>
             </h3>
-            <p className="mt-1 text-sm text-muted">{p.mood}</p>
+            <p className="mt-1 text-sm text-muted">
+              {p.mood} · {paletteBrands(p).join(" and ")} shades
+            </p>
             <ul className="mt-3 flex flex-wrap gap-2">
-              {p.codes
-                .map((code) => getColour(code))
-                .filter((c): c is Colour => c !== undefined)
-                .map((c) => (
-                  <li key={c.code}>
-                    <Link
-                      href={`/colours/${c.code}`}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-3 text-sm font-semibold transition hover:border-ink"
-                    >
-                      <span aria-hidden className="h-5 w-5 shrink-0 rounded-full border border-line" style={{ backgroundColor: c.hex }} />
-                      {c.name} <span className="font-normal text-muted">{c.code}</span>
-                    </Link>
-                  </li>
-                ))}
+              {p.shades.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    href={finderSearchHref(s)}
+                    prefetch={false}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-3 text-sm font-semibold transition hover:border-ink"
+                  >
+                    <span aria-hidden className="h-5 w-5 shrink-0 rounded-full border border-line" style={{ backgroundColor: s.hex }} />
+                    {s.name} <span className="font-normal text-muted">{s.code}</span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           </li>
         ))}
       </ul>
       <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm font-bold">
         <li>
-          <Link href={room ? `/colours?room=${encodeURIComponent(room)}` : "/colours"} className={`inline-flex min-h-11 items-center ${linkClass}`}>
-            {room ? `Browse ${room.toLowerCase()} shades` : "Browse every wall colour shade"}
+          <Link href="/colours" className={`inline-flex min-h-11 items-center ${linkClass}`}>
+            Browse every wall colour shade
           </Link>
         </li>
         <li>

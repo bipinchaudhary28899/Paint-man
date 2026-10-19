@@ -30,9 +30,12 @@ export async function GET(req: NextRequest) {
   const r = searchBrandShades({ q, brand, family, sort, page, perPage });
   const brandName = r.brand ? brandList().find((b) => b.slug === r.brand)?.name : undefined;
   const describe = [r.q && `matching "${r.q}"`, brandName && `from ${brandName}`, family && `in ${family}`].filter(Boolean).join(", ");
-  const html = new URLSearchParams({ catalogue: "brands" });
-  if (q) html.set("q", q);
+  // the finder reads the same parameters (/colours?brand=asian-paints&q=8386)
+  const html = new URLSearchParams();
   if (brand) html.set("brand", brand);
+  if (q) html.set("q", q);
+  if (family) html.set("family", family);
+  if (sort !== "shade") html.set("sort", sort);
   return apiOk({
     kind: "paint-colour",
     label: `${r.total.toLocaleString("en-IN")} brand paint shade${r.total === 1 ? "" : "s"}${describe ? " " + describe : ""} (page ${r.page} of ${r.pages})`,
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
       attribution: paintdb.attribution,
       note: paintdb.note,
     },
-    links: { self: req.nextUrl.pathname + req.nextUrl.search, html: `/colours?${html}`, brands: "/api/v1/colours/brands" },
+    links: { self: req.nextUrl.pathname + req.nextUrl.search, html: `/colours${html.size ? `?${html}` : ""}`, brands: "/api/v1/colours/brands" },
     headers: publicCache,
   });
 }

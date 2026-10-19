@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import { colours as catalogue } from "@/config/colours";
+import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
 import { clamp01, useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
 // Wheel of 36 illustrative shades that turns only with the scroll: it starts the moment the
@@ -103,7 +103,7 @@ export function ColourExplorer() {
               Discuss this shade with us <Arrow />
             </Link>
             <Link href="/colours" className="link-arrow">
-              Search all {catalogue.length} shades <Arrow />
+              Search {BRAND_SHADES_ROUNDED} brand shades <Arrow />
             </Link>
           </div>
         </div>

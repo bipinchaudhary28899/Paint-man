@@ -19,7 +19,7 @@ const next = [
   { text: "You receive an itemised quotation. Nothing is booked until you approve it.", tint: "bg-cobalt", emoji: "receipt" as const },
 ];
 
-// Static page: ?service=, ?colour=, ?palette= and ?shade= are read in the browser by BookPrefill.
+// Static page: ?service=, ?palette= and ?shade= are read in the browser by BookPrefill.
 // The prerendered HTML is the plain booking form, which hydrates in place (no Suspense bailout).
 // Service page slug -> the form's service choice; only this small map reaches the browser.
 const serviceBySlug = Object.fromEntries(services.map((s) => [s.slug, s.leadService]));

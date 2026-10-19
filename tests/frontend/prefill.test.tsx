@@ -8,6 +8,7 @@ import { BookPrefill, bookPrefill } from "@/components/BookPrefill";
 import { brandShadeUrl, parseShadeId, pickShade, useBrandShade, type BrandShadeSummary } from "@/components/useBrandShade";
 import { VisualizerFromParams, visualizerModel } from "@/components/visualizer/VisualizerFromParams";
 import { services } from "@/config/site";
+import { apiShade, sampleShades, serveColourApis } from "../support/catalogue-api";
 
 /** The map /book builds on the server from the service data. */
 const serviceBySlug = Object.fromEntries(services.map((s) => [s.slug, s.leadService]));
@@ -122,20 +123,20 @@ describe("BookPrefill", () => {
     }
   });
 
-  it("asks for a palette's shade cards, and a palette wins over a brand shade", () => {
+  it("asks for a palette's shade cards by brand, code and name, and a palette wins over a brand shade", () => {
     const fetchSpy = api([mecca]);
     open("/book?palette=calm-bedroom&shade=asian-paints:7982&service=interior-painting");
     render(<BookPrefill serviceBySlug={serviceBySlug} />);
-    expect(message().value).toBe('Interested in the "Calm bedroom" palette (PM-502, PM-101, PM-204). Please bring the shade cards.');
+    expect(message().value).toBe('Interested in the "Calm bedroom" palette (Asian Paints 8386 Pepper Leaf, Asian Paints L146 Sonnet, Asian Paints 8504 Wood Fence). Please bring the shade cards.');
     expect(service().value).toBe("Interior Painting");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("names a Paint Man shade from its code without any network call", () => {
+  it("ignores the retired ?colour= links: no message and no lookup", () => {
     const fetchSpy = api([mecca]);
-    open("/book?colour=502");
+    open("/book?colour=sage-mist");
     render(<BookPrefill serviceBySlug={serviceBySlug} />);
-    expect(message().value).toBe("Interested in the shade Sage Mist (PM-502). Please bring the shade card.");
+    expect(message().value).toBe("");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -170,8 +171,8 @@ describe("BookPrefill", () => {
     expect(message().value).toBe("");
   });
 
-  it("leaves the message empty for a palette or colour that does not exist", () => {
-    expect(bookPrefill({ palette: "nope", colour: "PM-000" })).toEqual({ defaultService: undefined, defaultMessage: undefined });
+  it("leaves the message empty for a palette that does not exist", () => {
+    expect(bookPrefill({ palette: "nope" })).toEqual({ defaultService: undefined, defaultMessage: undefined });
   });
 
   it("follows back and forward to another choice", () => {
@@ -198,28 +199,36 @@ describe("BookPrefill on the static /book page", () => {
   });
 
   it("prerenders the plain form, then remounts it once with the choice from the link", async () => {
-    open("/book?service=exterior-painting&colour=PM-502");
+    open("/book?service=exterior-painting&palette=agra-stone-exterior");
     const page = await prerenderAndHydrate(<BookPrefill serviceBySlug={serviceBySlug} />);
     // the static HTML never depends on the query
-    expect(page.serverHtml).not.toContain("Sage Mist");
+    expect(page.serverHtml).not.toContain("Cambridge");
     expect(page.serverHtml).not.toMatch(/<option selected=""[^>]*>Exterior Painting/);
     expect(page.problems).toEqual([]);
     expect(page.container.querySelector("form")).not.toBe(page.before.form);
     expect(page.container.querySelector<HTMLSelectElement>("#service")!.value).toBe("Exterior Painting");
-    expect(page.container.querySelector<HTMLTextAreaElement>("#message")!.value).toBe("Interested in the shade Sage Mist (PM-502). Please bring the shade card.");
+    expect(page.container.querySelector<HTMLTextAreaElement>("#message")!.value).toBe(
+      'Interested in the "Agra stone exterior" palette (Asian Paints 8771 Cambridge, Asian Paints L146 Sonnet, Asian Paints 9937 Red Rust-n). Please bring the shade cards.',
+    );
     page.done();
   });
 });
 
 describe("VisualizerFromParams", () => {
-  it("starts on a Paint Man shade from ?colour= and books with that code", () => {
-    open("/visualizer?colour=PM-502");
+  const meccaShade = apiShade("asian-paints", "Asian Paints", "7982", "Mecca Gold", "#e7975b", "orange");
+  const lookups = (spy: { mock: { calls: unknown[][] } }) => spy.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("perPage=5"));
+
+  it("ignores the retired ?colour= links and starts on the default brand shade", async () => {
+    const { spy } = serveColourApis();
+    open("/visualizer?colour=sage-mist");
     render(<VisualizerFromParams />);
-    expect(screen.getByRole("link", { name: "Book an inspection with Sage Mist" })).toHaveAttribute("href", "/book?colour=PM-502");
+    expect(screen.getByRole("link", { name: "Book an inspection with Pepper Leaf" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8386");
+    await screen.findByRole("button", { name: "Pure Red" }); // the picker has loaded
+    expect(lookups(spy)).toEqual([]);
   });
 
   it("switches to a brand shade from ?shade= once the API answers, and books with the shade id", async () => {
-    api([mecca]);
+    serveColourApis({ paint: [...sampleShades, meccaShade] });
     open("/visualizer?shade=asian-paints:7982");
     render(<VisualizerFromParams />);
     const link = await screen.findByRole("link", { name: "Book an inspection with Mecca Gold" });
@@ -228,39 +237,41 @@ describe("VisualizerFromParams", () => {
   });
 
   it("keeps a shade the visitor picked while the brand shade was still being looked up", async () => {
-    let answer!: () => void;
-    const json = vi.fn(async () => ({ data: [mecca] }));
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockReturnValue(new Promise<Response>((resolve) => (answer = () => resolve({ ok: true, json } as unknown as Response))));
+    const { spy, release } = serveColourApis({ paint: [...sampleShades, meccaShade], hold: "perPage=5" });
     open("/visualizer?shade=asian-paints:7982");
     const user = userEvent.setup();
     render(<VisualizerFromParams />);
-    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
-    await user.click(screen.getByRole("button", { name: "Sindoor" }));
+    await waitFor(() => expect(lookups(spy)).toHaveLength(1));
+    await user.click(await screen.findByRole("button", { name: "Pure Red" }));
     // the lookup lands after the pick
     await act(async () => {
-      answer();
+      release();
       await new Promise((r) => setTimeout(r, 0));
     });
-    expect(json).toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: "Book an inspection with Sindoor" })).toHaveAttribute("href", "/book?colour=PM-801");
+    expect(screen.getByRole("link", { name: "Book an inspection with Pure Red" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8093");
     expect(screen.queryByText(/Mecca Gold/)).toBeNull();
   });
 
   it("hydrates the prerendered default visualizer in place, then takes the shade from the link without remounting", async () => {
-    open("/visualizer?colour=PM-801");
+    serveColourApis();
+    open("/visualizer?shade=asian-paints:8093");
     const container = document.createElement("div");
     container.innerHTML = renderToString(<VisualizerFromParams />);
     document.body.append(container);
     // the static HTML is the default visualizer, whatever the link
-    expect(container.querySelector('a[href^="/book"]')).toHaveTextContent("Book an inspection with Sage Mist");
+    expect(container.querySelector('a[href^="/book"]')).toHaveTextContent("Book an inspection with Pepper Leaf");
     const dropzone = container.querySelector('input[type="file"]');
     const recoverable = vi.fn();
     const consoleError = vi.spyOn(console, "error");
     const root = await act(async () => hydrateRoot(container, <VisualizerFromParams />, { onRecoverableError: recoverable }));
+    // let the shade lookup and the picker's first requests land
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
     expect(recoverable).not.toHaveBeenCalled();
     expect(consoleError).not.toHaveBeenCalled();
     expect(container.querySelector('input[type="file"]')).toBe(dropzone);
-    expect(container.querySelector('a[href="/book?colour=PM-801"]')).toHaveTextContent("Book an inspection with Sindoor");
+    expect(container.querySelector('a[href="/book?shade=asian-paints%3A8093"]')).toHaveTextContent("Book an inspection with Pure Red");
     act(() => root.unmount());
     container.remove();
   });

@@ -154,8 +154,8 @@ export type BrandMatch = {
 
 /**
  * The `n` shades of each brand nearest to `hex` by OKLab distance (perceptually even, unlike RGB),
- * brands in the order given. Unknown brands are left out. Used on a Paint Man shade's page to
- * name the closest Asian Paints, Berger and Nerolac codes; a screen match to confirm on the card.
+ * brands in the order given. Unknown brands are left out. Used on the palettes page to name the
+ * closest Berger and Nerolac shades to each Asian Paints shade; a screen match to confirm on the card.
  */
 export function nearestBrandShades(hex: string, brands: readonly string[], n = 2): BrandMatch[] {
   const { shades } = load();
@@ -176,6 +176,22 @@ export function nearestBrandShades(hex: string, brands: readonly string[], n = 2
     return [{ brand: slug, brandName: shades[idx[0]].brandName, shades: best.map(({ i, d }) => ({ ...shades[i], distance: Math.round(d * 1000) / 1000 })) }];
   });
 }
+
+/** How close a match from nearestBrandShades looks, in plain words. */
+export function matchLabel(distance: number): string {
+  if (distance < 0.02) return "Very close match";
+  if (distance < 0.05) return "Close match";
+  return "Nearest in this range";
+}
+
+const slugOf = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/**
+ * Whether a brand shade's code is a real shade-card code. PaintDB fills a missing code with the
+ * slug of the name ("greenery", "sassy-pink"); printing that as a code would pass it off as one, so
+ * lists of brand matches show the name alone for these.
+ */
+export const hasShadeCardCode = (s: { name: string; code: string }) => s.code !== slugOf(s.name) && !/^[a-z-]+$/.test(s.code);
 
 export const shadeCount = () => data.shades.length;
 

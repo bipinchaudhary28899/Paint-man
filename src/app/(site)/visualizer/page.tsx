@@ -3,6 +3,7 @@ import { CtaBanner } from "@/components/CtaBanner";
 import { JsonLd } from "@/components/JsonLd";
 import { VisualizerFromParams } from "@/components/visualizer/VisualizerFromParams";
 import { site } from "@/config/site";
+import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -17,7 +18,7 @@ const faqs = [
   { q: "Will the wall look exactly like this?", a: "It is a close guide. Daylight, tube lights and the finish (matt or sheen) all shift a shade, so the inspector brings physical shade cards and paints a test patch before you decide." },
 ];
 
-// Static page: ?colour=, ?shade= and ?model= are read in the browser by VisualizerFromParams.
+// Static page: ?shade= and ?model= are read in the browser by VisualizerFromParams.
 // The prerendered HTML is the default visualizer, which hydrates in place (no Suspense bailout).
 export default function VisualizerPage() {
   return (
@@ -33,7 +34,8 @@ export default function VisualizerPage() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-[1.65] text-muted">
               Drop in a photo of the room. We find the wall surfaces, then only they change colour: the sofa, cupboards, windows and
-              light stay exactly as they are. Switch between any of our shades, or 32,000 named colours, instantly.
+              light stay exactly as they are. Switch between {BRAND_SHADES_ROUNDED} brand shades by their shade-card code, or 32,000 named
+              colours, instantly.
             </p>
           </div>
         </div>

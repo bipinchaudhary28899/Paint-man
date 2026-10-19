@@ -113,7 +113,7 @@ describe("Header and Footer", () => {
   });
 
   it("follows the route on inner pages and scrolls smoothly to a section on the home page", async () => {
-    for (const [path, label] of [["/palettes", "Colours"], ["/contact", "Estimate"], ["/book", "Estimate"], ["/colours/PM-101", "Colours"]] as const) {
+    for (const [path, label] of [["/palettes", "Colours"], ["/contact", "Estimate"], ["/book", "Estimate"], ["/colours", "Colours"]] as const) {
       vi.mocked(usePathnameMock).mockReturnValue(path);
       const { unmount } = render(<MobileCtaBar />);
       expect(screen.getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");

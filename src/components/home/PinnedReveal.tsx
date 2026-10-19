@@ -22,8 +22,8 @@ export const stages = [
 export const stageLabels = ["Before · putty", "Primer going on", "First coat", "Second coat · done"];
 const longestLabel = stageLabels.reduce((a, b) => (b.length > a.length ? b : a));
 
-/** The shade the walls take. Sage Mist, PM-502. */
-export const wallShade = { name: "Sage Mist", code: "PM-502", hex: "#b8c7b0" };
+/** The shade the walls take: a soft sage green, Asian Paints Pepper Leaf 8386 (PaintDB hex). */
+export const wallShade = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2" };
 const putty = "#cfc9bf";
 
 /**
@@ -104,7 +104,7 @@ export function PinnedReveal() {
               </span>
             </div>
             <p className="order-5 -mt-2 text-[12px] text-muted-2 md:order-none md:mt-3 md:text-[13px]">
-              Walls in {wallShade.name} <span className="font-medium">{wallShade.code}</span>
+              Walls in {wallShade.name}, <span className="font-medium">{wallShade.code}</span>
             </p>
           </div>
 

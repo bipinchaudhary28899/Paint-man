@@ -1,10 +1,10 @@
 import "server-only";
-import { colourFamilies, type ColourFamily } from "@/config/colours";
+import type { ColourFamily } from "./families";
 
 // The public colour-names catalogue: ~32,000 named colours from color.pizza (the open
-// "Color Names" project, CC0 names). Fetched once on the server, trimmed to what the finder
-// needs, kept in memory for a day, and classified into our families by hue and lightness so
-// the same chips work for both catalogues. The browser never calls color.pizza directly.
+// "Color Names" project, CC0 names). Fetched once on the server, trimmed to what the visualizer
+// needs, kept in memory for a day, and sorted into the families in ./families by hue and
+// lightness, for the visualizer's chips. The browser never calls color.pizza directly.
 
 export type WebColour = { name: string; hex: string; family: ColourFamily; lrv: number };
 
@@ -92,4 +92,4 @@ export function searchWebColours(items: WebColour[], { q = "", family, page = 1,
   return { items: ranked.slice((safePage - 1) * perPage, safePage * perPage), total, page: safePage, pages, perPage };
 }
 
-export const isColourFamily = (s: unknown): s is ColourFamily => typeof s === "string" && (colourFamilies as readonly string[]).includes(s);
+export { colourFamilies, isColourFamily, type ColourFamily } from "./families";

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { colourFamilies, colours, type Colour, type ColourFamily } from "@/config/colours";
 import { images } from "@/config/images";
-import { searchColours } from "@/lib/colours/search";
+import { PAINTDB } from "@/lib/colours/catalogue";
+import { colourFamilies, type ColourFamily } from "@/lib/colours/families";
 import { fitWithin, validateImageFile } from "@/lib/visualizer/files";
 import { feather, maskFromComponents, type Mask } from "@/lib/visualizer/mask";
 import { recolour, wallMeanLightness } from "@/lib/visualizer/recolour";
@@ -17,8 +17,11 @@ import { Segmenter, type ModelId, type SegmentResult } from "./segmenter";
 // Selection = the model's wall surfaces the user has kept (tap a surface to toggle it), feathered.
 
 type Status = "idle" | "loading" | "detecting" | "ready" | "error";
-/** `bookQuery` overrides the booking link (e.g. `shade=asian-paints%3A7982` for a brand shade). */
-type Shade = { name: string; hex: string; code?: string; bookQuery?: string };
+/** `code` is shown under the name ("Asian Paints 8386"); `bookQuery` is the booking link's query (`shade=asian-paints%3A8386`). */
+export type Shade = { name: string; hex: string; code?: string; bookQuery?: string };
+
+/** The shade on the walls until the visitor or a link picks another: a soft sage green, Asian Paints Pepper Leaf 8386. */
+export const DEFAULT_SHADE: Shade = { name: "Pepper Leaf", hex: "#bbc8b2", code: "Asian Paints 8386", bookQuery: "shade=asian-paints%3A8386" };
 
 type Photo = { width: number; height: number; pixels: Uint8ClampedArray; name: string };
 
@@ -36,7 +39,7 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
   const [error, setError] = useState("");
   const [result, setResult] = useState<SegmentResult | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [shade, setShade] = useState<Shade>(initialShade ?? { name: colours[18].name, hex: colours[18].hex, code: colours[18].code });
+  const [shade, setShade] = useState<Shade>(initialShade ?? DEFAULT_SHADE);
   // Set once the visitor chooses a shade in the picker (a swatch, including a search result).
   const [userPicked, setUserPicked] = useState(false);
   const pickShade = useCallback((s: Shade) => {
@@ -236,7 +239,7 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
             surfaces; we then repaint only those pixels, keeping their light, shadows and texture. Screen colours are a guide; the
             inspector brings real shade cards.
           </p>
-          <Link href={`/book${shade.bookQuery ? `?${shade.bookQuery}` : shade.code ? `?colour=${shade.code}` : ""}`} className="btn-primary mt-4 w-full">
+          <Link href={`/book${shade.bookQuery ? `?${shade.bookQuery}` : ""}`} className="btn-primary mt-4 w-full">
             Book an inspection with {shade.name}
           </Link>
         </div>
@@ -275,15 +278,101 @@ function Dropzone({ onFile, onSample, error }: { onFile: (f: File) => void; onSa
 }
 
 type WebColour = { name: string; hex: string; family: ColourFamily; lrv: number };
+type BrandOption = { slug: string; name: string; count: number };
+/** The fields of an /api/v1/colours/paint item the picker uses. */
+type BrandPick = { id: string; brandName: string; code: string; name: string; hex: string };
+type BrandPage = { items: BrandPick[]; total: number; page: number; pages: number };
 
+/** Brand shades per load in the picker; "Show more" adds the next page. */
+export const PICKER_PER_PAGE = 48;
+/** The brand the picker opens on, and the only option until the brand list arrives. */
+const FIRST_BRAND: BrandOption = { slug: "asian-paints", name: "Asian Paints", count: 0 };
+
+/** A brand shade as the visualizer holds it: named by brand and code, booked by its id. */
+export const brandShadePick = (s: BrandPick): Shade => ({ name: s.name, hex: s.hex, code: `${s.brandName} ${s.code}`, bookQuery: `shade=${encodeURIComponent(s.id)}` });
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const chipClass = (on: boolean) => `rounded-full border px-2.5 py-1 text-xs font-semibold ${on ? "border-ink bg-ink text-on-ink" : "border-line bg-paper hover:border-line-strong"}`;
+
+// Two catalogues: brand shades (50,000+ shade-card codes from 25 brands, searched on the server
+// through /api/v1/colours/paint, a page at a time) and ~32,000 public named colours
+// (/api/v1/colours/web). The brand data is server-only, so the brand list, its colour families
+// and every page of shades arrive through the public API.
 function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) => void }) {
-  const [tab, setTab] = useState<"ours" | "web">("ours");
+  const [tab, setTab] = useState<"brands" | "web">("brands");
   const [q, setQ] = useState("");
-  const [family, setFamily] = useState<ColourFamily | undefined>();
+
+  // --- brand shades
+  const [brands, setBrands] = useState<BrandOption[]>([FIRST_BRAND]);
+  const [brandFamilies, setBrandFamilies] = useState<string[]>([]);
+  const [brand, setBrand] = useState(FIRST_BRAND.slug);
+  const [brandFamily, setBrandFamily] = useState("");
+  const [brandPage, setBrandPage] = useState<BrandPage | null>(null);
+  const [brandState, setBrandState] = useState<"idle" | "loading" | "error">("idle");
+
+  // --- named colours
+  const [webFamily, setWebFamily] = useState<ColourFamily | undefined>();
   const [web, setWeb] = useState<{ items: WebColour[]; total: number } | null>(null);
   const [webState, setWebState] = useState<"idle" | "loading" | "error">("idle");
 
-  const ours = useMemo(() => searchColours({ q, family, limit: 60 }), [q, family]);
+  // the brands (Indian brands first) and their colour families, once
+  useEffect(() => {
+    const ctl = new AbortController();
+    fetch("/api/v1/colours/brands", { signal: ctl.signal })
+      .then((res) => (res.ok ? (res.json() as Promise<{ data?: BrandOption[]; meta?: { families?: string[] } }>) : null))
+      .then((json) => {
+        if (Array.isArray(json?.data) && json.data.length) setBrands(json.data);
+        if (Array.isArray(json?.meta?.families)) setBrandFamilies(json.meta.families);
+      })
+      .catch(() => {
+        // offline or aborted: the picker keeps Asian Paints and no family chips
+      });
+    return () => ctl.abort();
+  }, []);
+
+  /** The paint API query for page `n` of the current brand, search and family. */
+  const brandQuery = useCallback((n: number) => {
+    const sp = new URLSearchParams({ perPage: String(PICKER_PER_PAGE), page: String(n), brand });
+    if (q.trim()) sp.set("q", q.trim());
+    if (brandFamily) sp.set("family", brandFamily);
+    return `/api/v1/colours/paint?${sp}`;
+  }, [brand, q, brandFamily]);
+
+  // the first page whenever the brand, search or family changes
+  const brandKey = useRef("");
+  useEffect(() => {
+    if (tab !== "brands") return;
+    const url = brandQuery(1);
+    brandKey.current = url;
+    const ctl = new AbortController();
+    const t = setTimeout(async () => {
+      setBrandState("loading");
+      try {
+        const res = await fetch(url, { signal: ctl.signal });
+        if (!res.ok) throw new Error(String(res.status));
+        const json = (await res.json()) as { data: BrandPick[]; meta: { total: number; page: number; pages: number } };
+        setBrandPage({ items: json.data, total: json.meta.total, page: json.meta.page, pages: json.meta.pages });
+        setBrandState("idle");
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") setBrandState("error");
+      }
+    }, q ? 250 : 0);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [tab, brandQuery, q]);
+
+  const showMore = async () => {
+    if (!brandPage || brandPage.page >= brandPage.pages) return;
+    const key = brandKey.current;
+    try {
+      const res = await fetch(brandQuery(brandPage.page + 1));
+      if (!res.ok) throw new Error(String(res.status));
+      const json = (await res.json()) as { data: BrandPick[]; meta: { page: number; pages: number } };
+      if (brandKey.current !== key) return; // the search changed while this page was loading
+      setBrandPage((p) => p && { ...p, items: [...p.items, ...json.data.filter((s) => !p.items.some((i) => i.id === s.id))], page: json.meta.page, pages: json.meta.pages });
+    } catch {
+      setBrandState("error");
+    }
+  };
 
   useEffect(() => {
     if (tab !== "web") return;
@@ -293,7 +382,7 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
       try {
         const sp = new URLSearchParams({ perPage: "60" });
         if (q) sp.set("q", q);
-        if (family) sp.set("family", family);
+        if (webFamily) sp.set("family", webFamily);
         const res = await fetch(`/api/v1/colours/web?${sp}`, { signal: ctl.signal });
         if (!res.ok) throw new Error(String(res.status));
         const json = (await res.json()) as { data: WebColour[]; meta: { total: number } };
@@ -304,9 +393,22 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
       }
     }, 250);
     return () => { clearTimeout(t); ctl.abort(); };
-  }, [tab, q, family]);
+  }, [tab, q, webFamily]);
 
-  const list: Shade[] = tab === "ours" ? ours.map((c: Colour) => ({ name: c.name, hex: c.hex, code: c.code })) : (web?.items ?? []).map((c) => ({ name: c.name, hex: c.hex }));
+  const brandName = brands.find((b) => b.slug === brand)?.name ?? brand;
+  const list: Shade[] = tab === "brands" ? (brandPage?.items ?? []).map(brandShadePick) : (web?.items ?? []).map((c) => ({ name: c.name, hex: c.hex }));
+  const status =
+    tab === "brands"
+      ? brandState === "error"
+        ? "Brand shades are unavailable right now."
+        : !brandPage
+          ? "Loading shades…"
+          : `${(brandPage?.total ?? 0).toLocaleString("en-IN")} ${brandName} shade${brandPage?.total === 1 ? "" : "s"}, showing ${brandPage?.items.length ?? 0}`
+      : webState === "loading"
+        ? "Searching named colours…"
+        : webState === "error"
+          ? "Named colours are unavailable right now."
+          : `${web?.total ?? 0} named colours, showing ${web?.items.length ?? 0}`;
 
   return (
     <div className="rounded-3xl border border-line bg-paper p-5">
@@ -320,35 +422,48 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
       </div>
 
       <div role="group" aria-label="Catalogue" className="mt-5 inline-flex gap-1 rounded-full border border-line p-1 text-sm font-semibold">
-        <button type="button" aria-pressed={tab === "ours"} onClick={() => setTab("ours")} className={`rounded-full px-3.5 py-1.5 ${tab === "ours" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>Our shades ({colours.length})</button>
+        <button type="button" aria-pressed={tab === "brands"} onClick={() => setTab("brands")} className={`rounded-full px-3.5 py-1.5 ${tab === "brands" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>Brand shades</button>
         <button type="button" aria-pressed={tab === "web"} onClick={() => setTab("web")} className={`rounded-full px-3.5 py-1.5 ${tab === "web" ? "bg-ink text-on-ink" : "hover:bg-cream-wash"}`}>All named colours</button>
       </div>
+
+      {tab === "brands" && (
+        <div className="mt-3 flex items-center gap-2 text-sm">
+          <label htmlFor="picker-brand" className="font-semibold text-muted">Brand</label>
+          <select id="picker-brand" value={brand} onChange={(e) => { setBrand(e.target.value); setBrandFamily(""); setBrandPage(null); }} className="field !py-1.5 text-sm">
+            {brands.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
+          </select>
+        </div>
+      )}
 
       <input
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder={tab === "ours" ? "Search name, code or hex" : "Search 32,000 colour names or a hex"}
+        placeholder={tab === "brands" ? `Search ${brandName} by code, name or hex` : "Search 32,000 colour names or a hex"}
         aria-label="Search shades"
         className="field mt-3 text-sm"
       />
       <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Colour family">
-        {colourFamilies.map((f) => (
-          <button key={f} type="button" aria-pressed={family === f} onClick={() => setFamily(family === f ? undefined : f)} className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${family === f ? "border-ink bg-ink text-on-ink" : "border-line bg-paper hover:border-line-strong"}`}>
-            {f}
-          </button>
-        ))}
+        {tab === "brands"
+          ? brandFamilies.map((f) => (
+              <button key={f} type="button" aria-pressed={brandFamily === f} onClick={() => setBrandFamily(brandFamily === f ? "" : f)} className={chipClass(brandFamily === f)}>
+                {cap(f)}
+              </button>
+            ))
+          : colourFamilies.map((f) => (
+              <button key={f} type="button" aria-pressed={webFamily === f} onClick={() => setWebFamily(webFamily === f ? undefined : f)} className={chipClass(webFamily === f)}>
+                {f}
+              </button>
+            ))}
       </div>
 
-      <p className="mt-3 text-xs text-muted" aria-live="polite">
-        {tab === "ours" ? `${ours.length} shade${ours.length === 1 ? "" : "s"}` : webState === "loading" ? "Searching named colours…" : webState === "error" ? "Named colours are unavailable right now." : `${web?.total ?? 0} named colours, showing ${web?.items.length ?? 0}`}
-      </p>
+      <p className="mt-3 text-xs text-muted" aria-live="polite">{status}</p>
       <ul className="mt-2 grid max-h-72 grid-cols-6 gap-2 overflow-y-auto pr-1" aria-label="Shades">
         {list.map((s) => (
-          <li key={`${s.hex}-${s.name}`}>
+          <li key={`${s.hex}-${s.name}-${s.code ?? ""}`}>
             <button
               type="button"
-              title={`${s.name} ${s.hex.toUpperCase()}`}
+              title={`${s.name}${s.code ? ` ${s.code}` : ""} ${s.hex.toUpperCase()}`}
               aria-label={s.name}
               aria-pressed={s.hex === value.hex && s.name === value.name}
               onClick={() => onChange(s)}
@@ -358,6 +473,18 @@ function ShadePicker({ value, onChange }: { value: Shade; onChange: (s: Shade) =
           </li>
         ))}
       </ul>
+      {tab === "brands" && brandPage && brandPage.page < brandPage.pages && brandState !== "error" && (
+        <button type="button" onClick={() => void showMore()} className="btn-secondary mt-3 !min-h-[40px] w-full !px-4 text-sm">
+          Show more ({(brandPage.total - brandPage.items.length).toLocaleString("en-IN")} left)
+        </button>
+      )}
+      {tab === "brands" && (
+        <p className="mt-3 text-[11px] leading-relaxed text-muted">
+          Brand shades: <a href={PAINTDB.source} className="underline" rel="noopener" target="_blank">PaintDB</a>, licensed{" "}
+          <a href={PAINTDB.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>. Screen colours approximate each brand&apos;s
+          published shade; Paint Man isn&apos;t affiliated with these brands.
+        </p>
+      )}
     </div>
   );
 }
