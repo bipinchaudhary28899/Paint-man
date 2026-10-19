@@ -28,9 +28,11 @@ export type PhotoScene = {
 };
 
 /**
- * The one generic room every shade is shown on: the same cosy living room as the home-page
- * reveal (sofa, shelf, curtains), shown whole: the full photo from ceiling fan to rug. Its walls are already sage, so
- * the tint uses the "color" blend (hue + a pull towards the shade's lightness).
+ * The one generic room every shade is shown on: the same cosy living room, and the same wall
+ * colouring, as the home-page reveal (sofa, shelf, curtains). Its walls are warm white, so the
+ * tint is a single "multiply" layer exactly as the reveal paints it: white × shade = shade, and
+ * the wall's own light, shadow and texture stay crisp (the older colour + luminosity pair
+ * flattened that shading and looked soft).
  */
 export const genericScene: PhotoScene = {
   id: "living-room",
@@ -40,7 +42,7 @@ export const genericScene: PhotoScene = {
   height: 1400,
   mask: "/scenes/living-moody-mask.png",
   wallCoverage: 0.39,
-  blend: "color",
+  blend: "multiply",
 };
 
 export const photoScenes: PhotoScene[] = [genericScene];

@@ -414,8 +414,10 @@ describe("WallPreview", () => {
     const photo = screen.getByAltText("A cosy living room, repainted in Red Rust-n");
     expect(photo).not.toHaveAttribute("fetchpriority"); // previews lazy-load; nothing is preloaded
     const tints = container.querySelectorAll<HTMLElement>(".tint");
-    expect(tints).toHaveLength(2); // colour + luminosity layers for a wall that already has a colour
-    expect([...tints].map((t) => t.dataset.blend)).toEqual(["color", "lum"]);
+    // one multiply layer, exactly as the home-page reveal paints the same room: crisp wall texture
+    expect(tints).toHaveLength(1);
+    expect([...tints].map((t) => t.dataset.blend)).toEqual(["multiply"]);
+    expect(tints[0]).toHaveClass("tint-multiply");
     expect(tints[0].style.background).toBe("rgb(199, 105, 68)");
     expect(tints[0].style.maskImage).toContain("/scenes/living-moody-mask.png");
     expect(tints[0].style.maskImage).toContain(genericScene.mask);
