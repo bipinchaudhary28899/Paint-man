@@ -3,7 +3,7 @@
 // Codes are PM-<family><step> (four digits), e.g. PM-1204 = Blues, step 4.
 // The 32 curated shades in colours.ts (with inspector notes and pairings) sit on top of these.
 
-import type { Colour, ColourFamily, Finish, Room } from "./colours";
+import type { Colour, ColourFamily, Finish, Room, WallUse } from "./colours";
 
 type FamilySpec = { id: number; family: ColourFamily; hue: number; chroma: number; names: string[]; tags: string[]; rooms: Room[]; exterior?: boolean; /** how far down the ladder this family goes (whites stop pale) */ steps?: number };
 
@@ -76,6 +76,9 @@ export const LRV_LIGHT = 60;
 export const LRV_DEEP = 35;
 export const lrvBand = (lrv: number): LrvBand => (lrv >= LRV_LIGHT ? "light" : lrv >= LRV_DEEP ? "mid" : "deep");
 
+/** How much of a room a generated shade goes on, from the same bands as its note: deep is one feature wall, the rest every wall. */
+export const wallsFor = (lrv: number): WallUse => (lrvBand(lrv) === "deep" ? "feature" : "all");
+
 /** Rooms whose walls are outside (or open to the weather) and take exterior paint. */
 export const outdoorRooms: readonly Room[] = ["Exterior", "Balcony"];
 export const isOutdoor = (room: Room) => outdoorRooms.includes(room);
@@ -127,6 +130,7 @@ export function generateShades(): Colour[] {
         rooms: shadeRooms,
         finish: finishFor(lrv, shadeRooms),
         lrv,
+        walls: wallsFor(lrv),
         pairsWith: [i < 6 ? "PM-101" : codes[0], i < last / 2 ? codes[Math.min(last, i + 4)] : codes[Math.max(0, i - 6)]],
         note: noteFor(spec.family, lrv, Boolean(spec.exterior)),
         tags: [...spec.tags, `${depth} ${familySingular[spec.family]}`, band === "deep" ? "dark" : band === "light" ? "light" : "medium", `step ${i + 1}`],

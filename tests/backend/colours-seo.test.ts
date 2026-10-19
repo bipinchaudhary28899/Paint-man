@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { colourFamilies, colours, curatedColours } from "@/config/colours";
 import { generateShades } from "@/config/shades";
 import { getColour } from "@/lib/colours/search";
-import { colourDescription, colourTitle, finderDescription, finderTitle, indexableColours, isIndexableShade, TITLE_MAX, TITLE_SUFFIX } from "@/lib/colours/seo";
+import { colourDescription, colourTitle, DESCRIPTION_BENEFITS, finderDescription, finderTitle, indexableColours, isIndexableShade, TITLE_MAX, TITLE_SUFFIX } from "@/lib/colours/seo";
 
 const plurals = colourFamilies.map((f) => f.toLowerCase()).join("|");
 
@@ -14,7 +14,9 @@ describe("shade page titles", () => {
       const t = colourTitle(c);
       expect(t.startsWith(`${c.name} (${c.code})`)).toBe(true);
       expect((t + TITLE_SUFFIX).length).toBeLessThanOrEqual(TITLE_MAX);
+      expect(t.length).toBeLessThanOrEqual(48);
     }
+    expect(colours).toHaveLength(167);
   });
 
   it("drops words for a long name and refuses a name that cannot fit", () => {
@@ -35,9 +37,27 @@ describe("shade page descriptions", () => {
       expect(d).not.toMatch(new RegExp(`\\b(${plurals}) wall`, "i")); // "a greens wall colour"
       expect(d).not.toMatch(/house front|free|rental refresh/i);
       expect(d).toMatch(/shade card/i); // the proof: we bring the real card
-      expect(d).toMatch(/living room wall|room wall/); // the benefit: the one preview the page shows
       expect(d).toContain("Agra");
+      // the benefit: exactly one of the sentences the page backs up, as a whole sentence
+      const benefits = DESCRIPTION_BENEFITS.filter((b) => d.includes(` ${b} `));
+      expect(benefits, `${c.code}: ${d}`).toHaveLength(1);
     }
+  });
+
+  it("can choose every benefit, brand matches included, so none is dead code", () => {
+    const used = new Map<string, number>();
+    for (const c of colours) {
+      const d = colourDescription(c);
+      const b = DESCRIPTION_BENEFITS.find((x) => d.includes(` ${x} `))!;
+      used.set(b, (used.get(b) ?? 0) + 1);
+    }
+    for (const b of DESCRIPTION_BENEFITS) expect(used.get(b), b).toBeGreaterThan(0);
+    const brand = DESCRIPTION_BENEFITS.filter((b) => /Asian Paints|brand/.test(b));
+    expect(brand.reduce((n, b) => n + (used.get(b) ?? 0), 0)).toBeGreaterThan(colours.length / 4);
+    expect(colourDescription(getColour("PM-804")!)).toContain(" See its Asian Paints, Berger and Nerolac matches. ");
+    expect(colourDescription(getColour("PM-205")!)).toContain(" See its nearest Asian Paints codes. ");
+    expect(colourDescription(getColour("PM-502")!)).toContain(" See its nearest brand shade codes. ");
+    expect(colourDescription(getColour("PM-501")!)).toContain(" See it on a living room wall. ");
   });
 
   it("uses 'an' before a vowel and names up to three rooms", () => {

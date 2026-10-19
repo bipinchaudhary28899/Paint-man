@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import raw from "@/data/paintdb.json";
 import { curatedColours } from "@/config/colours";
-import { brandList, getBrandShade, isBrand, isShadeFamily, isShadeSort, nearestBrandShades, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
+import { brandList, decodeEntities, getBrandShade, isBrand, isShadeFamily, isShadeSort, nearestBrandShades, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
 import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
 
 describe("brand shade data (PaintDB, vendored)", () => {
@@ -21,6 +21,27 @@ describe("brand shade data (PaintDB, vendored)", () => {
       ids.add(`${b}:${code.toLowerCase()}`);
     }
     expect(ids.size).toBe(d.shades.length);
+  });
+
+  it("shows brand shade names as text, with the HTML entities from PaintDB decoded", () => {
+    const all = searchBrandShades({ perPage: 100_000 }).items;
+    expect(all).toHaveLength(50762);
+    const leaks = all.filter((s) => /&#|&amp;|&reg;|&quot;|&lt;|&gt;/.test(s.name)).map((s) => `${s.id}: ${s.name}`);
+    expect(leaks).toEqual([]);
+    expect(brandList().every((b) => !/&#|&amp;/.test(b.name))).toBe(true);
+    expect(getBrandShade("nerolac:152")?.name).toBe("Dove's Wing-w"); // was "Dove&#039;s Wing-w" on PM-104's page
+    expect(all.find((s) => s.code === "N7350G")?.name).toBe("Spick & Span");
+    // decoded names are still searchable by their words
+    expect(searchBrandShades({ q: "Dove's Wing", brand: "nerolac" }).items[0].code).toBe("152");
+  });
+
+  it("decodes named, decimal and hex entities once, and leaves anything else alone", () => {
+    expect(decodeEntities("Dove&#039;s Wing")).toBe("Dove's Wing");
+    expect(decodeEntities("Annie&#8217;s Cap")).toBe("Annie’s Cap");
+    expect(decodeEntities("Spick &amp; Span &lt;b&gt; &quot;x&quot; &apos;y&#39;")).toBe(`Spick & Span <b> "x" 'y'`);
+    expect(decodeEntities("Crumb Cake&reg; &#x27;hex&#X27;")).toBe("Crumb Cake® 'hex'");
+    expect(decodeEntities("&amp;#039;")).toBe("&#039;"); // one pass: an escaped entity stays as written
+    expect(decodeEntities("&bogus; &#0; &#99999999; R&D & co")).toBe("&bogus; &#0; &#99999999; R&D & co");
   });
 
   it("carries the CC BY 4.0 attribution", () => {

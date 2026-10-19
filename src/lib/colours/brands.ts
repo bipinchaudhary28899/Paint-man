@@ -54,6 +54,22 @@ const brandRank = (slug: string) => {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", reg: "®", copy: "©", trade: "™" };
+
+/**
+ * PaintDB names arrive HTML-escaped from its source sites ("Dove&#039;s Wing-w", "Spick &amp; Span").
+ * Decodes named, decimal and hex entities in one pass, so "&amp;#039;" stays "&#039;" as written;
+ * unknown or out-of-range entities are left as they are. scripts/import-paintdb.mjs does the same
+ * on import.
+ */
+export function decodeEntities(s: string): string {
+  return s.replace(/&(#\d{1,7}|#x[0-9a-f]{1,6}|[a-z]+);/gi, (whole, body: string) => {
+    if (body[0] !== "#") return NAMED_ENTITIES[body.toLowerCase()] ?? whole;
+    const n = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+    return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : whole;
+  });
+}
+
 export const SORTS = ["shade", "code", "name"] as const;
 export type ShadeSort = (typeof SORTS)[number];
 export const isShadeSort = (s: unknown): s is ShadeSort => typeof s === "string" && (SORTS as readonly string[]).includes(s);
@@ -85,9 +101,9 @@ function load() {
     return {
       id: `${brand.slug}:${code}`,
       brand: brand.slug,
-      brandName: brand.name,
+      brandName: decodeEntities(brand.name),
       code,
-      name,
+      name: decodeEntities(name),
       hex: `#${hex}`,
       lrv,
       family: data.families[f],
@@ -96,7 +112,7 @@ function load() {
       exterior: (where & 2) === 2,
     };
   });
-  const keys = shades.map((s) => ({ code: norm(s.code), name: s.name.toLowerCase(), words: s.name.toLowerCase().split(/[\s\-/&,.'()]+/).filter(Boolean) }));
+  const keys = shades.map((s) => ({ code: norm(s.code), name: s.name.toLowerCase(), words: s.name.toLowerCase().split(/[\s\-/&,.'’()®]+/).filter(Boolean) }));
   // the three browse orders, computed once: brand first, then the chosen order within it
   const idx = shades.map((_, i) => i);
   const brandCmp = (i: number, j: number) => brandRank(shades[i].brand) - brandRank(shades[j].brand) || shades[i].brand.localeCompare(shades[j].brand);
@@ -167,7 +183,7 @@ export function brandList() {
   const counts = new Map<number, number>();
   for (const s of data.shades) counts.set(s[0], (counts.get(s[0]) ?? 0) + 1);
   return data.brands
-    .map((b, i) => ({ slug: b.slug, name: b.name, count: counts.get(i) ?? 0 }))
+    .map((b, i) => ({ slug: b.slug, name: decodeEntities(b.name), count: counts.get(i) ?? 0 }))
     .sort((a, b) => brandRank(a.slug) - brandRank(b.slug) || a.name.localeCompare(b.name));
 }
 

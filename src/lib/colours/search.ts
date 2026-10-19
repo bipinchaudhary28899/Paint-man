@@ -80,28 +80,33 @@ export function pairings(c: Colour): Colour[] {
   return c.pairsWith.map((code) => getColour(code)).filter((x): x is Colour => Boolean(x));
 }
 
+/** A family's shades, light → dark (by LRV, then code), curated and generated together. */
+export function familyLadder(family: ColourFamily): Colour[] {
+  return colours.filter((x) => x.family === family).sort((a, b) => b.lrv - a.lrv || a.code.localeCompare(b.code));
+}
+
 /**
  * The shade's nearest neighbours by lightness in its own family: the family sorted light → dark,
- * then the shades either side of it (one lighter, one darker, two lighter, ...), wrapping at the
- * ends. Every shade gets its own "close by" set, so links spread through the whole family.
+ * then the shades either side of it (one lighter, one darker, two lighter, ...). At the light or
+ * dark end of the family there is nothing on one side, so the rest come from the other side: the
+ * lightest shade gets the next darker ones, never the darkest of the family.
  */
 export function similar(c: Colour, n = 4): Colour[] {
-  const fam = colours.filter((x) => x.family === c.family).sort((a, b) => b.lrv - a.lrv || a.code.localeCompare(b.code));
+  const fam = familyLadder(c.family);
   const i = fam.findIndex((x) => x.code === c.code);
   if (i < 0) return fam.slice(0, Math.max(0, n));
-  const len = fam.length;
-  const want = Math.min(Math.max(0, n), len - 1);
-  const seen = new Set([i]);
+  const want = Math.min(Math.max(0, n), fam.length - 1);
   const out: Colour[] = [];
   for (let k = 1; out.length < want; k++) {
-    for (const j of [i - k, i + k]) {
-      const w = ((j % len) + len) % len;
-      if (out.length >= want || seen.has(w)) continue;
-      seen.add(w);
-      out.push(fam[w]);
-    }
+    for (const j of [i - k, i + k]) if (out.length < want && j >= 0 && j < fam.length) out.push(fam[j]);
   }
   return out;
+}
+
+/** The closest shades in the same family that are strictly lighter and strictly darker (by LRV). */
+export function neighbours(c: Pick<Colour, "code" | "family" | "lrv">): { lighter?: Colour; darker?: Colour } {
+  const fam = familyLadder(c.family).filter((x) => x.code !== c.code);
+  return { lighter: fam.filter((x) => x.lrv > c.lrv).at(-1), darker: fam.find((x) => x.lrv < c.lrv) };
 }
 
 export function isFamily(s: unknown): s is ColourFamily {
