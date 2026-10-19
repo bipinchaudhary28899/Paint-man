@@ -86,7 +86,7 @@ export default function HomePage() {
           <dl className="mt-14 flex flex-wrap gap-10 border-t border-line pt-7">
             {[["Quotation", "Itemised, line by line"], ["Crew", "Supervised daily"], ["Paint", "Genuine, branded"]].map(([k, v]) => (
               <div key={k}>
-                <dt className="text-xs uppercase tracking-[0.12em] text-muted-2">{k}</dt>
+                <dt className="text-xs uppercase tracking-[0.12em] text-muted">{k}</dt>
                 <dd className="mt-1.5 font-medium">{v}</dd>
               </div>
             ))}
@@ -98,7 +98,7 @@ export default function HomePage() {
             {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
             <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
-          <p className="mx-1 mt-4 flex justify-between text-[13px] text-muted-2">
+          <p className="mx-1 mt-4 flex justify-between text-[13px] text-muted">
             <span>Example finish</span>
             <span>Warm white walls</span>
           </p>
