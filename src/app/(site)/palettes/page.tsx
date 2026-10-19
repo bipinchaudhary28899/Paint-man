@@ -87,7 +87,7 @@ export default function PalettesPage() {
                 </div>
                 {/* phones: the room preview comes first, so the palette is seen before it is read */}
                 <div className={`-order-1 border-b border-line bg-chalk p-3 lg:order-none lg:border-b-0 ${i % 2 ? "lg:border-r-2" : "lg:border-l-2"} md:p-8`}>
-                  <WallPreview colour={p.colours[0]} maxHeight="min(70vh, 620px)" sizes="(min-width: 1024px) 520px, 100vw" />
+                  <WallPreview colour={p.colours[0]} desktopCrop maxHeight="min(70vh, 620px)" sizes="(min-width: 1024px) 520px, 100vw" />
                   <div className="mt-3 flex h-6 overflow-hidden rounded-full border border-line md:mt-4 md:h-10" aria-hidden>
                     <span className="flex-[3]" style={{ background: p.colours[0].hex }} />
                     <span className="flex-[2]" style={{ background: p.colours[1].hex }} />

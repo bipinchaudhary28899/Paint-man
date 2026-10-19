@@ -13,6 +13,9 @@ export type PreviewShade = Pick<Colour, "name" | "code" | "hex" | "lrv">;
 // narrows to keep the photo's shape. `compact` (phones): the height comes from `frameClassName`,
 // the width follows the photo's shape, and there is no caption. Every preview sits below the
 // fold or beside the list, so the photo lazy-loads (no preload: it would compete with the CSS).
+// `desktopCrop`: from the lg breakpoint the frame fills its column at a 7:8 crop of the room
+// (sofa, shelf and walls up close); phones keep the whole photo. Photo and mask are both
+// cover-cropped around the centre, so the tint stays aligned at either shape.
 export function WallPreview({
   colour,
   className = "",
@@ -20,7 +23,8 @@ export function WallPreview({
   compact = false,
   frameClassName = "",
   maxHeight = "75vh",
-}: { colour: PreviewShade; className?: string; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string }) {
+  desktopCrop = false,
+}: { colour: PreviewShade; className?: string; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string; desktopCrop?: boolean }) {
   const scene = genericScene;
   const ratio = scene.width / scene.height;
   const frame = compact
@@ -28,7 +32,11 @@ export function WallPreview({
     : { aspectRatio: `${scene.width} / ${scene.height}`, width: `min(100%, calc(${maxHeight} * ${ratio.toFixed(4)}))`, marginInline: "auto" };
   return (
     <figure className={`overflow-hidden rounded-3xl border border-line bg-paper ${className}`}>
-      <div className={`scene relative ${compact ? "w-auto" : ""} ${frameClassName}`} style={frame}>
+      <div
+        className={`scene relative ${compact ? "w-auto" : ""} ${desktopCrop && !compact ? "lg:aspect-[7/8]! lg:w-full!" : ""} ${frameClassName}`}
+        data-crop={desktopCrop && !compact ? "desktop" : undefined}
+        style={frame}
+      >
         <Image src={scene.image.src} alt={`${scene.label} in ${colour.name}`} fill sizes={sizes} className="object-cover" />
         {(scene.blend === "color" ? ["color", "lum"] : ["multiply"]).map((blend) => (
           <span

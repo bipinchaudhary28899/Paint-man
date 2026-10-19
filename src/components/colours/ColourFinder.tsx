@@ -492,7 +492,7 @@ export function ColourFinder({
 
       {view && (
         <section className="hidden rounded-[2rem] border border-line bg-paper p-5 lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto" aria-labelledby="active-colour">
-          <WallPreview colour={view} maxHeight="min(56vh, 600px)" sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
+          <WallPreview colour={view} desktopCrop maxHeight="min(56vh, 600px)" sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
           <div className="mt-5 flex items-center gap-4">
             <span className="h-14 w-14 shrink-0 rounded-2xl border border-line" style={{ background: view.hex }} />
             <div className="min-w-0">

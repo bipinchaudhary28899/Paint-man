@@ -218,6 +218,19 @@ describe("WallPreview", () => {
     expect(frame.style.width).toMatch(/^min\(100%, (calc\(75vh \* 0\.6664\)|49\.98vh)\)$/);
     expect(container.textContent).toContain("PM-401");
     expect(container.textContent).toContain("LRV 18");
+    expect(frame.dataset.crop).toBeUndefined();
+  });
+
+  it("can crop in to 7:8 on desktop while phones keep the whole photo", () => {
+    const { container } = render(<WallPreview colour={getColour("PM-401")!} desktopCrop />);
+    const frame = container.querySelector<HTMLElement>(".scene")!;
+    expect(frame.dataset.crop).toBe("desktop");
+    expect(frame.className).toContain("lg:aspect-[7/8]!");
+    expect(frame.className).toContain("lg:w-full!");
+    expect(frame.style.aspectRatio).toBe("933 / 1400"); // below lg: the whole photo
+    // compact (phone strip) previews never crop
+    const strip = render(<WallPreview colour={getColour("PM-401")!} desktopCrop compact />).container.querySelector<HTMLElement>(".scene")!;
+    expect(strip.dataset.crop).toBeUndefined();
   });
 });
 
