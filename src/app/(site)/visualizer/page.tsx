@@ -1,8 +1,6 @@
-import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { JsonLd } from "@/components/JsonLd";
-import { Visualizer } from "@/components/visualizer/Visualizer";
 import { VisualizerFromParams } from "@/components/visualizer/VisualizerFromParams";
 import { site } from "@/config/site";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
@@ -20,7 +18,7 @@ const faqs = [
 ];
 
 // Static page: ?colour=, ?shade= and ?model= are read in the browser by VisualizerFromParams.
-// Its Suspense fallback is the default visualizer, so the prerendered HTML has the full widget.
+// The prerendered HTML is the default visualizer, which hydrates in place (no Suspense bailout).
 export default function VisualizerPage() {
   return (
     <>
@@ -42,9 +40,7 @@ export default function VisualizerPage() {
       </section>
 
       <section className="container-page mt-10 md:mt-14" aria-label="Visualizer">
-        <Suspense fallback={<Visualizer model="b0" />}>
-          <VisualizerFromParams />
-        </Suspense>
+        <VisualizerFromParams />
       </section>
 
       <section className="container-page mt-24 grid gap-10 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="vis-faq">

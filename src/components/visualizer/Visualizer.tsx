@@ -37,13 +37,21 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
   const [result, setResult] = useState<SegmentResult | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [shade, setShade] = useState<Shade>(initialShade ?? { name: colours[18].name, hex: colours[18].hex, code: colours[18].code });
-  // A starting shade can arrive after mount (a brand shade from ?shade= is looked up in the
-  // browser). It replaces the current shade without remounting, so a loaded photo is kept.
+  // Set once the visitor chooses a shade in the picker (a swatch, including a search result).
+  const [userPicked, setUserPicked] = useState(false);
+  const pickShade = useCallback((s: Shade) => {
+    setUserPicked(true);
+    setShade(s);
+  }, []);
+  // A starting shade can arrive after mount: the page reads its link after hydrating, and a
+  // brand shade from ?shade= is looked up through the API. It replaces the current shade without
+  // remounting, so a loaded photo is kept, but never a shade the visitor has already picked.
+  // (Loading a photo is not a pick: the visitor came for the linked shade.)
   const initialKey = initialShade ? `${initialShade.hex}|${initialShade.name}|${initialShade.code ?? ""}|${initialShade.bookQuery ?? ""}` : "";
   const [appliedKey, setAppliedKey] = useState(initialKey);
   if (initialKey !== appliedKey) {
     setAppliedKey(initialKey);
-    if (initialShade) setShade(initialShade);
+    if (initialShade && !userPicked) setShade(initialShade);
   }
   const [showOriginal, setShowOriginal] = useState(false);
   const [hint, setHint] = useState("");
@@ -220,7 +228,7 @@ export function Visualizer({ initialShade, segmenterFactory, model = "b0" }: Vis
 
       {/* ---------- shade picker ---------- */}
       <aside>
-        <ShadePicker value={shade} onChange={setShade} />
+        <ShadePicker value={shade} onChange={pickShade} />
         <div className="mt-6 rounded-2xl border border-line bg-paper p-4 text-sm leading-relaxed text-muted">
           <p className="font-semibold text-ink">How this works</p>
           <p className="mt-1">

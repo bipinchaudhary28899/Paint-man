@@ -1,24 +1,20 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { getPalette } from "@/config/palettes";
+import { getService } from "@/config/site";
 import { getColour } from "@/lib/colours/search";
 import type { serviceTypes } from "@/lib/leads/options";
 import { LeadForm } from "./LeadForm";
 import { useBrandShade, type BrandShadeSummary } from "./useBrandShade";
+import { useUrlQuery } from "./useUrlQuery";
 
 // The booking form with the choice the visitor came from filled in: ?service= (a service page),
 // ?palette= (the palettes page), ?colour= (a Paint Man shade) or ?shade= (a brand shade from the
-// colour finder). It reads the query in the browser so /book stays a static page; the page renders
-// the plain form as this component's Suspense fallback, so the form is in the HTML either way.
+// colour finder). It reads the query in the browser so /book stays a static page: the server
+// HTML is the plain form, which hydrates in place, and only a link that carries a choice
+// remounts it with that choice filled in.
 
 type ServiceType = (typeof serviceTypes)[number];
-
-const serviceBySlug = new Map<string, ServiceType>([
-  ["interior-painting", "Interior Painting"],
-  ["exterior-painting", "Exterior Painting"],
-  ["rental-property-painting", "Rental Property"],
-]);
 
 export type BookQuery = { service?: string | null; colour?: string | null; palette?: string | null; shade?: string | null };
 
@@ -33,16 +29,19 @@ export function bookPrefill(query: BookQuery, brandShade?: BrandShadeSummary): {
       : brandShade
         ? `Interested in ${brandShade.brandName} ${brandShade.code} ${brandShade.name} (${brandShade.hex.toUpperCase()}). Please bring the shade card.`
         : undefined;
-  return { defaultService: query.service ? serviceBySlug.get(query.service) : undefined, defaultMessage };
+  // a service page links with its slug; the form's choice for it comes from the service data
+  const defaultService = query.service ? getService(query.service)?.leadService : undefined;
+  return { defaultService, defaultMessage };
 }
 
 export function BookPrefill() {
-  const params = useSearchParams();
+  const params = useUrlQuery();
   const query: BookQuery = { service: params.get("service"), colour: params.get("colour"), palette: params.get("palette"), shade: params.get("shade") };
   const ownChoice = Boolean((query.palette && getPalette(query.palette)) || (query.colour && getColour(query.colour)));
   // a brand shade is only looked up when no palette or Paint Man shade is chosen
   const brandShade = useBrandShade(ownChoice ? null : query.shade);
   const { defaultService, defaultMessage } = bookPrefill(query, brandShade);
-  // The form's fields are uncontrolled, so a prefill that arrives later (a brand shade) remounts it.
+  // The form's fields are uncontrolled, so a prefill remounts it. Without one the key is the
+  // same as in the server render, so the hydrated form (and anything typed into it) stays.
   return <LeadForm key={`${defaultService ?? ""}|${defaultMessage ?? ""}`} type="booking" defaultService={defaultService} defaultMessage={defaultMessage} />;
 }

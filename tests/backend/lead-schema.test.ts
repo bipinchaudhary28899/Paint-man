@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { leadSchema } from "@/lib/leads/schema";
 
 const booking = {
@@ -73,12 +73,6 @@ describe("lead schema: bookings", () => {
     expect(errorFields({ ...booking, service: "Car wrap" })).toContain("service");
   });
 
-  it("accepts an empty or ISO preferred date, rejects other formats", () => {
-    expect(leadSchema.safeParse({ ...booking, preferredDate: "" }).success).toBe(true);
-    expect(leadSchema.safeParse({ ...booking, preferredDate: "2026-11-02" }).success).toBe(true);
-    expect(errorFields({ ...booking, preferredDate: "02/11/2026" })).toContain("preferredDate");
-  });
-
   it("caps field lengths to stop oversized payloads", () => {
     expect(errorFields({ ...booking, name: "a".repeat(81) })).toContain("name");
     expect(errorFields({ ...booking, message: "a".repeat(1001) })).toContain("message");
@@ -86,6 +80,63 @@ describe("lead schema: bookings", () => {
 
   it("rejects submissions where the hidden honeypot field is filled", () => {
     expect(errorFields({ ...booking, website: "http://spam.example" })).toContain("website");
+  });
+});
+
+describe("lead schema: preferred inspection date", () => {
+  /** Sets the clock; the times below are UTC, India is UTC+05:30. */
+  const at = (iso: string) => vi.setSystemTime(new Date(iso));
+  const dateError = (preferredDate: unknown) => {
+    const r = leadSchema.safeParse({ ...booking, preferredDate });
+    return r.success ? undefined : r.error.issues.find((i) => i.path[0] === "preferredDate")?.message;
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    at("2026-10-19T04:30:00Z"); // 10:00 on 19 October in Agra
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("is optional: blank, spaces or missing all mean no date", () => {
+    for (const preferredDate of ["", "   ", undefined]) {
+      const r = leadSchema.parse({ ...booking, preferredDate });
+      expect(r.type === "booking" && r.preferredDate).toBeUndefined();
+    }
+  });
+
+  it("accepts today, tomorrow and any day up to a year ahead", () => {
+    for (const preferredDate of ["2026-10-19", "2026-10-20", "2027-02-28", "2027-10-19", " 2026-11-02 "]) {
+      expect(dateError(preferredDate)).toBeUndefined();
+    }
+    expect(leadSchema.parse({ ...booking, preferredDate: " 2026-11-02 " })).toMatchObject({ preferredDate: "2026-11-02" });
+  });
+
+  it("rejects a date before today with a friendly message", () => {
+    expect(dateError("2026-10-18")).toBe("Choose today or a later date");
+    expect(dateError("2025-12-31")).toBe("Choose today or a later date");
+  });
+
+  it("rejects a date more than a year ahead", () => {
+    expect(dateError("2027-10-20")).toBe("Choose a date within the next year");
+    expect(dateError("2099-01-01")).toBe("Choose a date within the next year");
+  });
+
+  it("goes by the date in India, not the server's clock", () => {
+    at("2026-10-18T19:00:00Z"); // 00:30 on 19 October in Agra, still the 18th in UTC
+    expect(dateError("2026-10-18")).toBe("Choose today or a later date");
+    expect(dateError("2026-10-19")).toBeUndefined();
+    at("2026-10-19T18:00:00Z"); // 23:30 on the 19th in Agra
+    expect(dateError("2026-10-19")).toBeUndefined();
+    expect(dateError("2027-10-20")).toBe("Choose a date within the next year");
+  });
+
+  it("rejects other formats and dates that do not exist, with one message each", () => {
+    for (const bad of ["02/11/2026", "2026-11-2", "2026-02-30", "2026-13-01", "2027-02-29", "tomorrow", "2026-11-02T10:00"]) {
+      expect(dateError(bad)).toBe("Choose a date from the calendar");
+      const r = leadSchema.safeParse({ ...booking, preferredDate: bad });
+      expect(r.success ? [] : r.error.issues.filter((i) => i.path[0] === "preferredDate")).toHaveLength(1);
+    }
+    expect(dateError(20261102)).toBeDefined();
   });
 });
 

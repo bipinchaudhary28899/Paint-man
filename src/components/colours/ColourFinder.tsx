@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { colourFamilies, colours, rooms, type Colour, type ColourFamily, type Room } from "@/config/colours";
 import { finishSummary } from "@/lib/colours/guide";
 import { isFamily, isRoom, searchColours } from "@/lib/colours/search";
+import { useUrlQuery } from "../useUrlQuery";
 import { WallPreview } from "./WallPreview";
 
 /** A brand shade as the API returns it (see /api/v1/colours/paint). */
@@ -131,10 +131,18 @@ const ShadeTile = memo(function ShadeTile({ colour: c, selected, onSelect }: { c
   );
 });
 
-// Brand shades have no pages of their own, so their tiles stay toggle buttons.
+// Brand shades have no pages of their own, so their tiles stay toggle buttons. Off-screen tiles
+// skip style and layout work (content-visibility) on the button itself: on the grid cell, its
+// paint containment would clip the tile's selected ring, offset shadow and hover lift, which
+// paint outside the button's box. The reserved size is per breakpoint (phone tiles are shorter).
 const BrandTile = memo(function BrandTile({ shade: s, selected, showBrand, onSelect }: { shade: BrandShadeItem; selected: boolean; showBrand: boolean; onSelect: (s: BrandShadeItem) => void }) {
   return (
-    <button type="button" onClick={() => onSelect(s)} aria-pressed={selected} className={tileClass(selected)}>
+    <button
+      type="button"
+      onClick={() => onSelect(s)}
+      aria-pressed={selected}
+      className={`${tileClass(selected)} [content-visibility:auto] [contain-intrinsic-size:auto_100px] sm:[contain-intrinsic-size:auto_164px]`}
+    >
       <span className="block h-14 border-b border-line sm:h-24" style={{ background: s.hex }} />
       <span className="block p-1.5 sm:p-3">
         <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{s.name}</span>
@@ -450,8 +458,7 @@ export function ColourFinder({
                 </p>
                 <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Brand shades">
                   {bItems.map((s) => (
-                    // off-screen tiles skip style and layout work; the reserved size is per breakpoint (phone tiles are shorter)
-                    <li key={s.id} className="[content-visibility:auto] [contain-intrinsic-size:auto_100px] sm:[contain-intrinsic-size:auto_164px]">
+                    <li key={s.id}>
                       <BrandTile shade={s} selected={brandActive?.id === s.id} showBrand={!brand} onSelect={setBSelected} />
                     </li>
                   ))}
@@ -518,18 +525,20 @@ const MemoColourFinder = memo(ColourFinder);
 /**
  * The finder with its starting search, filters and catalogue read from the URL in the browser
  * (/colours?family=Greens, /colours?catalogue=brands&brand=berger&q=3P0050), so /colours itself
- * stays a static page. Render it inside <Suspense> with a plain <ColourFinder> as the fallback:
- * the prerendered HTML then still carries the full grid of shade links.
+ * stays a static page. The server HTML is the finder with no filters, which carries a link to
+ * every shade page and hydrates in place. A link with filters then remounts the finder once with
+ * them (the finder holds its search and filters in its own state); without any, nothing remounts.
  */
 export function ColourFinderFromUrl(props: Omit<Props, "initialQuery" | "initialFamily" | "initialRoom" | "initialCatalogue" | "initialBrand">) {
-  const params = useSearchParams();
   // Read once: later URL changes are the finder's own (it keeps the URL shareable as you filter).
-  const [initial] = useState(() => ({
+  const params = useUrlQuery({ once: true });
+  const initial = {
     initialQuery: params.get("q") ?? undefined,
     initialFamily: params.get("family") ?? undefined,
     initialRoom: params.get("room") ?? undefined,
     initialCatalogue: params.get("catalogue") ?? undefined,
     initialBrand: params.get("brand") ?? undefined,
-  }));
-  return <MemoColourFinder {...props} {...initial} />;
+  };
+  const key = JSON.stringify(Object.values(initial));
+  return <MemoColourFinder key={key} {...props} {...initial} />;
 }

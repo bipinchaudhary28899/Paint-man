@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Suspense } from "react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ColoursPage from "@/app/(site)/colours/page";
 import { ColourFinder, ColourFinderFromUrl, PER_PAGE, type BrandShadeItem } from "@/components/colours/ColourFinder";
@@ -9,16 +10,32 @@ import { colours } from "@/config/colours";
 import { genericScene } from "@/config/scenes";
 import { getColour } from "@/lib/colours/search";
 
-const searchParams = vi.hoisted(() => ({ current: new URLSearchParams() as URLSearchParams | (() => never) }));
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => {
-    const p = searchParams.current;
-    if (typeof p === "function") return p();
-    return p;
-  },
-}));
+/** The visitor arrives on this address. */
+const open = (url: string) => window.history.replaceState(null, "", url);
 
 const shadeTiles = () => within(screen.getByRole("list", { name: "Shades" })).getAllByRole("link");
+
+/** Prerenders the finder as the static /colours page does, then hydrates that HTML in the browser. */
+async function prerenderAndHydrate() {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(<ColourFinderFromUrl />);
+  document.body.append(container);
+  const serverLinks = container.querySelectorAll('ul[aria-label="Shades"] a').length;
+  const list = container.querySelector('ul[aria-label="Shades"]');
+  const recoverable = vi.fn();
+  const consoleError = vi.spyOn(console, "error");
+  const root = await act(async () => hydrateRoot(container, <ColourFinderFromUrl />, { onRecoverableError: recoverable }));
+  return {
+    container,
+    serverLinks,
+    list,
+    problems: [...recoverable.mock.calls, ...consoleError.mock.calls],
+    done: () => {
+      act(() => root.unmount());
+      container.remove();
+    },
+  };
+}
 
 // Counts link clicks the browser would have followed (nothing called preventDefault), then
 // stops jsdom from trying to navigate.
@@ -36,7 +53,7 @@ describe("ColourFinder", () => {
   });
   afterEach(() => {
     document.removeEventListener("click", onDocumentClick);
-    searchParams.current = new URLSearchParams();
+    open("/");
   });
 
   it("renders the whole catalogue as links to each shade page and selects the first shade by default", () => {
@@ -126,23 +143,45 @@ describe("ColourFinder", () => {
   });
 
   it("reads its starting filters from the URL in the browser and keeps them in the URL", () => {
-    searchParams.current = new URLSearchParams("q=PM-604&family=Blues&room=Garage");
+    open("/colours?q=PM-604&family=Blues&room=Garage");
     render(<ColourFinderFromUrl />);
     expect(shadeTiles()[0]).toHaveTextContent("Blue Pottery");
     expect(screen.getByRole("button", { name: "Blues" })).toHaveAttribute("aria-pressed", "true");
     expect(window.location.search).toBe("?q=PM-604&family=Blues");
   });
 
-  it("shows the full grid of shade links until the URL is known", () => {
-    searchParams.current = () => {
-      throw new Promise(() => {}); // still suspended, as during the static prerender
-    };
-    render(
-      <Suspense fallback={<ColourFinder />}>
-        <ColourFinderFromUrl />
-      </Suspense>,
-    );
-    expect(shadeTiles()).toHaveLength(colours.length);
+  it("prerenders the full grid of shade links whatever the URL, then hydrates and applies the link's filters", async () => {
+    open("/colours?family=Blues");
+    const page = await prerenderAndHydrate();
+    expect(page.serverLinks).toBe(colours.length); // crawlers get a link to every shade
+    expect(page.problems).toEqual([]);
+    const tiles = within(page.container.querySelector<HTMLElement>('ul[aria-label="Shades"]')!).getAllByRole("link");
+    expect(tiles.length).toBeLessThan(colours.length);
+    expect(tiles.every((t) => t.textContent?.includes("Blues"))).toBe(true);
+    expect(within(page.container).getByRole("button", { name: "Blues" })).toHaveAttribute("aria-pressed", "true");
+    expect(window.location.search).toBe("?family=Blues");
+    page.done();
+  });
+
+  it("hydrates in place without remounting when the URL has no filters", async () => {
+    open("/colours?utm_source=newsletter");
+    const page = await prerenderAndHydrate();
+    expect(page.problems).toEqual([]);
+    expect(page.container.querySelector('ul[aria-label="Shades"]')).toBe(page.list);
+    expect(page.container.querySelectorAll('ul[aria-label="Shades"] a')).toHaveLength(colours.length);
+    page.done();
+  });
+
+  it("ignores its own URL updates instead of starting over", async () => {
+    open("/colours?family=Greens");
+    const user = userEvent.setup();
+    render(<ColourFinderFromUrl />);
+    const list = screen.getByRole("list", { name: "Shades" });
+    await user.click(screen.getByRole("button", { name: "Bedroom" }));
+    expect(window.location.search).toBe("?family=Greens&room=Bedroom");
+    act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+    expect(screen.getByRole("list", { name: "Shades" })).toBe(list);
+    expect(screen.getByRole("button", { name: "Bedroom" })).toHaveAttribute("aria-pressed", "true");
   });
 });
 
@@ -211,7 +250,7 @@ describe("ColourFinder: brand shades", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
-    searchParams.current = new URLSearchParams();
+    open("/");
   });
 
   it("starts with the brands, then loads a brand's shades with primary-colour chips and attribution", async () => {
@@ -242,8 +281,14 @@ describe("ColourFinder: brand shades", () => {
     await user.click(tiles[3]);
     expect(screen.getByRole("heading", { name: /^Shade 3 Asian Paints 7003/ })).toBeInTheDocument();
     expect(tiles.filter((t) => t.getAttribute("aria-pressed") === "true")).toEqual([tiles[3]]);
-    // off-screen tiles skip rendering work
-    expect(tiles[0].closest("li")!.className).toContain("[content-visibility:auto]");
+    // off-screen tiles skip rendering work; the containment sits on the tile itself, so its
+    // selected ring, offset shadow and hover lift are never clipped by the grid cell
+    for (const t of [tiles[0], tiles[3]]) {
+      expect(t.className).toContain("[content-visibility:auto]");
+      expect(t.className).toContain("[contain-intrinsic-size:auto_100px]");
+      expect(t.closest("li")!.className).not.toContain("content-visibility");
+    }
+    expect(tiles[3].className).toContain("ring-2");
   });
 
   it("scrolls in more pages and never refetches a page it already has", async () => {
@@ -288,7 +333,7 @@ describe("ColourFinder: brand shades", () => {
 
   it("opens a brand's search straight from a link (catalogue, brand and code in the URL)", async () => {
     const fetchSpy = servePages();
-    searchParams.current = new URLSearchParams("catalogue=brands&brand=berger&q=3P0050");
+    open("/colours?catalogue=brands&brand=berger&q=3P0050");
     render(<ColourFinderFromUrl {...props} />);
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
     const url = String(fetchSpy.mock.calls[0][0]);

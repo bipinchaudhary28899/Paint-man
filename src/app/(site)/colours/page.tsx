@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
-import { ColourFinder, ColourFinderFromUrl } from "@/components/colours/ColourFinder";
+import { ColourFinderFromUrl } from "@/components/colours/ColourFinder";
 import { Emoji } from "@/components/Emoji";
 import { JsonLd } from "@/components/JsonLd";
 import { colours } from "@/config/colours";
@@ -33,9 +32,9 @@ const colourFaqs = [
 ];
 
 // Static: the page never reads searchParams on the server, so it is prerendered and served from
-// the CDN. The finder reads ?q, ?family, ?room, ?catalogue and ?brand in the browser; until then
-// (and in the prerendered HTML crawlers read) the fallback is the same finder with no filters,
-// which carries a link to every shade page.
+// the CDN. The finder reads ?q, ?family, ?room, ?catalogue and ?brand in the browser after it
+// hydrates; the prerendered HTML crawlers read is the same finder with no filters, which carries
+// a link to every shade page.
 export default function ColoursPage() {
   const finderProps = {
     brands: brandList(),
@@ -70,9 +69,7 @@ export default function ColoursPage() {
 
       <section className="container-page mt-12" aria-labelledby="finder-heading">
         <h2 id="finder-heading" className="sr-only">Search shades</h2>
-        <Suspense fallback={<ColourFinder {...finderProps} />}>
-          <ColourFinderFromUrl {...finderProps} />
-        </Suspense>
+        <ColourFinderFromUrl {...finderProps} />
       </section>
 
       <section className="container-page mt-24 grid gap-10 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="colour-faq-heading">
