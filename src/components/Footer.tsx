@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Wordmark } from "./Logo";
 import { services, site } from "@/config/site";
 
 const explore = [
@@ -20,7 +21,7 @@ export function Footer() {
     <footer className="bg-ink pb-[120px] text-on-ink-muted min-[721px]:pb-0">
       <div className="container-page grid gap-12 py-[72px] md:grid-cols-[1.3fr_1fr_1fr_1fr] md:pb-14">
         <div>
-          <p className="font-display text-3xl tracking-[-0.01em] text-on-ink">PaintMan</p>
+          <p><Wordmark variant="reversed" className="h-10 w-auto" /></p>
           <p className="mt-3 max-w-[300px] text-[15px] leading-relaxed">
             {site.tagline}. Interiors, exteriors and complete homes, inspected, quoted line by line and supervised.
           </p>

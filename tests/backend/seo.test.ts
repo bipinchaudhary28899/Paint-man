@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import manifest from "@/app/manifest";
 import robots from "@/app/robots";
@@ -13,6 +15,7 @@ import {
   fullTitle,
   ICON_SIZES,
   iconPath,
+  LOGO_PATH,
   localBusinessJsonLd,
   MAX_TITLE_LENGTH,
   openingHoursSpecification,
@@ -103,10 +106,14 @@ describe("business structured data", () => {
   it("publishes a square, crawlable raster logo of at least 112px", () => {
     const logo = (localBusinessJsonLd() as Json).logo as Json;
     expect(logo["@type"]).toBe("ImageObject");
-    expect(logo.url).toBe(`${site.url}${iconPath(512)}`);
+    expect(logo.url).toBe(`${site.url}${LOGO_PATH}`);
     expect(logo.width).toBe(logo.height);
     expect(logo.width as number).toBeGreaterThanOrEqual(112);
-    expect(ICON_SIZES).toContain(logo.width);
+    // the file exists in the brand pack at the size the schema states
+    const file = join(process.cwd(), "public", LOGO_PATH);
+    expect(existsSync(file)).toBe(true);
+    const png = readFileSync(file);
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([logo.width, logo.height]);
   });
 
   it("states opening hours as OpeningHoursSpecification from site.hours", () => {
@@ -333,12 +340,13 @@ describe("robots", () => {
 });
 
 describe("web manifest", () => {
-  it("offers the SVG mark plus 192 and 512 PNG icons, one of them maskable", () => {
+  it("offers the brand pack's 192 and 512 app icons, one of them maskable", () => {
     const m = manifest();
     const icons = m.icons ?? [];
-    expect(icons).toContainEqual({ src: "/icon.svg", sizes: "any", type: "image/svg+xml" });
-    for (const size of [192, 512] as const) {
+    for (const size of ICON_SIZES) {
       expect(icons).toContainEqual({ src: iconPath(size), sizes: `${size}x${size}`, type: "image/png", purpose: "any" });
+      const png = readFileSync(join(process.cwd(), "public", iconPath(size)));
+      expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([size, size]);
     }
     expect(icons).toContainEqual({ src: iconPath(512), sizes: "512x512", type: "image/png", purpose: "maskable" });
     expect(m.background_color).toBe("#f8f5ef");

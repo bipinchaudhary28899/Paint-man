@@ -64,10 +64,12 @@ export function pageMetadata({ title, description, path, noindex, absoluteTitle,
   };
 }
 
-/** Raster app icons drawn by src/app/icon.tsx and served at /icon/{size}; the manifest and the logo use them. */
+/** Home-screen app icons from the brand pack (public/brand/05-app-icon): full-bleed squares for the manifest. */
 export const ICON_SIZES = [192, 512] as const;
 export type IconSize = (typeof ICON_SIZES)[number];
-export const iconPath = (size: IconSize) => `/icon/${size}`;
+export const iconPath = (size: IconSize) => `/brand/05-app-icon/app-icon-light-${size}.png`;
+/** The swatch-fan mark on a transparent background: the LocalBusiness logo Google shows. */
+export const LOGO_PATH = "/brand/04-icon/paintman-icon-color-512.png";
 
 /** The brand's written-together wordmark ("PaintMan"), published as an alternate name of the same entity. */
 export const ALTERNATE_NAME = "PaintMan";
@@ -168,8 +170,8 @@ export function localBusinessJsonLd() {
     logo: {
       "@type": "ImageObject",
       "@id": `${site.url}/#logo`,
-      url: abs(iconPath(512)),
-      contentUrl: abs(iconPath(512)),
+      url: abs(LOGO_PATH),
+      contentUrl: abs(LOGO_PATH),
       width: 512,
       height: 512,
       caption: site.name,

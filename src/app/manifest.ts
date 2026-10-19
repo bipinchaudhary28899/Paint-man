@@ -12,10 +12,9 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#f8f5ef",
     theme_color: "#242522",
     icons: [
-      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
       ...ICON_SIZES.map((size) => ({ src: iconPath(size), sizes: `${size}x${size}`, type: "image/png", purpose: "any" as const })),
-      // The dot sits well inside the maskable safe zone (the centre 80%) on a full-bleed
-      // background, so the 512 doubles as the maskable icon.
+      // The app icons are full-bleed with the mark inside the centre 80% (the maskable safe
+      // zone), so the 512 doubles as the maskable icon.
       { src: iconPath(512), sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
