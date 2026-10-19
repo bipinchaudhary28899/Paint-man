@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { memo, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { useUrlQuery } from "../useUrlQuery";
+import { PreviewSheet } from "./PreviewSheet";
 import { WallPreview } from "./WallPreview";
 
 /** A brand shade as the API returns it (see /api/v1/colours/paint). */
@@ -149,6 +150,31 @@ export function ColourFinder({
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [selected, setSelected] = useState<BrandShadeItem | null>(null);
   const showBrandGrid = !brand && !q.trim();
+  // Phones: the large preview (PreviewSheet). Opening it pushes a history entry, so the phone's
+  // Back button closes it instead of leaving the page.
+  const [expanded, setExpanded] = useState(false);
+  const expandedRef = useRef(false);
+  const openSheet = () => {
+    window.history.pushState({ finderPreview: true }, "", window.location.href);
+    expandedRef.current = true;
+    setExpanded(true);
+  };
+  const closeSheet = useCallback(() => {
+    if (!expandedRef.current) return;
+    if ((window.history.state as { finderPreview?: boolean } | null)?.finderPreview) window.history.back(); // popstate closes it
+    else {
+      expandedRef.current = false;
+      setExpanded(false);
+    }
+  }, []);
+  // a phone turned to a wide screen gets the side panel instead
+  useEffect(() => {
+    if (!expanded || typeof window.matchMedia !== "function") return;
+    const wide = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => { if (wide.matches) closeSheet(); };
+    wide.addEventListener?.("change", onChange);
+    return () => wide.removeEventListener?.("change", onChange);
+  }, [expanded, closeSheet]);
 
   // Opening a brand, and going back to all brands, are steps a visitor expects Back to undo (the
   // brand tiles are links), so each pushes one history entry; Back then restores the step from the
@@ -168,6 +194,12 @@ export function ColourFinder({
   };
   useEffect(() => {
     const onPopState = () => {
+      // Back with the large preview open only closes it; the finder keeps its place
+      if (expandedRef.current) {
+        expandedRef.current = false;
+        setExpanded(false);
+        return;
+      }
       const sp = new URLSearchParams(window.location.search);
       const nextBrand = brands.some((b) => b.slug === sp.get("brand")) ? sp.get("brand")! : "";
       const nextFamily = sp.get("family") ?? "";
@@ -277,7 +309,13 @@ export function ColourFinder({
         <div role="group" aria-label="Selected shade preview" className="sticky top-[73px] z-20 -mx-5 mb-4 border-b border-line-soft bg-canvas/95 px-5 pb-3 pt-2 backdrop-blur-md lg:hidden">
           {/* the whole room on the left, the shade and its actions on the right */}
           <div className="flex items-stretch gap-3">
-            <WallPreview colour={view} compact frameClassName="h-[26svh] min-h-[180px] max-h-[240px]" sizes="45vw" className="shrink-0 !rounded-2xl" />
+            {/* tap the room for the large preview, where picking goes on */}
+            <button type="button" onClick={openSheet} aria-label={`See ${view.name} larger`} className="relative shrink-0 rounded-2xl">
+              <WallPreview colour={view} compact frameClassName="h-[26svh] min-h-[180px] max-h-[240px]" sizes="45vw" className="!rounded-2xl" />
+              <span aria-hidden className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-canvas/90 shadow-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+              </span>
+            </button>
             <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
               <div>
                 <span className="block h-7 w-7 rounded-lg border border-line" style={{ background: view.hex }} />
@@ -456,6 +494,16 @@ export function ColourFinder({
             and paints a test patch before you decide.
           </p>
         </section>
+      )}
+      {expanded && view && active && (
+        <PreviewSheet
+          view={view}
+          shades={items}
+          selectedId={active.id}
+          onSelect={(id) => setSelected(items.find((s) => s.id === id) ?? null)}
+          onClose={closeSheet}
+          onNearEnd={() => void loadMore()}
+        />
       )}
     </div>
   );

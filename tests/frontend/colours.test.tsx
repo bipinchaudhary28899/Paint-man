@@ -180,7 +180,7 @@ describe("ColourFinder: the brands", () => {
     const user = userEvent.setup();
     render(<ColourFinder {...props} />);
     await user.type(screen.getByLabelText("Search all brands by code, name or hex"), "7982");
-    await waitFor(() => expect(screen.getByRole("button", { name: /Mecca Gold/ })).toBeInTheDocument());
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Brand shades" })).getByRole("button", { name: /Mecca Gold/ })).toBeInTheDocument());
     expect(String(fetchSpy.mock.calls[0][0])).toContain("q=7982");
     expect(String(fetchSpy.mock.calls[0][0])).not.toContain("brand=");
     expect(screen.getByText(/1 shade for “7982”/)).toBeInTheDocument();
@@ -444,5 +444,101 @@ describe("WallPreview", () => {
     // compact (phone strip) previews never crop
     const strip = render(<WallPreview colour={shade} desktopCrop compact />).container.querySelector<HTMLElement>(".scene")!;
     expect(strip.dataset.crop).toBeUndefined();
+  });
+});
+
+describe("ColourFinder: the large preview on phones", () => {
+  const sheet = () => screen.getByRole("dialog", { name: /^Shade/ });
+  const openFinder = async () => {
+    open("/colours?brand=asian-paints");
+    servePages();
+    const user = userEvent.setup();
+    render(<ColourFinder {...props} initialBrand="asian-paints" />);
+    await waitFor(() => expect(screen.getByText(/100 shades\. Tap one/)).toBeInTheDocument());
+    return user;
+  };
+
+  it("opens from the pinned room, keeps picking in its strip, and closes back to the grid", async () => {
+    const user = await openFinder();
+    await user.click(screen.getByRole("button", { name: "See Shade 0 larger" }));
+    const dialog = sheet();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(within(dialog).getByRole("heading", { name: "Shade 0" })).toBeInTheDocument();
+    expect(within(dialog).getByAltText("A cosy living room, repainted in Shade 0")).toBeInTheDocument();
+    // focus moves into the dialog and the page behind stops scrolling
+    expect(within(dialog).getByRole("button", { name: "Close the large preview" })).toHaveFocus();
+    expect(document.documentElement.style.overflow).toBe("hidden");
+    // Back closes it: opening pushed a history entry of its own
+    expect(window.history.state).toEqual({ finderPreview: true });
+
+    // every loaded shade is in the strip; a tap repaints the big room and the grid follows
+    const swatches = within(within(dialog).getByRole("list", { name: "Shades" })).getAllByRole("button");
+    expect(swatches).toHaveLength(48);
+    expect(swatches[0]).toHaveAttribute("aria-pressed", "true");
+    await user.click(swatches[5]);
+    expect(within(sheet()).getByRole("heading", { name: "Shade 5" })).toBeInTheDocument();
+    expect(within(sheet()).getByRole("link", { name: "Book inspection" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7005");
+    expect(within(sheet()).getByRole("link", { name: "Try on my photo" })).toHaveAttribute("href", "/visualizer?shade=asian-paints%3A7005");
+
+    // × goes Back, which closes the sheet but keeps the brand and the pick
+    await user.click(within(sheet()).getByRole("button", { name: "Close the large preview" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(screen.getByText(/100 shades\. Tap one/)).toBeInTheDocument();
+    expect(brandTiles()[5]).toHaveAttribute("aria-pressed", "true");
+    expect(window.location.search).toBe("?brand=asian-paints");
+  });
+
+  it("closes on the phone's Back button and on Escape", async () => {
+    const user = await openFinder();
+    await user.click(screen.getByRole("button", { name: "See Shade 0 larger" }));
+    act(() => { window.history.back(); });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByText("Asian Paints", { selector: "p.font-display" })).toBeInTheDocument(); // still in the brand
+
+    await user.click(screen.getByRole("button", { name: "See Shade 0 larger" }));
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("loads more shades when the strip is swiped near its end", async () => {
+    const user = await openFinder();
+    await user.click(screen.getByRole("button", { name: "See Shade 0 larger" }));
+    const list = within(sheet()).getByRole("list", { name: "Shades" });
+    Object.defineProperties(list, { scrollWidth: { value: 3000, configurable: true }, clientWidth: { value: 375, configurable: true } });
+    list.scrollLeft = 2500;
+    fireEvent.scroll(list);
+    await waitFor(() => expect(within(within(sheet()).getByRole("list", { name: "Shades" })).getAllByRole("button")).toHaveLength(96), SLOW); // the next 48 joined the first 48
+  });
+
+  it("closes when the screen becomes wide enough for the side panel", async () => {
+    let listener: (() => void) | undefined;
+    const mq = { matches: false, addEventListener: (_: string, cb: () => void) => { listener = cb; }, removeEventListener: vi.fn() };
+    vi.stubGlobal("matchMedia", () => mq);
+    const user = await openFinder();
+    await user.click(screen.getByRole("button", { name: "See Shade 0 larger" }));
+    mq.matches = true;
+    act(() => listener?.());
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+describe("PreviewSheet", () => {
+  it("keeps Tab inside the dialog and closes without history when it was not pushed", async () => {
+    const { PreviewSheet } = await import("@/components/colours/PreviewSheet");
+    const onClose = vi.fn();
+    const view = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2", lrv: 52, meta: "#BBC8B2 · LRV 52", bookHref: "/book", tryHref: "/visualizer" };
+    render(<PreviewSheet view={view} shades={[{ id: "a:1", name: "One", code: "1", hex: "#ffffff" }]} selectedId="a:1" onSelect={vi.fn()} onClose={onClose} />);
+    const close = screen.getByRole("button", { name: "Close the large preview" });
+    const last = screen.getByRole("link", { name: "Try on my photo" });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
+    fireEvent.keyDown(last, { key: "Tab" });
+    expect(close).toHaveFocus();
+    fireEvent.keyDown(close, { key: "a" });
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(close, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
