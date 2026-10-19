@@ -54,7 +54,8 @@ const brandRank = (slug: string) => {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", reg: "®", copy: "©", trade: "™" };
+// A Map, not a plain object: a lookup on an object would also find inherited names ("&constructor;").
+const NAMED_ENTITIES = new Map<string, string>(Object.entries({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", reg: "®", copy: "©", trade: "™" }));
 
 /**
  * PaintDB names arrive HTML-escaped from its source sites ("Dove&#039;s Wing-w", "Spick &amp; Span").
@@ -64,7 +65,7 @@ const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quo
  */
 export function decodeEntities(s: string): string {
   return s.replace(/&(#\d{1,7}|#x[0-9a-f]{1,6}|[a-z]+);/gi, (whole, body: string) => {
-    if (body[0] !== "#") return NAMED_ENTITIES[body.toLowerCase()] ?? whole;
+    if (body[0] !== "#") return NAMED_ENTITIES.get(body.toLowerCase()) ?? whole;
     const n = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
     return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : whole;
   });

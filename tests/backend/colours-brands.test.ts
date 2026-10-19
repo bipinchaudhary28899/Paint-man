@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import raw from "@/data/paintdb.json";
 import { curatedColours } from "@/config/colours";
@@ -42,6 +43,21 @@ describe("brand shade data (PaintDB, vendored)", () => {
     expect(decodeEntities("Crumb Cake&reg; &#x27;hex&#X27;")).toBe("Crumb Cake® 'hex'");
     expect(decodeEntities("&amp;#039;")).toBe("&#039;"); // one pass: an escaped entity stays as written
     expect(decodeEntities("&bogus; &#0; &#99999999; R&D & co")).toBe("&bogus; &#0; &#99999999; R&D & co");
+    // names an object inherits are not entities
+    expect(decodeEntities("A &constructor; B")).toBe("A &constructor; B");
+    expect(decodeEntities("&CONSTRUCTOR; &toString; &valueOf; &hasOwnProperty; &isPrototypeOf;")).toBe("&CONSTRUCTOR; &toString; &valueOf; &hasOwnProperty; &isPrototypeOf;");
+  });
+
+  it("decodes the same way on import (scripts/import-paintdb.mjs)", () => {
+    // Importing the script would run the import and rewrite src/data/paintdb.json, so lift its
+    // entity table and decoder out of the source and run those.
+    const script = readFileSync(new URL("../../scripts/import-paintdb.mjs", import.meta.url), "utf8");
+    const table = /^const NAMED_ENTITIES = .+$/m.exec(script)![0];
+    const fn = /^function decodeEntities\(s\) \{[\s\S]*?^\}$/m.exec(script)![0];
+    const decode = new Function(`${table}\n${fn}\nreturn decodeEntities;`)() as (s: string) => string;
+    for (const s of ["Dove&#039;s Wing", "Spick &amp; Span &lt;b&gt;", "Crumb Cake&reg; &#x27;hex&#X27;", "&amp;#039;", "&bogus; &#0; R&D", "A &constructor; B", "&toString; &valueOf;"])
+      expect(decode(s), s).toBe(decodeEntities(s));
+    expect(decode("A &constructor; B")).toBe("A &constructor; B");
   });
 
   it("carries the CC BY 4.0 attribution", () => {
