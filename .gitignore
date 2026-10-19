@@ -16,3 +16,9 @@ coverage
 
 # Vercel CLI link
 .vercel
+
+# generated intro video and its working files
+marketing/*.mp4
+marketing/intro-video/audio/
+marketing/intro-video/shots/
+marketing/intro-video/out/

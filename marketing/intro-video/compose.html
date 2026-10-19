@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Paint Man intro studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@400;600;700&display=block" rel="stylesheet" />
+<style>
+  html, body { margin: 0; background: #1b1b1a; }
+  canvas { display: block; width: 540px; height: 960px; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// Paint Man intro video: one canvas, 1080x1920 (9:16), drawn scene by scene in real time and
+// recorded with MediaRecorder together with the narration (macOS "say", Rishi en-IN).
+const W = 1080, H = 1920;
+const C = { canvas: "#f8f5ef", ink: "#242522", muted: "#5f5a52", terracotta: "#a8532f", accent: "#c76b4a", sand: "#e8d7c5", sage: "#71856a", golden: "#e9b949" };
+const SHOTS = { intro: ["intro"], problem: ["problem"], inspection: ["inspection"], interior: ["interior"], exterior: ["exterior"], rental: ["rental"], colours: ["colours-grid", "colours"], visualizer: ["visualizer"], supervised: ["supervised"], book: ["book"] };
+const LEAD = 0.45, TAIL = 0.75, END_HOLD = 1.8, XFADE = 0.5;
+
+const cv = document.getElementById("c");
+const g = cv.getContext("2d");
+const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : 1 - Math.pow(1 - x, 3));
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const loadImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+
+let scenes = [], total = 0, actx, dest, buffers = {};
+
+async function setup() {
+  await document.fonts.load('400 92px "DM Serif Display"');
+  await document.fonts.load('italic 400 92px "DM Serif Display"');
+  await document.fonts.load('600 36px "Manrope"');
+  await document.fonts.load('700 30px "Manrope"');
+  const script = await (await fetch("script.json")).json();
+  actx = new AudioContext({ sampleRate: 48000 });
+  dest = actx.createMediaStreamDestination();
+  let t = 0;
+  for (const s of script) {
+    const imgs = await Promise.all(SHOTS[s.id].map((n) => loadImg(`shots/${n}.png`)));
+    const buf = await actx.decodeAudioData(await (await fetch(`audio/${s.id}.wav`)).arrayBuffer());
+    buffers[s.id] = buf;
+    const dur = LEAD + buf.duration + TAIL + (s.id === "book" ? END_HOLD : 0);
+    scenes.push({ ...s, imgs, start: t, dur });
+    t += dur;
+  }
+  total = t;
+  return { total, scenes: scenes.map((s) => [s.id, +s.start.toFixed(2), +s.dur.toFixed(2)]) };
+}
+
+// ---------- drawing helpers ----------
+function roundRect(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+
+function wrapRuns(runs, maxW) {
+  // runs: [{text, font, color}] -> lines of positioned words
+  const lines = [[]]; let x = 0;
+  for (const run of runs) {
+    g.font = run.font;
+    for (const word of run.text.split(/\s+/).filter(Boolean)) {
+      const w = g.measureText(word).width, space = g.measureText(" ").width;
+      if (x > 0 && x + space + w > maxW) { lines.push([]); x = 0; }
+      if (x > 0) x += space;
+      lines[lines.length - 1].push({ word, x, font: run.font, color: run.color });
+      x += w;
+    }
+  }
+  return lines;
+}
+
+function drawBackground(t) {
+  g.fillStyle = C.canvas; g.fillRect(0, 0, W, H);
+  const blob = (cx, cy, r, color, a) => { g.save(); g.globalAlpha = a; g.fillStyle = color; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.restore(); };
+  blob(160 + Math.sin(t * 0.21) * 60, 1240 + Math.cos(t * 0.17) * 70, 520, C.sand, 0.55);
+  blob(960 + Math.cos(t * 0.15) * 50, 560 + Math.sin(t * 0.19) * 60, 360, C.sage, 0.13);
+  blob(900 + Math.sin(t * 0.12) * 40, 1820, 300, C.golden, 0.12);
+}
+
+function drawText(scene, u) {
+  const out = clamp01((scene.dur - u) / 0.35); // fade out at the end of a scene
+  const left = 70, maxW = 940;
+  // eyebrow
+  const a1 = ease(u / 0.4) * out;
+  g.save(); g.globalAlpha = a1; g.fillStyle = C.terracotta; g.font = '700 30px "Manrope"';
+  g.letterSpacing = "4px"; g.fillText(scene.eyebrow.toUpperCase(), left, 215 + (1 - a1) * 14); g.restore();
+  // title with one italic accent
+  const a2 = ease((u - 0.12) / 0.5) * out;
+  const runs = [{ text: scene.title, font: '400 96px "DM Serif Display"', color: C.ink }];
+  if (scene.accent) runs.push({ text: scene.accent, font: 'italic 400 96px "DM Serif Display"', color: C.accent });
+  const lines = wrapRuns(runs, maxW);
+  let y = 320;
+  g.save(); g.globalAlpha = a2;
+  for (const line of lines) { for (const w of line) { g.font = w.font; g.fillStyle = w.color; g.fillText(w.word, left + w.x, y + (1 - a2) * 30); } y += 100; }
+  g.restore();
+  // body
+  const a3 = ease((u - 0.35) / 0.5) * out;
+  const body = wrapRuns([{ text: scene.body, font: '600 36px "Manrope"', color: C.muted }], maxW);
+  y += 6;
+  g.save(); g.globalAlpha = a3;
+  for (const line of body) { for (const w of line) { g.font = w.font; g.fillStyle = w.color; g.fillText(w.word, left + w.x, y + (1 - a3) * 20); } y += 50; }
+  g.restore();
+  return y;
+}
+
+const PHONE = { w: 560, h: 1212, x: (W - 560) / 2, y: 660, bezel: 20, r: 78, status: 64 };
+
+function drawScreenImage(img, alpha, zoom, pan) {
+  // the page sits below the phone's status bar; a slow zoom drifts it up a little
+  const { w, h, x, y, status } = PHONE;
+  const iw = w * zoom, ih = (img.height / img.width) * iw;
+  const top = y + status, room = h - status;
+  g.save(); g.globalAlpha = alpha;
+  g.beginPath(); g.rect(x, top, w, room); g.clip();
+  g.drawImage(img, x + (w - iw) / 2, top - Math.max(0, ih - room) * pan * 0.25, iw, ih);
+  g.restore();
+}
+
+function drawStatusBar(x, y, w) {
+  g.save();
+  g.fillStyle = C.ink; g.font = '700 26px "Manrope"';
+  g.fillText("9:41", x + 52, y + 44);
+  // signal, wifi-ish dots and battery
+  const bx = x + w - 92;
+  roundRect(bx, y + 24, 46, 22, 6); g.lineWidth = 2.5; g.strokeStyle = C.ink; g.stroke();
+  g.fillRect(bx + 4, y + 28, 34, 14); g.fillRect(bx + 48, y + 31, 4, 8);
+  for (let i = 0; i < 4; i++) g.fillRect(bx - 56 + i * 9, y + 42 - i * 5, 6, 4 + i * 5);
+  g.restore();
+}
+
+function drawPhone(t, scene, u, prev) {
+  const intro = scene.id === "intro" ? ease(u / 1.1) : 1;
+  const float = Math.sin(t * 0.9) * 6;
+  const dy = (1 - intro) * 700 + float;
+  const { w, h, x, bezel, r } = PHONE;
+  const y = PHONE.y + dy;
+  g.save();
+  // soft photo shadow
+  g.shadowColor = "rgba(36,37,34,0.28)"; g.shadowBlur = 80; g.shadowOffsetY = 40;
+  g.fillStyle = C.ink; roundRect(x - bezel, y - bezel, w + bezel * 2, h + bezel * 2, r + bezel); g.fill();
+  g.restore();
+  g.save();
+  roundRect(x, y, w, h, r); g.clip();
+  g.fillStyle = C.canvas; g.fillRect(x, y, w, h);
+  g.translate(0, dy);
+  // the screen: crossfade from the previous scene's last shot, slow zoom and drift (Ken Burns)
+  const k = clamp01(u / scene.dur);
+  const imgs = scene.imgs;
+  const half = scene.dur / 2;
+  const zoom = 1 + 0.045 * k, pan = 0.5 * k;
+  if (prev && u < XFADE) drawScreenImage(prev.imgs[prev.imgs.length - 1], 1, 1.045, 0.5);
+  const fadeIn = prev ? ease(u / XFADE) : 1;
+  if (imgs.length === 2) {
+    const second = ease((u - half) / 0.45);
+    drawScreenImage(imgs[0], fadeIn * (1 - second), zoom, pan);
+    if (second > 0) drawScreenImage(imgs[1], second, 1 + 0.03 * clamp01((u - half) / half), 0);
+  } else drawScreenImage(imgs[0], fadeIn, zoom, pan);
+  g.restore();
+  // status bar and a dynamic-island style camera cut-out
+  g.save(); roundRect(x, y, w, h, r); g.clip(); drawStatusBar(x, y, w); g.restore();
+  g.save(); g.fillStyle = C.ink; roundRect(x + w / 2 - 70, y + 16, 140, 38, 19); g.fill(); g.restore();
+}
+
+function drawCta(scene, u, y) {
+  if (scene.id !== "book") return;
+  const a = ease((u - 1.0) / 0.5) * clamp01((scene.dur - u) / 0.35);
+  if (a <= 0) return;
+  g.save(); g.globalAlpha = a;
+  g.font = '700 34px "Manrope"';
+  const label = "Get a free estimate  →", tw = g.measureText(label).width;
+  g.fillStyle = C.terracotta; roundRect(70, y + 6, tw + 80, 84, 42); g.fill();
+  g.fillStyle = C.canvas; g.fillText(label, 110, y + 60);
+  g.restore();
+}
+
+function renderAt(t) {
+  const i = Math.max(0, scenes.findIndex((s) => t >= s.start && t < s.start + s.dur));
+  const scene = scenes[i] ?? scenes[scenes.length - 1];
+  const u = t - scene.start;
+  drawBackground(t);
+  drawPhone(t, scene, u, scenes[i - 1]);
+  // the text area sits above the phone; give it a calm backing so screens never show through
+  const y = drawText(scene, u);
+  drawCta(scene, u, y);
+  // fade from and to cream at the very ends
+  const edge = Math.min(clamp01(t / 0.5), clamp01((total - t) / 0.8));
+  if (edge < 1) { g.save(); g.globalAlpha = 1 - edge; g.fillStyle = C.canvas; g.fillRect(0, 0, W, H); g.restore(); }
+}
+
+async function record() {
+  await actx.resume();
+  const mimes = ["video/mp4;codecs=avc1.640028,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
+  const mime = mimes.find((m) => MediaRecorder.isTypeSupported(m));
+  const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 9_000_000, audioBitsPerSecond: 160_000 });
+  const chunks = [];
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  const stopped = new Promise((r) => (rec.onstop = r));
+  renderAt(0);
+  rec.start(1000);
+  const t0 = actx.currentTime + 0.3;
+  for (const s of scenes) {
+    const src = actx.createBufferSource();
+    src.buffer = buffers[s.id];
+    src.connect(dest);
+    src.start(t0 + s.start + LEAD);
+  }
+  await new Promise((done) => {
+    const frame = () => {
+      const t = actx.currentTime - t0;
+      renderAt(Math.max(0, t));
+      if (t >= total) return done();
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  rec.stop();
+  await stopped;
+  const blob = new Blob(chunks, { type: mime });
+  const ext = mime.startsWith("video/mp4") ? "mp4" : "webm";
+  await fetch(`/out/paint-man-intro.${ext}`, { method: "PUT", body: blob });
+  return { mime, size: blob.size, total, ext };
+}
+
+window.studio = { setup, renderAt, record, get total() { return total; } };
+window.__scenes = () => scenes; window.__buffers = () => buffers; window.__LEAD = LEAD;
+</script>
+
+<script type="module">
+// Frame-by-frame export: WebCodecs H.264 + AAC into a standard (non-fragmented, fast-start) MP4,
+// so every player knows the full duration and can seek. Deterministic: frames are rendered at
+// exact times, not in real time.
+import { Muxer, ArrayBufferTarget } from "https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.mjs";
+
+window.studio.exportMp4 = async ({ fps = 30, videoBitrate = 4_500_000, audioBitrate = 128_000, name = "paint-man-intro.mp4" } = {}) => {
+  const { total, renderAt } = window.studio;
+  const sr = 48000;
+  const vcfg = { codec: "avc1.640028", width: 1080, height: 1920, bitrate: videoBitrate, framerate: fps, avc: { format: "avc" } };
+  const acfg = { codec: "mp4a.40.2", sampleRate: sr, numberOfChannels: 2, bitrate: audioBitrate };
+  const vs = await VideoEncoder.isConfigSupported(vcfg), as = await AudioEncoder.isConfigSupported(acfg);
+  if (!vs.supported) throw new Error("H.264 encoding not supported");
+  if (!as.supported) throw new Error("AAC encoding not supported");
+  const muxer = new Muxer({ target: new ArrayBufferTarget(), fastStart: "in-memory", firstTimestampBehavior: "offset",
+    video: { codec: "avc", width: 1080, height: 1920, frameRate: fps }, audio: { codec: "aac", numberOfChannels: 2, sampleRate: sr } });
+  let err = null;
+  const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: (e) => (err = e) });
+  venc.configure(vcfg);
+  const aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: (e) => (err = e) });
+  aenc.configure(acfg);
+
+  // narration, mixed offline at the scene times
+  const frames = Math.ceil(total * sr);
+  const off = new OfflineAudioContext(2, frames, sr);
+  for (const s of window.__scenes()) {
+    const src = off.createBufferSource(); src.buffer = window.__buffers()[s.id]; src.connect(off.destination); src.start(s.start + window.__LEAD);
+  }
+  const mix = await off.startRendering();
+  const L = mix.getChannelData(0), R = mix.getChannelData(1), CH = 1024;
+  for (let i = 0; i < frames; i += CH) {
+    const n = Math.min(CH, frames - i), data = new Float32Array(n * 2);
+    data.set(L.subarray(i, i + n), 0); data.set(R.subarray(i, i + n), n);
+    const ad = new AudioData({ format: "f32-planar", sampleRate: sr, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((i / sr) * 1e6), data });
+    aenc.encode(ad); ad.close();
+  }
+
+  const cv = document.getElementById("c"), count = Math.ceil(total * fps);
+  for (let f = 0; f < count; f++) {
+    if (err) throw err;
+    renderAt(f / fps);
+    const vf = new VideoFrame(cv, { timestamp: Math.round((f * 1e6) / fps), duration: Math.round(1e6 / fps) });
+    venc.encode(vf, { keyFrame: f % (fps * 2) === 0 });
+    vf.close();
+    while (venc.encodeQueueSize > 8) await new Promise((r) => setTimeout(r, 2));
+  }
+  await venc.flush(); await aenc.flush();
+  if (err) throw err;
+  muxer.finalize();
+  const buf = muxer.target.buffer;
+  await fetch("/out/" + name, { method: "PUT", body: buf });
+  return { name, bytes: buf.byteLength, frames: count, seconds: total };
+};
+</script>
+</body>
+</html>

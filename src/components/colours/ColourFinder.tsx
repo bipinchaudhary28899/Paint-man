@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { memo, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
+import { shadeDisplayName } from "@/config/palettes";
 import { useUrlQuery } from "../useUrlQuery";
 import { PreviewSheet } from "./PreviewSheet";
 import { WallPreview } from "./WallPreview";
@@ -56,8 +57,9 @@ type View = {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+// PaintDB keeps a brand's suffix on some names ("Malibu Green-n"); visitors see the clean name.
 const brandView = (s: BrandShadeItem): View => ({
-  name: s.name,
+  name: shadeDisplayName(s.name),
   code: `${s.brandName} ${s.code}`,
   hex: s.hex,
   lrv: s.lrv,
@@ -111,7 +113,7 @@ const BrandTile = memo(function BrandTile({ shade: s, selected, showBrand, onSel
     >
       <span className="block h-14 border-b border-line sm:h-24" style={{ background: s.hex }} />
       <span className="block p-1.5 sm:p-3">
-        <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{s.name}</span>
+        <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{shadeDisplayName(s.name)}</span>
         <span className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
           <span className="truncate">{s.code}</span>
           <span className="hidden truncate sm:inline">{showBrand ? s.brandName : ""}</span>

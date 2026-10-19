@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { images } from "@/config/images";
-import { palettes } from "@/config/palettes";
+import { palettes, shadeDisplayName } from "@/config/palettes";
 import { PAINTDB } from "@/lib/colours/catalogue";
 import { colourFamilies, type ColourFamily } from "@/lib/colours/families";
 import { fitWithin, validateImageFile } from "@/lib/visualizer/files";
@@ -297,7 +297,7 @@ export const PICKER_PER_PAGE = 48;
 const FIRST_BRAND: BrandOption = { slug: "asian-paints", name: "Asian Paints", count: 0 };
 
 /** A brand shade as the visualizer holds it: named by brand and code, booked by its id. */
-export const brandShadePick = (s: BrandPick): Shade => ({ name: s.name, hex: s.hex, code: `${s.brandName} ${s.code}`, bookQuery: `shade=${encodeURIComponent(s.id)}` });
+export const brandShadePick = (s: BrandPick): Shade => ({ name: shadeDisplayName(s.name), hex: s.hex, code: `${s.brandName} ${s.code}`, bookQuery: `shade=${encodeURIComponent(s.id)}` });
 
 /** The brand slug of a brand shade ("shade=berger%3A2P1857" → "berger"); undefined for a named colour. */
 export function shadeBrand(shade?: Shade): string | undefined {

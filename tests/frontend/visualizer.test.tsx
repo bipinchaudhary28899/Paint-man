@@ -261,6 +261,8 @@ describe("Visualizer", () => {
     expect(STARTER_SHADES[0]).toEqual(DEFAULT_SHADE);
     expect(await within(screen.getByRole("list", { name: "Shades" })).findByRole("button", { name: "Pepper Leaf, Asian Paints 8386" })).toHaveAttribute("aria-pressed", "true");
     expect(brandShadePick(sampleShades[1])).toEqual({ name: "Pure Red", hex: "#c73d3c", code: "Asian Paints 8093", bookQuery: "shade=asian-paints%3A8093" });
+    // PaintDB's one-letter suffixes ("Malibu Green-n") never reach the label
+    expect(brandShadePick({ ...sampleShades[1], name: "Malibu Green-n" }).name).toBe("Malibu Green");
   });
 
   it("browses brand shades by brand, colour family and search, with Show more, then named colours, all through the API", async () => {

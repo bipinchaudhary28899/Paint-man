@@ -27,7 +27,7 @@ const serviceBySlug = Object.fromEntries(services.map((s) => [s.slug, s.leadServ
 export default function BookPage() {
   return (
     <div className="relative overflow-hidden">
-      <Blob className="absolute -left-40 top-20 h-[28rem] w-[28rem] opacity-50" color="var(--pm-peach-wash)" />
+      <Blob className="absolute -left-40 top-20 h-[28rem] w-[28rem] opacity-50" color="var(--pm-sand)" />
       <div className="container-page relative py-10 md:py-14">
         <Breadcrumbs items={[{ name: "Book an inspection", path: "/book" }]} />
         <div className="mt-6 grid gap-12 lg:grid-cols-[1.4fr_1fr]">
