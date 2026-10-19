@@ -3,7 +3,7 @@ import { images, type SiteImage } from "./images";
 // Photographic wall preview for the colour finder: one generic, ordinary room (a Pexels
 // photo, free licence, see images.ts) with an exact wall mask. The mask is a PNG in
 // `public/scenes/` whose alpha is 255 on wall and 0 elsewhere, produced once by running the
-// visualizer's own SegFormer-B1 wall detector on the photo (speck filter, pocket fill, then a
+// SegFormer-B1 wall detector on the photo (speck filter, pocket fill, then a
 // 1.5 px blur for a soft edge). A tint layer in the shade's colour is masked by it and
 // blended onto the photo, so shadows, texture, sofa and TV stay real. `width`/`height` are
 // the photo and mask's pixel size: the frame keeps that aspect ratio so the mask never drifts.

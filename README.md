@@ -10,7 +10,6 @@ A Next.js website for a managed painting service in Agra. It collects inspection
 | `/book` | Inspection booking form (`?service=interior-painting` pre-selects a service; `?palette=` and `?shade=asian-paints:8386` fill in the message) |
 | `/colours` | Colour finder over 50,000+ brand shades (`?brand=`, `?q=`, `?family=`, `?sort=`); old `/colours/PM-xxx` links redirect here |
 | `/palettes` | Ready three-shade palettes of Asian Paints shades, with the closest Berger and Nerolac shades |
-| `/visualizer` | Wall colour visualizer (`?shade=` starts on a brand shade) |
 | `/services`, `/services/[slug]` | Service overview plus interior, exterior and rental property pages |
 | `/about`, `/faq`, `/contact` | Supporting SEO pages (the contact page has its own form) |
 | `/privacy-policy`, `/terms` | Starter legal text (get it reviewed before launch) |
@@ -126,37 +125,13 @@ Vitest runs **161 tests**: backend tests in Node, frontend tests in jsdom (a sim
 - Leads always go to Google Sheets on Vercel, because its file system is read-only. The site refuses to fall back to a local file there, and `/admin` tells you which Sheets setting is missing or wrong.
 - Visitor IPs come from Vercel's own `x-forwarded-for` header, which visitors can't fake.
 
-## Wall colour visualizer (`/visualizer`)
+## Colour previews and shade data
 
-Customers drop in a room photo, pick a shade, and only the wall surfaces change colour.
-
-**Model.** Wall detection is semantic segmentation with **SegFormer-B0 fine-tuned on ADE20K**
-(`Xenova/segformer-b0-finetuned-ade-512-512`, 4.4 MB quantised ONNX), run **in the browser** by
-`@huggingface/transformers` + ONNX Runtime WebAssembly inside a Web Worker
-(`src/components/visualizer/segment.worker.ts`). ADE20K has an explicit `wall` class, so this is a
-wall-specific detector rather than a generic object segmenter; it does not need SAM, a server, an
-API key, or any upload. The model and runtime are fetched once (Hugging Face / jsDelivr; the CSP in
-`next.config.ts` allows exactly those hosts) and cached by the browser.
-
-**Pipeline.** Photo → downscaled to ≤1400 px (`lib/visualizer/files.ts`) → worker returns the `wall`
-mask at photo size, drops specks, and labels each connected wall surface → page keeps the mask and
-labels (`components/visualizer/Visualizer.tsx`). Selection = the surfaces the user has kept (tap a
-surface to toggle it), feathered 1–2 px (`lib/visualizer/mask.ts`; the brush helpers there are kept
-for the eval tooling but no longer exposed in the UI). Recolouring
-(`lib/visualizer/recolour.ts`) works in OKLab: each wall pixel keeps its lightness *relative to the
-wall's mean*, takes the shade's hue/chroma, and is blended by the soft mask, so shadows, light
-falloff and plaster texture survive and non-wall pixels are byte-for-byte unchanged. Changing shade
-is a local repaint (no inference); hold-to-compare shows the original; Download saves a JPEG.
-
-**Fallbacks.** If the model cannot load (offline, old browser) or finds no confident wall (< 3 % of
-the image), the page says so and suggests a better photo; nothing is painted.
-Nothing is ever recoloured silently across the whole image.
-
-**Shade sources.** **50,762 brand shades** from 25 paint brands (Asian Paints, Berger, Nerolac, Dulux,
-Sherwin-Williams…) via `/api/v1/colours/paint` and `/api/v1/colours/brands` (the picker's "Brand shades"
-tab: pick a brand, a colour family or search, 48 at a time); and ~32,000 public named colours from
-color.pizza via `/api/v1/colours/web` (proxied and cached server-side for a day; the browser never calls
-the third party). The visualizer opens on Asian Paints Pepper Leaf (8386).
+Every shade is previewed on one room photo (`src/config/scenes.ts`): a wall mask PNG marks the walls, and a
+single `multiply` tint in the shade colour is laid over them, the same way the home-page reveal paints the
+room, so light, shadow and texture stay real. The phone finder opens a full-screen preview with a swatch
+strip. There is no photo upload: the former `/visualizer` was retired and now redirects (308) to `/colours`,
+and its named-colour API `/api/v1/colours/web` answers `410 Gone`.
 
 ### Brand shades (PaintDB, CC BY 4.0)
 
@@ -189,13 +164,3 @@ retired: the brands' shade cards already cover them, and customers ask for shade
   `error.details.replacement` names its nearest Asian Paints shade. `/api/v1/palettes` keeps its fields
   (`colours.featureWall.code` etc.) and adds `id`, `brand` and `brandName` to each shade.
 
-**Limitations** (measured on 14 hard room photos, see `docs/visualizer-eval/REPORT.md`). SegFormer-B0
-is small: on the eval set 8/14 photos needed no correction, 3 needed a brush stroke, and 3 failed —
-glossy flat white panels (wardrobe doors, a roller blind) are painted as wall, and a near-black wall
-beside a near-black wardrobe breaks into patches. Those are label errors, so the speck filter, pocket
-fill, feather and fallback knobs cannot fix them; the surface toggle exists for exactly these cases,
-and `?model=b1` (14 MB) fixes the dark-room case. Edges are coarse (the model works at
-512 px). Detection takes ~1.7–3.8 s per 1080 px photo on a laptop (median 2.5 s), longer on low-end
-phones; the first visit also downloads ~9 MB (runtime + model). Textured or patterned walls keep
-their texture but lose their original hue entirely; peeling paint is painted as the surrounding wall
-only where the model agrees.

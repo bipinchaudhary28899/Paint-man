@@ -5,7 +5,7 @@ import { useEffect, useRef, type KeyboardEvent, type UIEvent } from "react";
 import { WallPreview } from "./WallPreview";
 
 /** The shade the sheet shows, as the finder describes it. */
-export type SheetView = { name: string; code: string; hex: string; lrv: number; meta: string; bookHref: string; tryHref: string };
+export type SheetView = { name: string; code: string; hex: string; lrv: number; meta: string; bookHref: string };
 /** A swatch in the strip. */
 export type SheetShade = { id: string; name: string; code: string; hex: string };
 
@@ -135,8 +135,7 @@ export function PreviewSheet({
       </ul>
 
       <div className="mt-3 flex shrink-0 items-center gap-3">
-        <Link href={view.bookHref} className="btn-primary min-h-11 flex-1 justify-center whitespace-nowrap text-sm">Book inspection</Link>
-        <Link href={view.tryHref} className="btn-secondary min-h-11 justify-center whitespace-nowrap text-sm">Try on my photo</Link>
+        <Link href={view.bookHref} className="btn-primary min-h-11 flex-1 justify-center whitespace-nowrap text-sm">Book an inspection with this shade</Link>
       </div>
     </div>
   );

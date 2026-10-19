@@ -35,3 +35,17 @@ export function retiredShadeApi(code?: string) {
     publicCache,
   );
 }
+
+/**
+ * /api/v1/colours/web served the photo visualizer's named colours (color.pizza). The visualizer
+ * was retired (shades are previewed on the finder's room photo), so the endpoint answers 410.
+ */
+export function retiredWebColoursApi() {
+  return apiError(
+    410,
+    "gone",
+    `The named-colour search served the photo visualizer, which was retired. Search brand paint shades (Asian Paints, Berger, Nerolac and more) at ${shadeApiSuccessors.search}; each is previewed on a room at ${shadeApiSuccessors.html}.`,
+    shadeApiSuccessors,
+    publicCache,
+  );
+}

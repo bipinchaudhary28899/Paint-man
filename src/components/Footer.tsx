@@ -7,7 +7,6 @@ const explore = [
   { href: "/#how", label: "How it works" },
   { href: "/colours", label: "Colour finder" },
   { href: "/palettes", label: "Colour palettes" },
-  { href: "/visualizer", label: "Wall colour visualizer" },
   { href: "/areas", label: "Areas we serve" },
   { href: "/about", label: "About us" },
   { href: "/faq", label: "FAQ" },

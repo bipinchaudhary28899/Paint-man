@@ -7,10 +7,9 @@ import { useBrandShade, type BrandShadeSummary } from "./useBrandShade";
 import { useUrlQuery } from "./useUrlQuery";
 
 // The booking form with the choice the visitor came from filled in: ?service= (a service page),
-// ?palette= (the palettes page) or ?shade= (a brand shade from the colour finder or the
-// visualizer). It reads the query in the browser so /book stays a static page: the server HTML is
-// the plain form, which hydrates in place, and only a link that carries a choice remounts it with
-// that choice filled in.
+// ?palette= (the palettes page) or ?shade= (a brand shade from the colour finder). It reads the query in the browser so /book stays a static page: the server HTML is
+// the plain form, which hydrates in place, and only a link that carries a choice remounts it
+// with that choice filled in.
 
 type ServiceType = (typeof serviceTypes)[number];
 /** Service page slug -> the form's service choice. Built on the server from src/config/site.ts and

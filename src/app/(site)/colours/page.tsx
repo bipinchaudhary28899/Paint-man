@@ -58,8 +58,7 @@ export default function ColoursPage() {
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
                 {shadeCount().toLocaleString("en-IN")} shades from Asian Paints, Berger, Nerolac and {brands.length - 3} more brands, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
-                Pick one and we bring the real shade card to your home in {site.city}. Want to see a shade on your own room?{" "}
-                <Link href="/visualizer" className="font-bold text-ink underline">Try the visualizer</Link>. Want combinations instead?{" "}
+                Pick one and we bring the real shade card to your home in {site.city}. Want combinations instead?{" "}
                 <Link href="/palettes" className="font-bold text-ink underline">See ready palettes</Link>.
               </p>
             </div>

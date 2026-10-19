@@ -9,17 +9,12 @@ const isPreview = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== 
 // every page to render dynamically, which is slower and worse for SEO).
 const csp = [
   "default-src 'self'",
-  // The wall visualizer runs its segmentation model in-browser: ONNX Runtime WebAssembly inside
-  // a Web Worker ('wasm-unsafe-eval'; its loader module comes from jsDelivr) and a 4 MB model
-  // from Hugging Face, both cached by the browser. Photos never leave the device.
-  // blob: because ONNX Runtime imports its loader module from a Blob URL inside the worker.
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net${isDev ? " 'unsafe-eval'" : ""}`,
-  "worker-src 'self' blob:",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  "worker-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://images.pexels.com",
+  "img-src 'self' data: https://images.pexels.com",
   "font-src 'self'",
-  // Hugging Face serves model files from rotating CDN hosts under hf.co / huggingface.co.
-  `connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
   "frame-ancestors 'none'",
   "form-action 'self'",
   "base-uri 'self'",
@@ -51,7 +46,7 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     // No 3840 variant: no image box is wider than 1200 CSS px, so 2048 covers a 2x retina
     // screen, and every extra width is another slow first-request resize of a multi-MB
-    // original. 1080 must stay: the visualizer requests /_next/image at w=1080.
+    // original.
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     // Keep optimised variants for 30 days (default 4 hours) so photos are not re-encoded
     // after every short upstream max-age; the photo URLs change whenever the photo does.
@@ -60,6 +55,11 @@ const nextConfig: NextConfig = {
   // experimental.inlineCss was measured and left off: the stylesheet (~12 KB brotli) is fetched
   // once on the page's own connection and cached for every later page, while inlining copied it
   // three times into every HTML document and every RSC prefetch (/faq: 8.8 KB -> 22 KB brotli).
+  // The photo visualizer was retired: old links (including ?shade=…) land on the colour finder,
+  // where every shade is previewed on the room photo.
+  async redirects() {
+    return [{ source: "/visualizer", destination: "/colours", permanent: true }];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

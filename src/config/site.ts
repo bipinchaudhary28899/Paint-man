@@ -221,7 +221,7 @@ export const services: Service[] = [
     ],
     shades: {
       intro:
-        "Most rooms work best with one colour on a feature wall and a matching white on the other walls and ceiling. Start from a ready palette, look any shade up by its Asian Paints code in the colour finder, or try it on a photo of your own room in the visualizer.",
+        "Most rooms work best with one colour on a feature wall and a matching white on the other walls and ceiling. Start from a ready palette, or look any shade up by its Asian Paints code in the colour finder and see it on a room before the inspector brings the shade cards.",
       palettes: ["calm-bedroom", "sunny-living-room", "earthy-living-room", "kids-room-pista"],
     },
     faqs: [

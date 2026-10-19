@@ -49,8 +49,8 @@ export default function FaqPage() {
           <h2 className="mt-12 text-2xl font-normal">Choosing colours</h2>
           <p className="mt-4 leading-relaxed text-muted">
             Browse <Link href="/palettes" className={linkClass}>ready colour combinations</Link> for bedrooms, living rooms and exteriors, search{" "}
-            <Link href="/colours" className={linkClass}>wall colour shades by code</Link>, or see a shade on a photo of your own room in the{" "}
-            <Link href="/visualizer" className={linkClass}>wall colour visualizer</Link>.
+            <Link href="/colours" className={linkClass}>wall colour shades by code</Link> and see each one on a room; the inspector then
+            brings the real shade cards to your home.
           </p>
         </section>
       </div>

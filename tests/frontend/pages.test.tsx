@@ -10,7 +10,6 @@ import ContactPage, { metadata as contactMeta } from "@/app/(site)/contact/page"
 import PalettesPage, { metadata as palettesMeta } from "@/app/(site)/palettes/page";
 import PrivacyPage, { metadata as privacyMeta } from "@/app/(site)/privacy-policy/page";
 import TermsPage, { metadata as termsMeta } from "@/app/(site)/terms/page";
-import VisualizerPage, { metadata as visualizerMeta } from "@/app/(site)/visualizer/page";
 import { areaSlug, services, site } from "@/config/site";
 import { fakeContact, withFilledSite } from "../support/filled-site";
 
@@ -32,7 +31,6 @@ const pages: { path: string; Page: () => React.ReactNode; metadata: Metadata; h1
   { path: "/palettes", Page: PalettesPage, metadata: palettesMeta, h1: /wall colour combinations/i },
   { path: "/privacy-policy", Page: PrivacyPage, metadata: privacyMeta, h1: /privacy policy/i },
   { path: "/terms", Page: TermsPage, metadata: termsMeta, h1: /terms of service/i },
-  { path: "/visualizer", Page: VisualizerPage, metadata: visualizerMeta, h1: /wall colour visualizer/i },
 ];
 
 describe.each(pages)("$path", ({ path, Page, metadata, h1 }) => {
@@ -109,7 +107,7 @@ describe("/areas", () => {
   it("links the services, the colour tools and booking, and has substantial copy", () => {
     const { container } = render(<AreasPage />);
     for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}`);
-    for (const href of ["/colours", "/palettes", "/visualizer"]) expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
+    for (const href of ["/colours", "/palettes"]) expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: /weather/ })).toBeInTheDocument();
     // /colours can search and sort shades, not filter by washability: the link promises only light shades
     expect(screen.getByRole("link", { name: /Find light shades/ })).toHaveAttribute("href", "/colours");
@@ -201,16 +199,10 @@ describe("/contact once site.ts has contact details", () => {
   });
 });
 
-describe("static /book and /visualizer", () => {
+describe("static /book", () => {
   it("/book always renders the booking form, whatever the query", () => {
     render(<BookPage />);
     expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
   });
 
-  it("/visualizer renders the full visualizer", () => {
-    render(<VisualizerPage />);
-    expect(screen.getByLabelText("Choose a room photo")).toBeInTheDocument();
-    // the default shade is a brand shade, booked by its id
-    expect(screen.getByRole("link", { name: "Book an inspection with Pepper Leaf" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8386");
-  });
 });

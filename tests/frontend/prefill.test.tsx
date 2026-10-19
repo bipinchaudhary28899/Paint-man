@@ -6,7 +6,6 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BookPrefill, bookPrefill } from "@/components/BookPrefill";
 import { brandShadeUrl, parseShadeId, pickShade, useBrandShade, type BrandShadeSummary } from "@/components/useBrandShade";
-import { VisualizerFromParams, visualizerModel } from "@/components/visualizer/VisualizerFromParams";
 import { services } from "@/config/site";
 import { apiShade, sampleShades, serveColourApis } from "../support/catalogue-api";
 
@@ -214,72 +213,3 @@ describe("BookPrefill on the static /book page", () => {
   });
 });
 
-describe("VisualizerFromParams", () => {
-  const meccaShade = apiShade("asian-paints", "Asian Paints", "7982", "Mecca Gold", "#e7975b", "orange");
-  const lookups = (spy: { mock: { calls: unknown[][] } }) => spy.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("perPage=5"));
-
-  it("ignores the retired ?colour= links and starts on the default brand shade", async () => {
-    const { spy } = serveColourApis();
-    open("/visualizer?colour=sage-mist");
-    render(<VisualizerFromParams />);
-    expect(screen.getByRole("link", { name: "Book an inspection with Pepper Leaf" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8386");
-    await screen.findByRole("button", { name: "Pure Red, Asian Paints 8093" }); // the picker has loaded
-    expect(lookups(spy)).toEqual([]);
-  });
-
-  it("switches to a brand shade from ?shade= once the API answers, and books with the shade id", async () => {
-    serveColourApis({ paint: [...sampleShades, meccaShade] });
-    open("/visualizer?shade=asian-paints:7982");
-    render(<VisualizerFromParams />);
-    const link = await screen.findByRole("link", { name: "Book an inspection with Mecca Gold" });
-    expect(link).toHaveAttribute("href", "/book?shade=asian-paints%3A7982");
-    expect(screen.getByText("#E7975B · Asian Paints 7982")).toBeInTheDocument();
-  });
-
-  it("keeps a shade the visitor picked while the brand shade was still being looked up", async () => {
-    const { spy, release } = serveColourApis({ paint: [...sampleShades, meccaShade], hold: "perPage=5" });
-    open("/visualizer?shade=asian-paints:7982");
-    const user = userEvent.setup();
-    render(<VisualizerFromParams />);
-    await waitFor(() => expect(lookups(spy)).toHaveLength(1));
-    await user.click(await screen.findByRole("button", { name: "Pure Red, Asian Paints 8093" }));
-    // the lookup lands after the pick
-    await act(async () => {
-      release();
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    expect(screen.getByRole("link", { name: "Book an inspection with Pure Red" })).toHaveAttribute("href", "/book?shade=asian-paints%3A8093");
-    expect(screen.queryByText(/Mecca Gold/)).toBeNull();
-  });
-
-  it("hydrates the prerendered default visualizer in place, then takes the shade from the link without remounting", async () => {
-    serveColourApis();
-    open("/visualizer?shade=asian-paints:8093");
-    const container = document.createElement("div");
-    container.innerHTML = renderToString(<VisualizerFromParams />);
-    document.body.append(container);
-    // the static HTML is the default visualizer, whatever the link
-    expect(container.querySelector('a[href^="/book"]')).toHaveTextContent("Book an inspection with Pepper Leaf");
-    const dropzone = container.querySelector('input[type="file"]');
-    const recoverable = vi.fn();
-    const consoleError = vi.spyOn(console, "error");
-    const root = await act(async () => hydrateRoot(container, <VisualizerFromParams />, { onRecoverableError: recoverable }));
-    // let the shade lookup and the picker's first requests land
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 20));
-    });
-    expect(recoverable).not.toHaveBeenCalled();
-    expect(consoleError).not.toHaveBeenCalled();
-    expect(container.querySelector('input[type="file"]')).toBe(dropzone);
-    expect(container.querySelector('a[href="/book?shade=asian-paints%3A8093"]')).toHaveTextContent("Book an inspection with Pure Red");
-    act(() => root.unmount());
-    container.remove();
-  });
-
-  it("only allows the evaluation models it knows", () => {
-    expect(visualizerModel("b1")).toBe("b1");
-    expect(visualizerModel("b2")).toBe("b2");
-    expect(visualizerModel("b9")).toBe("b0");
-    expect(visualizerModel(null)).toBe("b0");
-  });
-});

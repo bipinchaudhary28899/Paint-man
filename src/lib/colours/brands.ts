@@ -1,6 +1,6 @@
 import "server-only";
 import raw from "@/data/paintdb.json";
-import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
+import { hexToRgb, rgbToOklab } from "@/lib/colours/oklab";
 
 // Brand paint shades: 50,000+ real shades from 25 paint brands (Asian Paints, Berger, Nerolac,
 // Dulux, Sherwin-Williams…), from PaintDB's open dataset (CC BY 4.0), vendored as

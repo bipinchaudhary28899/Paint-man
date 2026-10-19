@@ -121,16 +121,14 @@ describe("ColourFinder: the brands", () => {
     // the preview shows the first shade, with brand booking links
     expect(screen.getByRole("heading", { name: /Shade 0/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Book an inspection with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7000");
-    expect(screen.getByRole("link", { name: "Try on your wall" })).toHaveAttribute("href", "/visualizer?shade=asian-paints%3A7000");
+    // the photo visualizer is retired: the room preview is the only way to see a shade
+    expect(screen.queryByRole("link", { name: /Try|visualizer/i })).toBeNull();
     // the room is shown twice: the compact pinned preview for phones and the side panel for wide screens
     expect(screen.getAllByAltText("A cosy living room, repainted in Shade 0")).toHaveLength(2);
     const phone = screen.getByRole("group", { name: "Selected shade preview" });
     const book = within(phone).getByRole("link", { name: "Book" });
-    const tryIt = within(phone).getByRole("link", { name: "Try it" });
     expect(book).toHaveAttribute("href", "/book?shade=asian-paints%3A7000");
-    expect(tryIt).toHaveAttribute("href", "/visualizer?shade=asian-paints%3A7000");
     expect(book.className).toContain("!min-h-11");
-    expect(tryIt.className).toContain("min-h-11");
 
     // tiles are toggle buttons (brand shades have no pages); a tap moves the pressed state
     const tiles = brandTiles();
@@ -372,6 +370,17 @@ describe("ColourFinder: links", () => {
     page.done();
   });
 
+  it("opens the shade an old visualizer link carried (/visualizer?shade= now redirects here)", async () => {
+    const fetchSpy = servePages();
+    open("/colours?shade=asian-paints%3A8386");
+    const page = await prerenderAndHydrate();
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    const url = new URL(String(fetchSpy.mock.calls[0][0]), "http://x");
+    expect(url.searchParams.get("brand")).toBe("asian-paints");
+    expect(url.searchParams.get("q")).toBe("8386");
+    page.done();
+  });
+
   it("hydrates in place without remounting when the URL has no filters", async () => {
     open("/colours?utm_source=newsletter");
     const page = await prerenderAndHydrate();
@@ -401,7 +410,7 @@ describe("/colours page", () => {
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1).toHaveTextContent("Find a wall colour in Agra by shade code, brand or name");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("link", { name: "Try the visualizer" })).toHaveClass("text-ink");
+    expect(screen.queryByRole("link", { name: /visualizer/i })).toBeNull();
     expect(screen.getByRole("link", { name: "See ready palettes" })).toHaveClass("text-ink");
     expect(within(brandGrid()).getAllByRole("link")).toHaveLength(25);
     expect(document.body.textContent).not.toMatch(/PM codes|Paint Man shades/);
@@ -479,8 +488,7 @@ describe("ColourFinder: the large preview on phones", () => {
     expect(swatches[0]).toHaveAttribute("aria-pressed", "true");
     await user.click(swatches[5]);
     expect(within(sheet()).getByRole("heading", { name: "Shade 5" })).toBeInTheDocument();
-    expect(within(sheet()).getByRole("link", { name: "Book inspection" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7005");
-    expect(within(sheet()).getByRole("link", { name: "Try on my photo" })).toHaveAttribute("href", "/visualizer?shade=asian-paints%3A7005");
+    expect(within(sheet()).getByRole("link", { name: "Book an inspection with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7005");
 
     // × goes Back, which closes the sheet but keeps the brand and the pick
     await user.click(within(sheet()).getByRole("button", { name: "Close the large preview" }));
@@ -529,10 +537,10 @@ describe("PreviewSheet", () => {
   it("keeps Tab inside the dialog and closes without history when it was not pushed", async () => {
     const { PreviewSheet } = await import("@/components/colours/PreviewSheet");
     const onClose = vi.fn();
-    const view = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2", lrv: 52, meta: "#BBC8B2 · LRV 52", bookHref: "/book", tryHref: "/visualizer" };
+    const view = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2", lrv: 52, meta: "#BBC8B2 · LRV 52", bookHref: "/book" };
     render(<PreviewSheet view={view} shades={[{ id: "a:1", name: "One", code: "1", hex: "#ffffff" }]} selectedId="a:1" onSelect={vi.fn()} onClose={onClose} />);
     const close = screen.getByRole("button", { name: "Close the large preview" });
-    const last = screen.getByRole("link", { name: "Try on my photo" });
+    const last = screen.getByRole("link", { name: "Book an inspection with this shade" });
     expect(close).toHaveFocus();
     fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
     expect(last).toHaveFocus();

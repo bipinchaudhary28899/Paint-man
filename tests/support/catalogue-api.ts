@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
-// A stand-in for the public colour APIs the browser calls (/api/v1/colours/brands, /paint and
-// /web), for component tests. It answers like the real routes: the envelope's `data` and `meta`,
+// A stand-in for the public colour APIs the browser calls (/api/v1/colours/brands and /paint),
+// for component tests. It answers like the real routes: the envelope's `data` and `meta`,
 // brand shades filtered by brand, family and a code or name search, and paged.
 
 export type ApiShade = { id: string; brand: string; brandName: string; code: string; name: string; hex: string; lrv: number; family: string; undertone: string; interior: boolean; exterior: boolean };
@@ -28,16 +28,15 @@ const RealURL = globalThis.URL;
 
 /**
  * Mocks fetch with the colour APIs. `paint` overrides the brand shades (default sampleShades);
- * `web` the named colours; `hold` keeps any paint request whose URL contains it pending until the
+ * `hold` keeps any paint request whose URL contains it pending until the
  * returned `release()` is called (e.g. a ?shade= lookup that lands after a pick).
  */
-export function serveColourApis({ paint = sampleShades, web = [] as { name: string; hex: string; family: string; lrv: number }[], hold }: { paint?: ApiShade[]; web?: { name: string; hex: string; family: string; lrv: number }[]; hold?: string } = {}) {
+export function serveColourApis({ paint = sampleShades, hold }: { paint?: ApiShade[]; hold?: string } = {}) {
   const held: (() => void)[] = [];
   const spy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
     const url = new RealURL(String(input), "http://localhost");
     const sp = url.searchParams;
     if (url.pathname === "/api/v1/colours/brands") return json({ data: sampleBrands, meta: { families: ["white", "red", "blue", "green"] } });
-    if (url.pathname === "/api/v1/colours/web") return json({ data: web, meta: { total: web.length } });
     if (url.pathname !== "/api/v1/colours/paint") return json({ kind: "error" }, 404);
     if (hold && String(input).includes(hold)) await new Promise<void>((resolve) => held.push(resolve));
     const q = (sp.get("q") ?? "").toLowerCase().replace(/\.$/, "");

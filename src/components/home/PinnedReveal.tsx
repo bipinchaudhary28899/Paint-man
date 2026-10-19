@@ -27,7 +27,7 @@ export const wallShade = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: 
 const putty = "#cfc9bf";
 
 /**
- * Exact wall mask of the photo (alpha = wall), produced once by the visualizer's SegFormer-B1
+ * Exact wall mask of the photo (alpha = wall), produced once with a SegFormer-B1
  * wall detector (see src/config/scenes.ts). `.tint` sizes it with cover + centre, the same
  * crop `object-cover` gives the photo, so the 7:8 frame and the mask stay aligned.
  */

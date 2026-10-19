@@ -115,3 +115,19 @@ describe("GET /api/v1/palettes", () => {
     expect(err.error).toMatchObject({ code: "invalid_room", details: [...rooms] });
   });
 });
+
+describe("GET /api/v1/colours/web (retired with the photo visualizer)", () => {
+  it("answers 410 gone with the brand-shade successors and a cacheable body", async () => {
+    const { GET } = await import("@/app/api/v1/colours/web/route");
+    const res = GET();
+    expect(res.status).toBe(410);
+    expect(res.headers.get("cache-control")).toBe(publicCache["Cache-Control"]);
+    const body = await res.json();
+    expect(body).toMatchObject({
+      apiVersion: "v1",
+      kind: "error",
+      error: { code: "gone", details: { search: "/api/v1/colours/paint", brands: "/api/v1/colours/brands", html: "/colours" } },
+    });
+    expect(body.error.message).toMatch(/visualizer, which was retired/);
+  });
+});

@@ -120,11 +120,6 @@ export function ServiceShades({ service }: { service: Service }) {
             All colour combinations
           </Link>
         </li>
-        <li>
-          <Link href="/visualizer" className={`inline-flex min-h-11 items-center ${linkClass}`}>
-            Try a shade on a photo of your room
-          </Link>
-        </li>
       </ul>
     </section>
   );

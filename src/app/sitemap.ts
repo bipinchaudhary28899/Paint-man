@@ -13,7 +13,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/areas",
     "/colours",
     "/palettes",
-    "/visualizer",
     "/book",
     "/about",
     "/faq",

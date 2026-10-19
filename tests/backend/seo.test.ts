@@ -286,12 +286,14 @@ describe("sitemap", () => {
   it("lists every public page and no private ones", () => {
     const urls = paths();
     expect(urls).toEqual(
-      expect.arrayContaining(["/", "/book", "/services", "/areas", "/colours", "/palettes", "/visualizer", "/about", "/faq", "/contact", "/privacy-policy", "/terms"]),
+      expect.arrayContaining(["/", "/book", "/services", "/areas", "/colours", "/palettes", "/about", "/faq", "/contact", "/privacy-policy", "/terms"]),
     );
     for (const s of services) expect(urls).toContain(`/services/${s.slug}`);
     expect(urls.some((u) => u.startsWith("/admin") || u.startsWith("/api") || u === "/thank-you")).toBe(false);
     expect(new Set(urls).size).toBe(urls.length);
     for (const e of sitemap()) expect(e.url.startsWith(site.url)).toBe(true);
+    // the photo visualizer was retired; /visualizer now redirects to the colour finder
+    expect(sitemap().map((e) => new URL(e.url).pathname)).not.toContain("/visualizer");
   });
 
   it("lists the colour finder and no /colours/<code> pages (the old shade URLs redirect)", () => {

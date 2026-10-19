@@ -52,7 +52,6 @@ type View = {
   meta: string;
   note: string;
   bookHref: string;
-  tryHref: string;
 };
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -67,7 +66,6 @@ const brandView = (s: BrandShadeItem): View => ({
   meta: `${s.hex.toUpperCase()} · LRV ${s.lrv} · ${cap(s.family)} · ${s.undertone}`,
   note: s.interior && s.exterior ? "Made for interior and exterior walls." : s.exterior ? "An exterior shade." : "An interior shade.",
   bookHref: `/book?shade=${encodeURIComponent(s.id)}`,
-  tryHref: `/visualizer?shade=${encodeURIComponent(s.id)}`,
 });
 
 /** A representative swatch per PaintDB colour family, for the primary-colour chips. */
@@ -327,7 +325,6 @@ export function ColourFinder({
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <Link href={view.bookHref} className="btn-primary !min-h-11 !px-3.5 !py-1.5 text-xs">Book</Link>
-                <Link href={view.tryHref} className="inline-flex min-h-11 items-center text-xs font-semibold underline underline-offset-2">Try it</Link>
               </div>
             </div>
           </div>
@@ -439,7 +436,7 @@ export function ColourFinder({
           </>
         )}
         <p className="mt-6 hidden text-sm text-muted md:block">
-          Want to see a shade on your own room? Try it in the <Link href="/visualizer" className="font-semibold text-cobalt-text underline">visualizer</Link>, or start from a <Link href="/palettes" className="font-semibold text-cobalt-text underline">ready palette</Link>.
+          Want combinations instead? Start from a <Link href="/palettes" className="font-semibold text-cobalt-text underline">ready palette</Link>.
         </p>
         {attribution && (
           <p className="mt-5 text-xs leading-relaxed text-muted">
@@ -489,7 +486,6 @@ export function ColourFinder({
           <p className="mt-4 text-base text-ink">{view.note}</p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href={view.bookHref} className="btn-primary">Book an inspection with this shade</Link>
-            <Link href={view.tryHref} className="btn-secondary">Try on your wall</Link>
           </div>
           <p className="mt-4 text-xs text-muted">
             Screen colours are a guide. Paint shifts with daylight, bulbs and sheen, so our inspector brings physical shade cards
@@ -524,9 +520,12 @@ const MemoColourFinder = memo(ColourFinder);
 export function ColourFinderFromUrl(props: Omit<Props, "initialQuery" | "initialBrand" | "initialFamily" | "initialSort">) {
   // Read once: later URL changes are the finder's own (it keeps the URL shareable as you filter).
   const params = useUrlQuery({ once: true });
+  // an old visualizer link (/visualizer?shade=asian-paints:8386 now redirects here) opens that shade
+  const [shadeBrand, shadeCode] = (params.get("shade") ?? "").split(/:(.*)/s);
+  const fromShade = !params.get("brand") && !params.get("q") && shadeBrand && shadeCode ? { brand: shadeBrand, q: shadeCode } : undefined;
   const initial = {
-    initialQuery: params.get("q") ?? undefined,
-    initialBrand: params.get("brand") ?? undefined,
+    initialQuery: fromShade?.q ?? params.get("q") ?? undefined,
+    initialBrand: fromShade?.brand ?? params.get("brand") ?? undefined,
     initialFamily: params.get("family") ?? undefined,
     initialSort: params.get("sort") ?? undefined,
   };

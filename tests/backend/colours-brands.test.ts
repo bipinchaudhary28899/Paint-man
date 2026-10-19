@@ -4,7 +4,7 @@ import raw from "@/data/paintdb.json";
 import { palettes } from "@/config/palettes";
 import { brandList, decodeEntities, getBrandShade, hasShadeCardCode, isBrand, isShadeFamily, isShadeSort, matchLabel, nearestBrandShades, paintdb, searchBrandShades, shadeCardKey, shadeCount, shadeFamilies, splitBrand } from "@/lib/colours/brands";
 import { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
-import { hexToRgb, rgbToOklab } from "@/lib/visualizer/recolour";
+import { hexToRgb, rgbToOklab } from "@/lib/colours/oklab";
 
 describe("brand shade data (PaintDB, vendored)", () => {
   it("has every shade from all 25 brands, with valid, unique entries", () => {

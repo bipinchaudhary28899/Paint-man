@@ -120,7 +120,8 @@ describe("ServiceShades", () => {
     }
     expect(links.some((h) => h?.startsWith("/colours/"))).toBe(false);
     expect(screen.getByRole("link", { name: "Browse every wall colour shade" })).toHaveAttribute("href", "/colours");
-    expect(links).toEqual(expect.arrayContaining(["/palettes", "/visualizer"]));
+    expect(links).toContain("/palettes");
+    expect(links).not.toContain("/visualizer"); // retired
   });
 
   it("credits PaintDB under the CC BY 4.0 licence wherever it shows brand shades", () => {

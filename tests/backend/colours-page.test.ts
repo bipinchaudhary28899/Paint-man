@@ -52,7 +52,7 @@ describe("/palettes", () => {
   const text = textOf(html);
   const links = hrefs(html);
 
-  it("names every shade by brand, code, name, hex and finish, with links to find it, try it and book the palette", () => {
+  it("names every shade by brand, code, name, hex and finish, with links to find it and book the palette", () => {
     for (const p of palettes) {
       expect(text).toContain(p.description);
       expect(links).toContain(`/book?palette=${p.slug}`);
@@ -61,7 +61,7 @@ describe("/palettes", () => {
         expect(text, s.id).toContain(`See ${s.brandName} ${s.code} in the finder`);
         expect(text, s.id).toContain(`${s.hex.toUpperCase()} · LRV ${getBrandShade(s.id)!.lrv} · ${s.finish}`);
         expect(links, s.id).toContain(`/colours?brand=${s.brand}&q=${s.code}`);
-        expect(links, s.id).toContain(`/visualizer?shade=${encodeURIComponent(s.id)}`);
+        expect(links.some((h) => h?.startsWith("/visualizer")), s.id).toBe(false);
       }
     }
   });

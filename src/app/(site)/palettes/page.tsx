@@ -18,9 +18,8 @@ const roles = ["Feature wall", "Other walls & ceiling", "Accent"] as const;
 /** The other brands our customers ask for by code, matched to each palette shade on screen. */
 const MATCH_BRANDS = ["berger", "nerolac"];
 
-/** The colour finder searching one shade, and the visualizer starting on it. */
+/** The colour finder searching one shade. */
 const finderHref = (s: Pick<PaletteShade, "brand" | "code">) => `/colours?${new URLSearchParams({ brand: s.brand, q: s.code })}`;
-const visualizerHref = (s: PaletteShade) => `/visualizer?shade=${encodeURIComponent(s.id)}`;
 
 /** A palette shade with its LRV from the catalogue and its closest Berger and Nerolac shades. */
 function resolve(s: PaletteShade) {
@@ -46,8 +45,8 @@ export default function PalettesPage() {
                 Ready-made colour combinations, three shades per room: the feature wall, the white around it and one accent. Each
                 shade is an Asian Paints shade-card code, shown with the closest Berger and Nerolac shades. They are set out the way
                 our inspector proposes colours on a site visit in {site.city}, and we bring all three shade cards to your home. Not
-                sure yet? <Link href="/colours" className="font-bold text-cobalt-text underline">Search single shades</Link>{" "}
-                or <Link href="/visualizer" className="font-bold text-cobalt-text underline">try a shade on your own room</Link>.
+                sure yet? <Link href="/colours" className="font-bold text-cobalt-text underline">Search single shades</Link> and see
+                each one on the same room.
               </p>
             </div>
             <Emoji name="rainbow" size={120} className="hidden animate-float md:block" />
@@ -107,9 +106,6 @@ export default function PalettesPage() {
                           <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold">
                             <Link href={finderHref(s)} prefetch={false} className="inline-flex min-h-11 items-center underline decoration-terracotta underline-offset-4 hover:text-terracotta">
                               See {s.brandName} {s.code} in the finder
-                            </Link>
-                            <Link href={visualizerHref(s)} prefetch={false} className="inline-flex min-h-11 items-center underline decoration-terracotta underline-offset-4 hover:text-terracotta">
-                              Try {shadeDisplayName(s.name)} on your wall
                             </Link>
                           </p>
                         </div>

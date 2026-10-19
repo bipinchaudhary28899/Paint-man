@@ -5,7 +5,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 //
 // next/navigation's useSearchParams cannot do this on a prerendered page: it makes the nearest
 // <Suspense> boundary a client-side-render bailout, so on hydration React throws away the
-// server HTML inside it (the booking form, the shade finder, the visualizer) and mounts a fresh
+// server HTML inside it (the booking form, the shade finder) and mounts a fresh
 // tree, losing anything typed before hydration. This hook instead renders with an empty query on
 // the server and while hydrating, so the server HTML hydrates in place, then reads the address
 // bar once the tree is committed and re-renders with the real query.
