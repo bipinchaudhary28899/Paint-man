@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { AreaLinks } from "@/components/home/AreaLinks";
 import { ColourExplorer, swatchIndices, wheelAngle, wheelShades } from "@/components/home/ColourExplorer";
-import { HeroImage, heroSideBySide, heroSizes } from "@/components/home/HeroImage";
+import { HeroImage, heroPreloadMedia, heroSideBySide, heroSizes } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal, reveal } from "@/components/home/PinnedReveal";
 import { images } from "@/config/images";
@@ -25,19 +25,20 @@ vi.mock("next/image", async () => {
 });
 
 describe("HeroImage", () => {
-  it("loads eagerly without the deprecated priority and preloads only where it sits beside the copy", () => {
+  it("loads eagerly without the deprecated priority and preloads only where it is the LCP (tablets and desktop)", () => {
     render(<HeroImage image={images.livingMoody} />);
     const img = screen.getByAltText(images.livingMoody.alt);
     expect(img).toHaveAttribute("loading", "eager");
-    // side by side the photo column is at most 524px wide (see HeroImage); stacked it spans the screen
-    expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 524px, 100vw");
-    // on phones the photo is far below the h1 (the LCP there): it must not jump the queue
+    // side by side the column is at most 524px; below that it fills the framed panel across the page
+    expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 524px, (min-width: 721px) calc(100vw - 114px), calc(100vw - 66px)");
+    // on phones the h1 is the LCP: the picture must not jump the queue there
     expect(img).not.toHaveAttribute("fetchpriority");
     expect(img).not.toHaveAttribute("data-priority");
 
     const link = document.head.querySelector('link[rel="preload"][as="image"]');
     expect(link).not.toBeNull();
-    expect(link).toHaveAttribute("media", heroSideBySide);
+    expect(link).toHaveAttribute("media", heroPreloadMedia);
+    expect(heroPreloadMedia).toBe("(min-width: 721px)");
     expect(link).toHaveAttribute("fetchpriority", "high");
     // the preload and the <img> must ask for the same file, so their sizes match exactly
     expect(link).toHaveAttribute("imagesizes", heroSizes);

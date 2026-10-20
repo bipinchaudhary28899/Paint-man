@@ -8,7 +8,20 @@ import { estimatePaintArea, formatSqft } from "@/lib/leads/estimate";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
 import { readTracking } from "./UtmCapture";
 
-type Props = { type: "booking" | "contact"; defaultService?: (typeof serviceTypes)[number]; defaultMessage?: string };
+type Props = {
+  type: "booking" | "contact";
+  defaultService?: (typeof serviceTypes)[number];
+  defaultMessage?: string;
+  /** a short line right under the submit button (BookingSection puts its note there on phones) */
+  footnote?: React.ReactNode;
+};
+
+// Three layouts: phones get a compact single column (name and mobile stacked, locality and PIN side by
+// side), tablets two columns, desktops the roomier spacing. Fields are 48px tall on phones, 50px on
+// tablets and the .field default (54px) on desktops.
+const FIELD = "field max-tab:px-3 max-tab:py-[11px] tab:max-desk:px-3.5 tab:max-desk:py-3";
+/** two fields side by side from tablets up, stacked on phones */
+const PAIR = "grid gap-3.5 tab:grid-cols-2 tab:gap-4 desk:gap-5";
 
 function Field({
   id,
@@ -39,7 +52,7 @@ function Field({
 /** Fields under "Add more details": an error in one of them opens the section. */
 const DETAIL_FIELDS = ["service", "propertyType", "floors", "homeSize", "carpetArea", "preferredDate", "message"];
 
-export function LeadForm({ type, defaultService, defaultMessage }: Props) {
+export function LeadForm({ type, defaultService, defaultMessage, footnote }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
@@ -103,10 +116,10 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
     errors[name] ? { "aria-invalid": true as const, "aria-describedby": `${name}-error` } : {};
 
   return (
-    <form onSubmit={onSubmit} onChange={onJobChange} noValidate className="space-y-5">
-      <div className="grid gap-5 sm:grid-cols-2">
+    <form onSubmit={onSubmit} onChange={onJobChange} noValidate className="space-y-3.5 tab:space-y-4 desk:space-y-5">
+      <div className={PAIR}>
         <Field id="name" label="Your name" error={errors.name}>
-          <input id="name" name="name" autoComplete="name" required maxLength={80} className="field" {...aria("name")} />
+          <input id="name" name="name" autoComplete="name" required maxLength={80} className={FIELD} {...aria("name")} />
         </Field>
         <Field id="phone" label="Mobile number" error={errors.phone}>
           <input
@@ -118,7 +131,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
             required
             placeholder="10-digit mobile"
             maxLength={16}
-            className="field"
+            className={FIELD}
             {...aria("phone")}
           />
         </Field>
@@ -134,11 +147,11 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
               required
               maxLength={200}
               placeholder="e.g. 12, Rose Villa, Nehru Road"
-              className="field"
+              className={FIELD}
               {...aria("address")}
             />
           </Field>
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] gap-2.5 tab:grid-cols-2 tab:gap-4 desk:gap-5">
             <Field id="locality" label={live.length > 1 ? "Locality" : `Locality in ${live[0].name}`} error={errors.locality}>
               <input
                 id="locality"
@@ -148,7 +161,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                 required
                 maxLength={80}
                 placeholder="e.g. Kamla Nagar"
-                className="field"
+                className={FIELD}
                 {...aria("locality")}
               />
               <datalist id="locality-options">
@@ -166,14 +179,14 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                 required
                 maxLength={7}
                 placeholder="6 digits"
-                className="field"
+                className={FIELD}
                 {...aria("pincode")}
               />
             </Field>
           </div>
           {live.length > 1 && (
             <Field id="city" label="City" error={errors.city}>
-              <select id="city" name="city" required defaultValue="" className="field" {...aria("city")}>
+              <select id="city" name="city" required defaultValue="" className={FIELD} {...aria("city")}>
                 <option value="" disabled>Select</option>
                 {live.map((c) => (
                   <option key={c.slug} value={c.slug}>{c.name}</option>
@@ -187,19 +200,19 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
           <details
             open={moreOpen}
             onToggle={(e) => setMoreOpen(e.currentTarget.open)}
-            className="group rounded-2xl border border-line bg-cream-wash/60"
+            className="group rounded-pm-md border border-dashed border-line-strong bg-cream-wash desk:rounded-2xl desk:border-solid desk:border-line desk:bg-cream-wash/60"
           >
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 sm:px-5">
-              <span>
-                <span className="font-bold">Add more details</span> <span className="text-sm text-muted">(optional)</span>
-                <span className="block text-xs text-muted">What needs painting, the property and its size, a date, a note</span>
+            <summary className="flex min-h-[50px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2 tab:min-h-[52px] tab:px-4 desk:min-h-11 desk:px-5 desk:py-3">
+              <span className="text-[15px] desk:text-base">
+                <span className="font-bold">Add more details</span> <span className="text-[13px] text-muted tab:text-sm">(optional)</span>
+                <span className="hidden text-xs text-muted desk:block">What needs painting, the property and its size, a date, a note</span>
               </span>
-              <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-lg transition group-open:rotate-45">+</span>
+              <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[22px] transition group-open:rotate-45 desk:border desk:border-line desk:text-lg">+</span>
             </summary>
-            <div className="space-y-5 border-t border-line px-4 pb-5 pt-4 sm:px-5">
-              <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-3.5 border-t border-line px-3.5 pb-4 pt-3.5 tab:space-y-4 tab:px-4 desk:space-y-5 desk:px-5 desk:pb-5 desk:pt-4">
+              <div className={PAIR}>
                 <Field id="service" label="What needs painting?" error={errors.service}>
-                  <select id="service" name="service" defaultValue={defaultService ?? ""} className="field" {...aria("service")}>
+                  <select id="service" name="service" defaultValue={defaultService ?? ""} className={FIELD} {...aria("service")}>
                     <option value="">Select</option>
                     {serviceTypes.map((s) => (
                       <option key={s}>{s}</option>
@@ -207,7 +220,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                   </select>
                 </Field>
                 <Field id="propertyType" label="Property type" error={errors.propertyType}>
-                  <select id="propertyType" name="propertyType" defaultValue="" className="field" {...aria("propertyType")}>
+                  <select id="propertyType" name="propertyType" defaultValue="" className={FIELD} {...aria("propertyType")}>
                     <option value="">Select</option>
                     {propertyTypes.map((p) => (
                       <option key={p}>{p}</option>
@@ -215,9 +228,9 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                   </select>
                 </Field>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className={PAIR}>
                 <Field id="floors" label="Floors to paint" error={errors.floors}>
-                  <select id="floors" name="floors" defaultValue="" className="field" {...aria("floors")}>
+                  <select id="floors" name="floors" defaultValue="" className={FIELD} {...aria("floors")}>
                     <option value="">Select</option>
                     {floorOptions.map((f) => (
                       <option key={f} value={f}>{f === "1" ? "1 floor" : `${f} floors`}</option>
@@ -225,7 +238,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                   </select>
                 </Field>
                 <Field id="homeSize" label="Home size" error={errors.homeSize}>
-                  <select id="homeSize" name="homeSize" defaultValue="" className="field" {...aria("homeSize")}>
+                  <select id="homeSize" name="homeSize" defaultValue="" className={FIELD} {...aria("homeSize")}>
                     <option value="">Select</option>
                     {homeSizes.map((h) => (
                       <option key={h}>{h}</option>
@@ -233,7 +246,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                   </select>
                 </Field>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className={PAIR}>
                 <div>
                   <Field id="carpetArea" label="Carpet area per floor (sq ft)" error={errors.carpetArea}>
                     <input
@@ -244,7 +257,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                       pattern="[0-9, ]*"
                       maxLength={7}
                       placeholder="e.g. 1200"
-                      className="field"
+                      className={FIELD}
                       {...aria("carpetArea")}
                     />
                   </Field>
@@ -257,7 +270,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                   </p>
                 </div>
                 <Field id="preferredDate" label="Preferred inspection date" error={errors.preferredDate}>
-                  <input id="preferredDate" name="preferredDate" type="date" min={dateRange?.min} max={dateRange?.max} className="field" {...aria("preferredDate")} />
+                  <input id="preferredDate" name="preferredDate" type="date" min={dateRange?.min} max={dateRange?.max} className={FIELD} {...aria("preferredDate")} />
                 </Field>
               </div>
               <Field id="message" label="Anything we should know?" error={errors.message}>
@@ -268,7 +281,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                   maxLength={1000}
                   defaultValue={defaultMessage}
                   placeholder="A single wall, two doors, the balcony grills, a full flat… and any damp or cracks"
-                  className="field"
+                  className={FIELD}
                   {...aria("message")}
                 />
               </Field>
@@ -286,7 +299,7 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
             maxLength={1000}
             defaultValue={defaultMessage}
             required
-            className="field"
+            className={FIELD}
             {...aria("message")}
           />
         </Field>
@@ -304,10 +317,11 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
         </p>
       )}
 
-      <button type="submit" disabled={submitting} className="btn-primary w-full sm:w-auto disabled:opacity-60">
+      <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60 max-desk:min-h-[54px] max-desk:text-base desk:w-auto">
         {submitting ? "Sending…" : type === "booking" ? "Book my inspection" : "Send message"}
       </button>
-      <p className="text-xs text-muted">
+      {footnote}
+      <p className="text-xs text-muted max-desk:text-center">
         We use your details only to respond to this request. See our{" "}
         <a href="/privacy-policy" className="underline">privacy policy</a>.
       </p>

@@ -5,7 +5,8 @@ import { useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
 // Faint paint chips drifting behind the page. With CSS scroll timelines each chip rides its
 // own view() timeline (.chip-bg in globals.css); otherwise a passive rAF-throttled handler
-// translates each by scrollY × speed. Frozen under prefers-reduced-motion.
+// translates each by scrollY × speed. Frozen under prefers-reduced-motion. Desktop only: their
+// positions are set for the desktop page, and the phone and tablet designs have none.
 export const chips = [
   { name: "Sand · 01", hex: "#e8d7c5", opacity: 0.6, side: "left", offset: "-40px", top: 760, w: 220, h: 290, r: 18, rot: -8, speed: -0.12 },
   { name: "Golden · 02", hex: "#e9b949", opacity: 0.28, side: "right", offset: "6%", top: 1380, w: 180, h: 240, r: 16, rot: 6, speed: -0.2 },
@@ -23,7 +24,7 @@ export function ParallaxChips() {
   useScrollFrame(frame, needsJs);
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden" data-js={needsJs || undefined}>
+    <div aria-hidden className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden desk:block" data-js={needsJs || undefined}>
       {chips.map((c) => (
         <div
           key={c.name}

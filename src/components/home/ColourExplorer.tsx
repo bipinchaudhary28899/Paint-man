@@ -57,28 +57,34 @@ export function ColourExplorer() {
   useScrollFrame(frame, needsJs);
 
   return (
-    <section id="colour" className="relative md:min-h-[760px]" data-js={needsJs || undefined}>
-      <div className="container-page relative flex flex-wrap items-center gap-8 py-16 md:gap-12 md:py-40">
+    <section id="colour" className="relative desk:min-h-[760px]" data-js={needsJs || undefined}>
+      {/* Phone: one column; the selected shade is a big colour block with its label card on top,
+          then the swatches as a 6 x 2 grid of circles (no wheel). Tablet: the picker beside a
+          280px colour ring whose centre shows the selected shade. Desktop: the picker with the
+          full wheel bleeding off the right edge. */}
+      <div className="container-page relative py-14 tab:grid tab:grid-cols-[minmax(0,1fr)_280px] tab:items-center tab:gap-9 tab:py-[88px] desk:flex desk:flex-wrap desk:items-center desk:gap-12 desk:py-40">
         <div className="relative z-[2] min-w-0 max-w-[560px] flex-[1_1_440px]">
-          <p className="eyebrow">Colour explorer</p>
-          <h2 className="mt-6 text-[clamp(36px,4vw,56px)] leading-[1.06]">
+          <p className="eyebrow max-tab:text-[11px]">Colour explorer</p>
+          <h2 className="mt-3 text-[30px] leading-[1.06] tab:mt-5 tab:text-[44px] desk:mt-6 desk:text-[clamp(36px,4vw,56px)]">
             Find a shade that feels like <em>you.</em>
           </h2>
-          <p className="mt-5 max-w-[440px] text-[17px] leading-[1.65] text-muted">
+          <p className="mt-3 text-[15px] leading-[1.6] text-muted tab:mt-4 tab:text-[16px] tab:leading-[1.65] desk:mt-5 desk:max-w-[440px] desk:text-[17px]">
             Pick a shade to see it up close. Our inspector brings the real cards to your home and helps you choose finishes that suit
             your light, furniture and budget.
           </p>
 
-          <div className="mt-7 flex items-stretch gap-4 rounded-[20px] border border-line-soft bg-paper p-3 md:mt-9 md:gap-5 md:p-4">
-            <div className="w-20 shrink-0 rounded-[14px] transition-colors duration-300 md:w-28" style={{ background: hex }} />
-            <div className="flex min-w-0 flex-col justify-center gap-1">
-              <span className="text-xs uppercase tracking-[0.12em] text-muted-2">Selected shade</span>
-              <strong className="font-display text-[24px] font-normal tracking-[-0.01em] md:text-[28px]">{name}</strong>
-              <span className="text-sm text-muted">{hex.toUpperCase()} · {family}</span>
+          <div className="relative mt-5 h-[150px] overflow-hidden rounded-[22px] tab:mt-6 tab:flex tab:h-auto tab:items-stretch tab:gap-4 tab:overflow-visible tab:rounded-[20px] tab:border tab:border-line-soft tab:bg-paper tab:p-3 desk:mt-9 desk:gap-5 desk:p-4">
+            <div className="absolute inset-0 transition-colors duration-300 tab:static tab:min-h-[84px] tab:w-[92px] tab:shrink-0 tab:rounded-[14px] desk:min-h-0 desk:w-28" style={{ background: hex }} />
+            <div className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col justify-center gap-0.5 rounded-[14px] bg-canvas/94 px-3.5 py-3 tab:static tab:gap-1 tab:rounded-none tab:bg-transparent tab:p-0">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-2 tab:text-xs">Selected shade</span>
+              <span className="flex flex-wrap items-baseline justify-between gap-x-2.5 tab:contents">
+                <strong className="font-display text-[22px] font-normal tracking-[-0.01em] tab:text-[26px] desk:text-[28px]">{name}</strong>
+                <span className="text-[13px] text-muted tab:text-sm">{hex.toUpperCase()} · {family}</span>
+              </span>
             </div>
           </div>
 
-          <ul className="mt-5 grid max-w-[480px] grid-cols-6 gap-2.5" aria-label="Featured shades">
+          <ul className="mt-3.5 grid max-w-[480px] grid-cols-6 gap-2 tab:mt-4 tab:gap-2.5 desk:mt-5" aria-label="Featured shades">
             {swatchIndices.map((ci, i) => {
               const [sName, sHex] = wheelShades[ci];
               return (
@@ -88,37 +94,39 @@ export function ColourExplorer() {
                     onClick={() => setSel(i)}
                     aria-label={sName}
                     aria-pressed={i === sel}
-                    className="block aspect-square w-full rounded-xl transition-transform duration-200 hover:-translate-y-0.5"
+                    className="block aspect-square min-h-11 w-full rounded-full transition-transform duration-200 hover:-translate-y-0.5 tab:rounded-xl"
                     style={{ background: sHex, boxShadow: i === sel ? "0 0 0 2px #f8f5ef, 0 0 0 4px #242522" : "inset 0 0 0 1px rgba(36,37,34,0.12)" }}
                   />
                 </li>
               );
             })}
           </ul>
-          <p className="mt-3.5 text-xs text-muted-2">
+          <p className="mt-3 text-xs text-muted-2 max-desk:leading-[1.5] tab:mt-3.5">
             Shades shown on screen are illustrative. Final colour depends on the paint range, finish and your room&apos;s light.
             Brand shade data: <a href={PAINTDB.source} className="underline" rel="noopener" target="_blank">PaintDB</a>,{" "}
             <a href={PAINTDB.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>.
           </p>
-          <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2">
-            <Link href="/book" className="link-arrow">
+          <div className="mt-2 flex flex-col items-start tab:mt-4 tab:flex-row tab:flex-wrap tab:gap-x-7 tab:gap-y-1 desk:mt-5 desk:gap-x-8 desk:gap-y-2">
+            <Link href="/book" className="link-arrow max-desk:min-h-11">
               Discuss this shade with us <Arrow />
             </Link>
-            <Link href="/colours" className="link-arrow">
+            <Link href="/colours" className="link-arrow max-desk:min-h-11">
               Search {BRAND_SHADES_ROUNDED} brand shades <Arrow />
             </Link>
           </div>
         </div>
 
-        {/* Background wheel. Phones: a large wheel centred just off the right edge, so its left half
-            shows as a vertical semicircle behind the content (faded so the text stays readable).
-            Wider screens: the full wheel bleeding off the right edge beside the content. Either way
-            it turns only with the scroll (.wheel in globals.css). */}
-        <div ref={wheelBox} aria-hidden className="wheel-wrap pointer-events-none absolute -right-[290px] top-[calc(50%-290px)] z-0 h-[580px] w-[580px] opacity-30 md:-right-[200px] md:top-[calc(50%-560px)] md:h-[1120px] md:w-[760px] md:opacity-100">
-          <svg viewBox="0 0 1120 1120" className="wheel wheel-svg absolute inset-0 h-full w-full overflow-visible md:inset-auto md:left-0 md:top-0 md:h-[1120px] md:w-[1120px]" style={needsJs ? { transform: `rotate(${angle}deg)`, transition: "transform .12s linear", willChange: "transform" } : undefined}>
+        {/* The wheel turns only with the scroll (.wheel in globals.css). Phones: none. Tablets: a
+            280px ring beside the picker, its centre the selected shade. Desktop: the full wheel
+            bleeding off the right edge beside the content. */}
+        <div ref={wheelBox} aria-hidden className="wheel-wrap pointer-events-none relative z-0 hidden h-[280px] w-[280px] rounded-full shadow-[0_40px_80px_-40px_rgba(36,37,34,0.45)] tab:block desk:absolute desk:-right-[200px] desk:top-[calc(50%-560px)] desk:h-[1120px] desk:w-[760px] desk:rounded-none desk:shadow-none">
+          <svg viewBox="0 0 1120 1120" className="wheel wheel-svg absolute inset-0 h-full w-full overflow-visible desk:inset-auto desk:left-0 desk:top-0 desk:h-[1120px] desk:w-[1120px]" style={needsJs ? { transform: `rotate(${angle}deg)`, transition: "transform .12s linear", willChange: "transform" } : undefined}>
             {segments.map((s, i) => <path key={i} d={s.d} fill={s.hex} />)}
             <circle cx={CX} cy={CY} r="212" fill="#f8f5ef" />
             <circle cx={CX} cy={CY} r="212" fill="none" stroke="rgba(36,37,34,0.1)" />
+            {/* tablet ring: a cream band and the selected shade in the centre */}
+            <circle className="desk:hidden" cx={CX} cy={CY} r="280" fill="#f8f5ef" />
+            <circle data-testid="wheel-centre" className="transition-colors duration-300 desk:hidden" cx={CX} cy={CY} r="248" style={{ fill: hex }} />
           </svg>
         </div>
       </div>

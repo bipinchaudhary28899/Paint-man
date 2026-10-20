@@ -144,6 +144,12 @@
   --animate-spin-slow: spin 18s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
   --animate-wiggle: wiggle 3s ease-in-out infinite;
+
+  /* Three designs: phones (under 721px, where the header switches to the bottom bar), tablets
+     (tab: 721px up) and desktop (desk: 1080px up, where the home hero goes side by side).
+     Phone-only styles use max-tab:, tablet-only tab:max-desk:, desktop-only desk:. */
+  --breakpoint-tab: 45.0625rem;
+  --breakpoint-desk: 67.5rem;
 }
 
 /* Keyframes live outside @theme so Tailwind never tree-shakes them away */
@@ -274,14 +280,6 @@ h1 em, h2 em, h3 em, .accent {
    track drives every part of the panel. Without scroll-timeline support the room is shown finished. */
 @property --fill { syntax: "<integer>"; inherits: true; initial-value: 100; }
 .pin-track { height: auto; }
-/* The room: 7:8 beside the text on wide screens; on phones its height is whatever is left of the
-   screen after the header, heading, stage strip and bottom nav, so the pinned panel always fits
-   and the walls change colour in the middle of the screen. The mask is cover-cropped like the photo. */
-.pin-img { aspect-ratio: 7 / 8; }
-@media (max-width: 767px) {
-  .pin-img { aspect-ratio: auto; height: clamp(180px, calc(100svh - 390px), 430px); }
-  .pin-stages > * { border-top: 2px solid var(--color-line); padding-top: 6px; }
-}
 /* The wrappers carry the blend: a clipped element is its own stacking context, so a blend
    on the spans inside would never reach the photo. */
 .pin-before, .pin-after { mix-blend-mode: multiply; }
@@ -405,9 +403,6 @@ h1 em, h2 em, h3 em, .accent {
   .bnav-bar, .bnav-slot { transition: none; }
   .bnav-dab-hop { animation: none; }
 }
-
-/* ---------- Word strip ---------- */
-.word-strip { font-weight: 700; font-size: clamp(56px, 6.6vw, 96px); line-height: 1.1; letter-spacing: -0.03em; white-space: nowrap; }
 
 /* ---------- Tilt frame (hero photo) ---------- */
 .tilt {
@@ -584,6 +579,19 @@ h1 em, h2 em, h3 em, .accent {
 .card-hover:hover { transform: translateY(-4px); }
 
 /* Hairline-divided list used for steps and FAQs */
+/* A horizontal swipe row (phones): scrolls inside itself, snaps to each card, no scrollbar. The page
+   never scrolls sideways; the row bleeds to the screen edges with matching padding. */
+.swipe {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.swipe::-webkit-scrollbar { display: none; }
+.swipe > * { scroll-snap-align: start; flex: none; }
+
 .rule-list { border-top: 1px solid var(--color-line); }
 .rule-list > * { border-bottom: 1px solid var(--color-line); }
 }
