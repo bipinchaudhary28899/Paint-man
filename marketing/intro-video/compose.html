@@ -46,6 +46,7 @@ async function setup() {
     t += dur;
   }
   total = t;
+  LOGO = await loadImg("logo.png");
   return { total, scenes: scenes.map((s) => [s.id, +s.start.toFixed(2), +s.dur.toFixed(2)]) };
 }
 
@@ -76,15 +77,13 @@ function drawBackground(t) {
   blob(900 + Math.sin(t * 0.12) * 40, 1820, 300, C.golden, 0.12);
 }
 
+let LOGO = null;
 function drawLogo(scene, u) {
-  // the text wordmark the site uses until the logo files arrive: "Paint" in ink, "Saathi" italic terracotta
-  if (scene.id !== "intro" && scene.id !== "book") return;
+  // the Paint Saathi horizontal logo on the opening and closing cards
+  if (!LOGO || (scene.id !== "intro" && scene.id !== "book")) return;
   const a = ease(u / 0.5) * clamp01((scene.dur - u) / 0.35);
-  g.save(); g.globalAlpha = a;
-  g.font = '400 64px "DM Serif Display"'; g.fillStyle = C.ink; g.fillText("Paint", 70, 128);
-  const w = g.measureText("Paint ").width;
-  g.font = 'italic 400 64px "DM Serif Display"'; g.fillStyle = C.terracotta; g.fillText("Saathi", 70 + w, 128);
-  g.restore();
+  const h = 76, w = (LOGO.width / LOGO.height) * h;
+  g.save(); g.globalAlpha = a; g.drawImage(LOGO, 70, 70, w, h); g.restore();
 }
 
 function drawText(scene, u) {
