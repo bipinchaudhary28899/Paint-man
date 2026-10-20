@@ -94,13 +94,16 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        {/* Side by side this column is as tall as the copy: the buttons sit centred in the space above
-            the painter, who stands at the bottom, level with the end of the copy */}
-        <div className="flex min-w-0 flex-[1_1_420px] flex-col [perspective:1600px]">
+        {/* Side by side this column is as tall as the copy, but never taller than the first screen under
+            the header (86px) and the hero's top padding (40px), less a 24px margin: the buttons sit centred
+            in the space above the painter, and the painter's feet are always in view on load. On a
+            shorter screen the painter's box shrinks (by CSS alone, so nothing shifts) and the cut-out
+            scales down inside it. */}
+        <div className="flex min-w-0 flex-[1_1_420px] flex-col [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)]">
           <div className="hidden flex-1 items-center justify-center pb-6 min-[1080px]:flex">
             <HeroActions className="flex justify-center" />
           </div>
-          <Tilt max={6} className="relative aspect-[1160/1024] w-full">
+          <Tilt max={6} className="relative aspect-[1160/1024] w-full min-[1080px]:max-h-[calc(100svh-240px)] min-[1080px]:min-h-[300px]">
             {/* The painter cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
             <HeroImage image={illustrations.painter} className="object-contain object-bottom" />
           </Tilt>
