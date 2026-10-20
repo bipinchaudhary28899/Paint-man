@@ -66,7 +66,7 @@ export default function HomePage() {
       <ParallaxChips />
 
       {/* ---------- Hero ---------- */}
-      <section id="top" className="container-page relative z-[1] flex flex-wrap items-center gap-10 pb-16 pt-10 md:pb-32 md:pt-[88px] lg:gap-[72px]">
+      <section id="top" className="container-page relative z-[1] flex flex-wrap items-center gap-10 pb-16 pt-8 md:pb-20 md:pt-10 min-[1080px]:items-stretch lg:gap-[72px]">
         <div className="min-w-0 flex-[1_1_500px]">
           {/* The eyebrow is part of the h1, so the heading carries the keyword and the city. Its box
               matches the old eyebrow line (24px) and the tagline keeps its 28px gap below it. */}
@@ -94,8 +94,12 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
-          <HeroActions className="mb-6 hidden min-[1080px]:flex" />
+        {/* Side by side this column is as tall as the copy: the buttons sit centred in the space above
+            the painter, who stands at the bottom, level with the end of the copy */}
+        <div className="flex min-w-0 flex-[1_1_420px] flex-col [perspective:1600px]">
+          <div className="hidden flex-1 items-center justify-center pb-6 min-[1080px]:flex">
+            <HeroActions className="flex justify-center" />
+          </div>
           <Tilt max={6} className="relative aspect-[1160/1024] w-full">
             {/* The painter cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
             <HeroImage image={illustrations.painter} className="object-contain object-bottom" />
