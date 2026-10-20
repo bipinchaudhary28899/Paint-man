@@ -40,7 +40,7 @@ export default function FaqPage() {
             <div className="mt-5"><FaqList faqs={s.faqs} /></div>
             <p className="mt-4 text-sm">
               <Link href={`/services/${s.slug}`} className={`inline-flex min-h-11 items-center ${linkClass}`}>
-                How {s.name.toLowerCase()} works in {site.city} →
+                How {s.name.toLowerCase()} works →
               </Link>
             </p>
           </section>

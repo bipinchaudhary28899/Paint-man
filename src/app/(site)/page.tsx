@@ -8,15 +8,17 @@ import { ColourExplorer } from "@/components/home/ColourExplorer";
 import { HeroImage } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal } from "@/components/home/PinnedReveal";
+import { Promises } from "@/components/Promises";
+import { QuickVisitForm } from "@/components/QuickVisitForm";
 import { Tilt } from "@/components/Tilt";
 import { images } from "@/config/images";
-import { generalFaqs, services, site } from "@/config/site";
+import { cityPath, generalFaqs, homeCity, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Book House Painters Online in ${site.city} | ${site.name}`,
+  title: `Book House Painters Online in India | ${site.name}`,
   absoluteTitle: true,
-  description: `Book house painters online in ${site.city}. ${site.name} manages your painting end to end: on-site inspection, an itemised quote and a supervised crew.`,
+  description: `Book house painters online with ${site.name}: zero advance payment, a full estimate before work starts and a supervised crew. Now painting in ${homeCity.name}.`,
   path: "/",
 });
 
@@ -69,7 +71,7 @@ export default function HomePage() {
               matches the old eyebrow line (24px) and the tagline keeps its 28px gap below it. */}
           <h1 className="text-[clamp(48px,5.8vw,80px)] leading-[1.02] tracking-[-0.02em]">
             <span className="eyebrow flex h-6 items-center pt-[3px] font-sans leading-[1.5]">
-              Book house painters online in {site.city}<span className="sr-only">: </span>
+              Book house painters online<span className="sr-only">: </span>
             </span>
             <span className="mt-7 block">
               Your space, painted beautifully. Managed <em>completely.</em>
@@ -77,14 +79,15 @@ export default function HomePage() {
           </h1>
           <p className="mt-7 max-w-[500px] text-lg leading-[1.65] text-muted">
             Tell us what you need. We inspect, quote line by line, bring genuine branded paint and a supervised crew, and hand back a
-            spotless home. One team, one quote, one person to call.
+            spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Link href="/book" className="btn-primary btn-lg">Get a free estimate</Link>
-            <Link href="#colour" className="btn-secondary btn-lg">Explore colours</Link>
+          {/* The quick site-visit form is the first thing a visitor can do: here on phones and tablets,
+              floated over the hero photo on wide screens (one of the two is display:none). */}
+          <div className="card mt-8 max-w-[520px] p-5 md:p-6 lg:hidden">
+            <QuickVisitForm intro="Zero advance payment and a full estimate before any work starts. Leave your number and we call you back." />
           </div>
-          <dl className="mt-14 flex flex-wrap gap-10 border-t border-line pt-7">
-            {[["Quotation", "Itemised, line by line"], ["Crew", "Supervised daily"], ["Paint", "Genuine, branded"]].map(([k, v]) => (
+          <dl className="mt-10 flex flex-wrap gap-10 border-t border-line pt-7">
+            {[["Payment", "Zero advance"], ["Estimate", "Full, before work starts"], ["Work", "Timed and documented"]].map(([k, v]) => (
               <div key={k}>
                 <dt className="text-xs uppercase tracking-[0.12em] text-muted">{k}</dt>
                 <dd className="mt-1.5 font-medium">{v}</dd>
@@ -92,12 +95,15 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
-          <Tilt max={6} className="frame-shadow relative h-[420px] overflow-hidden rounded-3xl md:h-[640px]">
+        <div className="relative min-w-0 flex-[1_1_420px] [perspective:1600px]">
+          <Tilt max={6} className="frame-shadow relative h-[420px] overflow-hidden rounded-3xl md:h-[640px] lg:h-[700px]">
             <HeroImage image={images.livingMoody} />
             {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
             <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
+          <div className="card absolute inset-x-6 bottom-14 z-10 hidden bg-paper/95 p-6 backdrop-blur-md lg:block">
+            <QuickVisitForm intro="Zero advance payment and a full estimate before any work starts. Leave your number and we call you back." />
+          </div>
           <p className="mx-1 mt-4 flex justify-between text-[13px] text-muted">
             <span>Example finish</span>
             <span>Warm white walls</span>
@@ -112,6 +118,11 @@ export default function HomePage() {
 
       <div className="relative z-[1]">
         <PinnedReveal />
+      </div>
+
+      {/* ---------- Promises ---------- */}
+      <div className="container-page relative z-[1] mt-16 md:mt-[120px]">
+        <Promises />
       </div>
 
       {/* ---------- We diagnose first ---------- */}

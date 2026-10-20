@@ -162,3 +162,25 @@ describe("lead schema: unknown input", () => {
     expect(leadSchema.safeParse(input).success).toBe(false);
   });
 });
+
+describe("lead schema: quick site-visit requests", () => {
+  it("needs only a name, a mobile and a known city; the locality is optional", () => {
+    const r = leadSchema.safeParse({ type: "visit", name: "Asha", phone: "+91 98765 43210", city: "agra", locality: "  " });
+    expect(r.success).toBe(true);
+    if (r.success && r.data.type === "visit") {
+      expect(r.data.phone).toBe("9876543210");
+      expect(r.data.locality).toBeUndefined();
+    }
+    expect(leadSchema.safeParse({ type: "visit", name: "Asha", phone: "9876543210", city: "bangalore", locality: "Indiranagar" }).success).toBe(true);
+  });
+
+  it("rejects an unknown city and a bad mobile with friendly messages", () => {
+    const r = leadSchema.safeParse({ type: "visit", name: "Asha", phone: "12345", city: "paris" });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      const issues = Object.fromEntries(r.error.issues.map((i) => [String(i.path[0]), i.message]));
+      expect(issues.city).toBe("Choose your city");
+      expect(issues.phone).toBe("Enter a valid 10-digit mobile number");
+    }
+  });
+});

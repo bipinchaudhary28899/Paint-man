@@ -1,5 +1,6 @@
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import type { serviceTypes } from "@/lib/leads/options";
+import type { EmojiName } from "@/components/Emoji";
 import { images, type SiteImage } from "./images";
 
 // Central business details. Fill the TODO fields before launch: they feed the
@@ -69,14 +70,26 @@ export type FaqItem = { q: string; a: string; link?: { href: string; label: stri
 /** A titled paragraph: a preparation layer or a cost factor. */
 export type ServicePoint = { title: string; body: string };
 
+/** What a service page says for one city: /services/<service>/<city>. Written for that city only. */
+export type ServiceLocal = {
+  /** 140–155 characters, naming the city. */
+  description: string;
+  intro: string;
+  /** What is different about this work in this city: weather, seasons, the way homes are built or let. */
+  notes: ServicePoint[];
+  /** Questions that only make sense for this city (marked up on the city page, nowhere else). */
+  faqs: FaqItem[];
+};
+
 export type Service = {
   slug: string;
   image: SiteImage;
   accent: string;
   name: string;
   shortName: string;
-  /** Page title and h1, "{Topic} in Agra": the root template adds " | Paint Saathi". */
+  /** The service hub's title and h1 with no city ("Interior Wall Painting Services"); a city page adds " in {City}". */
   title: string;
+  /** The hub's description and intro, true in every city. */
   description: string;
   intro: string;
   /** The matching choice in the booking form's "Service needed" list. */
@@ -97,7 +110,10 @@ export type Service = {
   aftercare: string[];
   /** Palette slugs from src/config/palettes.ts, shown with their brand shade-card codes. */
   shades: { intro: string; palettes: string[] };
+  /** Questions true in every city (marked up on the hub). */
   faqs: FaqItem[];
+  /** Per-city copy, keyed by city slug. A service appears in a city only when it has an entry. */
+  local: Record<string, ServiceLocal>;
 };
 
 /**
@@ -131,9 +147,9 @@ export const services: Service[] = [
     accent: "bg-terracotta text-on-ink",
     name: "Interior Painting",
     shortName: "Interior",
-    title: "Interior Wall Painting Services in Agra",
+    title: "Interior Wall Painting Services",
     description:
-      "Interior wall painting in Agra without managing painters yourself. On-site inspection, itemised quotation and branded paint, with a supervised crew.",
+      "Interior wall painting without managing painters yourself: on-site inspection, an itemised quote, branded paint and a supervised crew to the walkthrough.",
     intro:
       "Repaint bedrooms, living rooms, kitchens and ceilings without managing painters yourself. We inspect your walls, give you an itemised quote and supervise the job until the final walkthrough.",
     leadService: "Interior Painting",
@@ -226,10 +242,6 @@ export const services: Service[] = [
     },
     faqs: [
       {
-        q: "How long does interior painting take for a 2BHK in Agra?",
-        a: `A full repaint of a 2 BHK takes ${twoBhk.duration} with a crew sized to the job, usually ${twoBhk.painters} painters, and less when the walls need little putty work. Heavy crack repair, damp patches or deep shades add time. Your quotation states the expected duration before you approve it.`,
-      },
-      {
         q: "Do I need to move my furniture out?",
         a: "No. Our team moves furniture to the centre of the room and covers furniture, floors and fittings before work begins.",
       },
@@ -246,6 +258,38 @@ export const services: Service[] = [
         a: "Water-based interior emulsions have a mild smell that clears within a day or two with the windows open. Tell the inspector if someone at home is sensitive to it.",
       },
     ],
+    local: {
+      agra: {
+        description:
+          "Interior wall painting in Agra without managing painters yourself. On-site inspection, itemised quotation and branded paint, with a supervised crew.",
+        intro:
+          "Repaint bedrooms, living rooms, kitchens and ceilings in Agra without managing painters yourself. An inspector visits your home, you get an itemised quote, and a supervisor stays on the job until the final walkthrough.",
+        notes: [
+          {
+            title: "Dust and summer heat",
+            body: "Agra summers are long, hot and dusty, and fine dust settles on walls in every room. A washable finish in living rooms, kitchens and kids' rooms lets you wipe marks off without scrubbing the colour away, while matt hides small plaster flaws in older homes.",
+          },
+          {
+            title: "Monsoon damp",
+            body: "Monsoon humidity shows up as damp patches beside bathrooms, kitchens and outer walls. The inspector checks for seepage before quoting, because paint over a damp wall peels; the cause is noted so it can be fixed first.",
+          },
+          {
+            title: "Festive season",
+            body: "Many families repaint before Diwali and weddings, when painters are busiest. Booking the inspection a few weeks ahead leaves time to pick shades and approve the quote before the dates you want.",
+          },
+        ],
+        faqs: [
+          {
+            q: "How long does interior painting take for a 2BHK in Agra?",
+            a: `A full repaint of a 2 BHK takes ${twoBhk.duration} with a crew sized to the job, usually ${twoBhk.painters} painters, and less when the walls need little putty work. Heavy crack repair, damp patches or deep shades add time. Your quotation states the expected duration before you approve it.`,
+          },
+          {
+            q: "When should I book interior painting before Diwali in Agra?",
+            a: "A few weeks before you want the work done. The inspection, the quotation and your approval come first, and the quotation states the expected duration, so the job can be planned around your dates.",
+          },
+        ],
+      },
+    },
   },
   {
     slug: "exterior-painting",
@@ -253,11 +297,11 @@ export const services: Service[] = [
     accent: "bg-sage-deep text-on-ink",
     name: "Exterior Painting",
     shortName: "Exterior",
-    title: "Exterior House Painting Services in Agra",
+    title: "Exterior House Painting Services",
     description:
-      "Exterior house painting in Agra that stands up to sun, dust and monsoon. Crack repair, weatherproof coats and an itemised quote after a site inspection.",
+      "Exterior house painting that stands up to sun, dust and monsoon: crack repair, primer and weatherproof coats, and an itemised quote after a site visit.",
     intro:
-      "Agra's summer heat, dust and monsoon take a toll on outer walls. We inspect the exterior, repair cracks where needed and apply weather-resistant coatings with a clear, itemised quote.",
+      "Summer heat, dust and the monsoon take a toll on outer walls. We inspect the exterior, repair cracks where needed and apply weather-resistant coatings with a clear, itemised quote.",
     leadService: "Exterior Painting",
     includes: [
       "Inspection of walls, cracks, dampness and existing paint",
@@ -327,7 +371,7 @@ export const services: Service[] = [
     ],
     timeline: [
       "Exterior walls are measured on site rather than estimated from carpet area, because height, parapets and boundary walls vary so much from house to house.",
-      "The job runs in stages: cleaning and crack repair, time for repairs to set, then primer and finish coats. Dry weather matters more than crew size, so your quotation states the expected duration, and rainy days can push it out. In Agra the dry months, roughly October to March, are the best window.",
+      "The job runs in stages: cleaning and crack repair, time for repairs to set, then primer and finish coats. Dry weather matters more than crew size, so your quotation states the expected duration, and rainy days can push it out.",
     ],
     aftercare: [
       "Give fresh exterior paint a few dry days to cure, and avoid hosing the walls down for the first few weeks.",
@@ -342,10 +386,6 @@ export const services: Service[] = [
     },
     faqs: [
       {
-        q: "When is the best time for exterior painting in Agra?",
-        a: "Dry months, roughly October to March, are best. We avoid applying exterior paint during heavy rain because moisture affects adhesion and finish.",
-      },
-      {
         q: "Do you fix cracks before painting?",
         a: "Yes. Crack filling and surface repairs found during the inspection are listed separately in your quotation so you can see what each costs.",
       },
@@ -358,6 +398,34 @@ export const services: Service[] = [
         a: "Yes. Boundary walls, gates and grilles are listed as separate items on the quotation, so you can include them or leave them out.",
       },
     ],
+    local: {
+      agra: {
+        description:
+          "Exterior house painting in Agra that stands up to sun, dust and monsoon. Crack repair, weatherproof coats and an itemised quote after a site inspection.",
+        intro:
+          "Agra's summer heat, dust and monsoon take a toll on outer walls. We inspect the exterior, repair cracks where needed and apply weather-resistant coatings with a clear, itemised quote.",
+        notes: [
+          {
+            title: "The best season",
+            body: "In Agra the dry months, roughly October to March, are the best window for outside walls. Exterior paint is not applied in heavy rain, because moisture under the coat spoils adhesion and finish.",
+          },
+          {
+            title: "Strong sun",
+            body: "Long summer afternoons fade deep colours on sun-facing walls fastest. Stone, beige and warm white shades fade less visibly and hide dust better than bright white.",
+          },
+          {
+            title: "Dust and rain marks",
+            body: "Dust settles on parapets and ledges and runs down the walls with the first rain. Cleaning before primer, and checking drip lines, pipes and AC drains at the inspection, keeps new paint from streaking early.",
+          },
+        ],
+        faqs: [
+          {
+            q: "When is the best time for exterior painting in Agra?",
+            a: "Dry months, roughly October to March, are best. We avoid applying exterior paint during heavy rain because moisture affects adhesion and finish.",
+          },
+        ],
+      },
+    },
   },
   {
     slug: "rental-property-painting",
@@ -365,9 +433,9 @@ export const services: Service[] = [
     accent: "bg-golden text-ink",
     name: "Rental Property Painting",
     shortName: "Rental",
-    title: "Rental Property and PG Painting in Agra",
+    title: "Rental Property and PG Painting",
     description:
-      "Repaint rental flats, houses and PGs in Agra between tenants without visiting the site. Supervised painters, photo updates and one itemised quotation.",
+      "Repaint rental flats, houses and PGs between tenants without visiting the site: inspection, economy or standard paint, photo updates and an itemised quote.",
     intro:
       "Repaint between tenants without visiting the site every day. We handle inspection, painting and cleanup, and send you photo updates so the property is ready to let again quickly.",
     leadService: "Rental Property",
@@ -378,7 +446,7 @@ export const services: Service[] = [
       "Photo updates through the job",
       "Invoice with GST details where applicable",
     ],
-    suitableFor: ["Landlords", "PG and hostel owners", "Property managers", "Owners living outside Agra"],
+    suitableFor: ["Landlords", "PG and hostel owners", "Property managers", "Owners living in another city"],
     process: [
       {
         step: "Inspection, with or without you",
@@ -450,10 +518,6 @@ export const services: Service[] = [
     },
     faqs: [
       {
-        q: "Can you paint the property if I live outside Agra?",
-        a: "Yes. We can collect keys by arrangement, share inspection photos and the quotation online, and send progress photos until the job is complete.",
-      },
-      {
         q: "Is one coat enough between tenants?",
         a: "Often, if the existing paint is sound and the colour stays the same. The inspector checks each room and tells you where a full repaint is needed instead.",
       },
@@ -466,12 +530,149 @@ export const services: Service[] = [
         a: "Yes. You get an invoice for the job, with GST details where applicable.",
       },
     ],
+    local: {
+      agra: {
+        description:
+          "Repaint rental flats, houses and PGs in Agra between tenants without visiting the site. Supervised painters, photo updates and one itemised quotation.",
+        intro:
+          "Repaint rented flats, houses and PGs in Agra between tenants without visiting the site every day. We handle inspection, painting and cleanup, and send photo updates so the property is ready to let again quickly.",
+        notes: [
+          {
+            title: "If you live outside Agra",
+            body: "Keys can be collected by arrangement. Inspection photos and the itemised quote come to you online, and progress photos follow through the job, so there is no need to travel for it.",
+          },
+          {
+            title: "Between tenancies",
+            body: "Tell us the move-out and move-in dates when you book. The quotation states the expected duration, so the job can be planned into the gap between tenants.",
+          },
+        ],
+        faqs: [
+          {
+            q: "Can you paint the property if I live outside Agra?",
+            a: "Yes. We can collect keys by arrangement, share inspection photos and the quotation online, and send progress photos until the job is complete.",
+          },
+        ],
+      },
+    },
   },
 ];
 
 export function getService(slug: string): Service | undefined {
   return services.find((s) => s.slug === slug);
 }
+
+/** A weather note on a city page, with an optional link (to a service in that city or a tool). */
+export type CityWeather = { title: string; emoji: EmojiName; text: string; link?: { href: string; label: string } };
+
+/**
+ * A city we paint in. Every city gets /services/house-painting/<slug> (its main page) and
+ * /services/<service>/<slug> for each service with a `local` entry for it. Add a city here, plus
+ * the services' `local` copy for it, and its pages, sitemap entries and menu links follow.
+ */
+export type City = {
+  slug: string;
+  name: string;
+  /** The region the city is grouped under in menus ("Uttar Pradesh", "Delhi NCR", "Karnataka"). */
+  region: string;
+  /**
+   * "live": we paint here; its pages are indexed and in the sitemap. "soon": a waitlist page only,
+   * noindex and out of the sitemap, so search never sends people to a city we cannot serve yet.
+   * Switch to "live" (and add the services' `local` copy and the localities) when crews start.
+   */
+  status: "live" | "soon";
+  /** Localities we serve and supervise; each has an anchor on the city page (areaSlug). */
+  areas: readonly string[];
+  /** The city page: 140–155 characters. */
+  description: string;
+  intro: string;
+  weather: CityWeather[];
+};
+
+export const cities: City[] = [
+  {
+    slug: "agra",
+    name: site.city,
+    region: site.region,
+    status: "live",
+    areas: site.areas,
+    description: `House painting services in ${site.city}: interiors, exteriors and rental homes, with an on-site inspection, an itemised quote and a supervised crew. Book online.`,
+    intro: `Interior, exterior and rental painting across ${site.areas.length} localities of ${site.city}, a list kept short so a supervisor can reach every site. Every job starts the same way: an on-site inspection and an itemised quotation, and nothing is booked until you approve it.`,
+    weather: [
+      {
+        title: "Summer heat and dust",
+        emoji: "sun",
+        text: `Summers in ${site.city} are long, hot and dusty. Walls are cleaned before primer goes on, and a washable finish is worth it in living rooms, kitchens and kids' rooms, where dust and hand marks get wiped off often. Very dark exterior shades take in more heat and fade faster in strong sun.`,
+        link: { href: "/colours", label: "Find light shades" },
+      },
+      {
+        title: "Monsoon damp",
+        emoji: "cloud-with-rain",
+        text: "Paint applied over a damp wall blisters and peels. The inspector checks for seepage from the roof, bathrooms and plumbing; the cause should be fixed and the wall dried and primed before any finish coat. Repairs found at the inspection are listed separately in your quotation.",
+      },
+      {
+        title: "Exterior walls",
+        emoji: "house-with-garden",
+        text: "Outer walls need cracks filled, an exterior primer and weather-resistant finish coats. Dry months, roughly October to March, are the best time; exterior paint is not applied in heavy rain because moisture affects adhesion and finish.",
+        link: { href: "/services/exterior-painting/agra", label: `Exterior painting in ${site.city}` },
+      },
+    ],
+  },
+  {
+    slug: "delhi-ncr",
+    name: "Delhi NCR",
+    region: "Delhi NCR",
+    status: "soon",
+    areas: [],
+    description: "Paint Saathi is coming to Delhi NCR: managed house painting with an on-site inspection, an itemised quote and a supervised crew. Join the waitlist.",
+    intro: "We are getting ready to paint homes in Delhi, Noida, Gurugram, Ghaziabad and Faridabad, with the same inspection, itemised quotation and supervised crews as in Agra. Leave your number and we will call you when bookings open in your area.",
+    weather: [],
+  },
+  {
+    slug: "bangalore",
+    name: "Bangalore",
+    region: "Karnataka",
+    status: "soon",
+    areas: [],
+    description: "Paint Saathi is coming to Bangalore: managed house painting with an on-site inspection, an itemised quote and a supervised crew. Join the waitlist.",
+    intro: "We are getting ready to paint homes in Bangalore, with the same inspection, itemised quotation and supervised crews as in Agra. Leave your number and we will call you when bookings open in your area.",
+    weather: [],
+  },
+];
+
+/** Cities where we paint now. */
+export const liveCities = () => cities.filter((c) => c.status === "live");
+
+/** The city the business started in: the home page, the booking form and the schema address. */
+export const homeCity = cities[0];
+
+export function getCity(slug: string): City | undefined {
+  return cities.find((c) => c.slug === slug);
+}
+
+/** The services offered in a city: those with copy written for it, and only in a live city. */
+export function servicesIn(city: City): Service[] {
+  return city.status === "live" ? services.filter((s) => city.slug in s.local) : [];
+}
+
+/** "/services/house-painting/agra": a city's main painting page. */
+export const cityPath = (city: City) => `/services/house-painting/${city.slug}`;
+/** "/services/interior-painting" (the hub) or "/services/interior-painting/agra" (in a city). */
+export const servicePath = (service: Service, city?: City) => (city ? `/services/${service.slug}/${city.slug}` : `/services/${service.slug}`);
+/** "Interior Wall Painting Services in Agra". */
+export const serviceCityTitle = (service: Service, city: City) => `${service.title} in ${city.name}`;
+
+/**
+ * The service promises (owner-stated policy), shown on the home page, the booking page, city pages
+ * and next to the quick site-visit form. Each one matches what the rest of the copy commits to.
+ */
+export const promises: { title: string; text: string }[] = [
+  { title: "Zero advance payment", text: "You pay nothing up front. No payment is due before the work starts." },
+  { title: "Full estimate before work starts", text: "An itemised quote after the site visit: area, preparation, paint, coats and timeline. Nothing starts until you approve it." },
+  { title: "Timed work", text: "The quotation states how long the job takes, and the crew is sized to finish within it." },
+  { title: "Fully documented", text: "A written quotation, daily photo updates, written approval for any change and an invoice at the end." },
+  { title: "Zero compromise on quality", text: "Genuine branded paint, every preparation step the quote lists, and a supervisor checking each stage before handover." },
+  { title: "What's best for you, not for us", text: "We recommend the paint, finish and repairs that suit your walls and budget, never the option that simply pays us more." },
+];
 
 /**
  * How booking painters online works, shown (and marked up as FAQPage) on /book only. Facts only:
@@ -481,7 +682,7 @@ export const bookingSteps: { title: string; text: string }[] = [
   { title: "Fill in the form", text: "Your name, mobile number, locality, the kind of property and the work you need. It takes about a minute." },
   { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
   { title: "Inspection and itemised quote", text: "Our inspector measures the walls, checks for damp and cracks, and you get a line-by-line quotation." },
-  { title: "Approve, then we paint", text: "Nothing is scheduled until you approve the quote. A supervised crew then paints and hands over room by room." },
+  { title: "Approve, then we paint", text: "Nothing is scheduled until you approve the quote, and there is no advance payment. A supervised crew then paints to the stated timeline." },
 ];
 
 export const bookingFaqs: FaqItem[] = [
@@ -492,6 +693,10 @@ export const bookingFaqs: FaqItem[] = [
   {
     q: "Is the estimate free?",
     a: "Yes. The inspector measures your walls and checks their condition, and you get an itemised quotation at no charge. Nothing is booked until you approve the quote.",
+  },
+  {
+    q: "Do I have to pay anything in advance?",
+    a: "No. We work with zero advance payment: you pay nothing before the work starts. The quotation you approve sets out the payment schedule, and every change is approved in writing first.",
   },
   {
     q: "What details do I need to book painters online?",
@@ -512,7 +717,7 @@ export const generalFaqs: FaqItem[] = [
   {
     q: `Do you have painters near me in ${site.city}?`,
     a: `We currently serve ${site.areas.join(", ")}. If your area is not listed, book anyway and we will confirm whether we can serve you.`,
-    link: { href: "/areas", label: `See the areas we serve in ${site.city}` },
+    link: { href: "/services/house-painting/agra#localities", label: `See the areas we serve in ${site.city}` },
   },
   {
     q: "How is the price calculated?",

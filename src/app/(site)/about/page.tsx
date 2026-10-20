@@ -70,7 +70,7 @@ export default function AboutPage() {
             problems quickly:
           </p>
           <p className="mt-4 font-display text-xl font-bold text-sunshine">{site.areas.join(" · ")}</p>
-          <Link href="/areas" className="mt-6 inline-flex min-h-11 items-center font-semibold text-on-ink underline decoration-golden underline-offset-4 hover:text-golden">
+          <Link href="/services/house-painting/agra#localities" className="mt-6 inline-flex min-h-11 items-center font-semibold text-on-ink underline decoration-golden underline-offset-4 hover:text-golden">
             How we work in each area of {site.city}
           </Link>
         </div>

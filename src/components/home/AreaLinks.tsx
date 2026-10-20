@@ -2,8 +2,9 @@ import Link from "next/link";
 import { areaSlug } from "@/config/site";
 
 /**
- * The home page's "Painters in {area}" strip, each locality linking to its entry on /areas. The
- * anchor comes from areaSlug() in src/config/site.ts, the same function /areas uses for its ids.
+ * The home page's "Painters in {area}" strip, each locality linking to its entry on the city page
+ * (/services/house-painting/agra). The anchor comes from areaSlug() in src/config/site.ts, which
+ * the city page uses for its ids.
  */
 export function AreaLinks({ areas }: { areas: readonly string[] }) {
   return (
@@ -13,7 +14,7 @@ export function AreaLinks({ areas }: { areas: readonly string[] }) {
           {/* 10px above and below a 24px line: every link is at least a 44px tap target, and the first
               lines of names that wrap stay level with their neighbours */}
           <Link
-            href={`/areas#${areaSlug(a)}`}
+            href={`/services/house-painting/agra#${areaSlug(a)}`}
             className="block py-2.5 underline decoration-line-strong decoration-1 underline-offset-[5px] transition-colors hover:text-terracotta hover:decoration-terracotta"
           >
             Painters in {a}

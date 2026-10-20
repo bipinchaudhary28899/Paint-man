@@ -239,14 +239,32 @@ describe("website, service, FAQ and breadcrumb schema", () => {
     expect(ld).toMatchObject({ "@type": "WebSite", name: site.name, alternateName: ALTERNATE_NAME, publisher: { "@id": `${site.url}/#business` } });
   });
 
-  it("gives each service a stable @id, its provider and the Agra area", () => {
+  it("gives each service hub a stable @id, its provider and every live city", () => {
     for (const service of services) {
       const ld = serviceJsonLd(service);
       expect(ld["@id"]).toBe(`${site.url}/services/${service.slug}#service`);
       expect(ld.url).toBe(`${site.url}/services/${service.slug}`);
       expect(ld.provider).toEqual({ "@id": `${site.url}/#business` });
-      expect(ld.areaServed).toEqual(agraPlace());
+      expect(ld.areaServed).toEqual([agraPlace()]); // Delhi NCR and Bangalore are not live yet
     }
+  });
+
+  it("gives a service in a city its own @id, name, description and city", async () => {
+    const { getCity } = await import("@/config/site");
+    const agra = getCity("agra")!;
+    for (const service of services) {
+      const ld = serviceJsonLd(service, agra);
+      expect(ld["@id"]).toBe(`${site.url}/services/${service.slug}/agra#service`);
+      expect(ld.name).toBe(`${service.title} in Agra`);
+      expect(ld.description).toBe(service.local.agra.description);
+      expect(ld.areaServed).toEqual(agraPlace());
+      expect(ld.provider).toEqual({ "@id": `${site.url}/#business` });
+    }
+    // a city without written copy falls back to the hub description and a plain City node
+    const soon = getCity("bangalore")!;
+    const ld = serviceJsonLd(services[0], soon);
+    expect(ld.description).toBe(services[0].description);
+    expect(ld.areaServed).toEqual({ "@type": "City", name: "Bangalore" });
   });
 
   it("builds FAQ and breadcrumb schema", () => {
@@ -286,9 +304,15 @@ describe("sitemap", () => {
   it("lists every public page and no private ones", () => {
     const urls = paths();
     expect(urls).toEqual(
-      expect.arrayContaining(["/", "/book", "/services", "/areas", "/colours", "/palettes", "/about", "/faq", "/contact", "/privacy-policy", "/terms"]),
+      expect.arrayContaining(["/", "/book", "/services", "/services/house-painting", "/services/house-painting/agra", "/colours", "/palettes", "/about", "/faq", "/contact", "/privacy-policy", "/terms"]),
     );
-    for (const s of services) expect(urls).toContain(`/services/${s.slug}`);
+    for (const s of services) {
+      expect(urls).toContain(`/services/${s.slug}`); // the hub
+      expect(urls).toContain(`/services/${s.slug}/agra`); // the live city's page
+    }
+    // /areas became the Agra page; cities that are not live yet stay out of the sitemap
+    expect(urls).not.toContain("/areas");
+    expect(urls.some((u) => u.includes("delhi-ncr") || u.includes("bangalore"))).toBe(false);
     expect(urls.some((u) => u.startsWith("/admin") || u.startsWith("/api") || u === "/thank-you")).toBe(false);
     expect(new Set(urls).size).toBe(urls.length);
     for (const e of sitemap()) expect(e.url.startsWith(site.url)).toBe(true);

@@ -7,8 +7,12 @@ import { JsonLd } from "@/components/JsonLd";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero } from "@/components/PageHero";
 import { accentCity, ServiceDetails } from "@/components/services/ServiceDetails";
-import { services, site } from "@/config/site";
+import { cities, cityPath, serviceCityTitle, servicePath, services } from "@/config/site";
 import { faqJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
+
+// The service hub (/services/interior-painting): how we do this work anywhere, with no city in the
+// copy. Each city it is offered in has its own page (/services/interior-painting/agra) with the
+// local intro, notes and questions; this page links to them and they link back here.
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -22,7 +26,7 @@ export async function generateMetadata({ params }: Params) {
   const { slug } = await params;
   const service = services.find((s) => s.slug === slug);
   if (!service) return {};
-  return pageMetadata({ title: service.title, description: service.description, path: `/services/${service.slug}` });
+  return pageMetadata({ title: service.title, description: service.description, path: servicePath(service) });
 }
 
 const tints = ["bg-sky-wash", "bg-peach-wash", "bg-rose-wash"];
@@ -30,20 +34,21 @@ const shapes = ["arch", "blob", "scallop"] as const;
 const emojis = ["house", "house-with-garden", "key"] as const;
 const linkClass = "font-semibold underline decoration-terracotta decoration-2 underline-offset-4 hover:text-terracotta";
 
-export default async function ServicePage({ params }: Params) {
+export default async function ServiceHubPage({ params }: Params) {
   const { slug } = await params;
   const index = services.findIndex((s) => s.slug === slug);
   const service = services[index];
   if (!service) notFound();
   const others = services.filter((s) => s.slug !== service.slug);
+  const offeredIn = cities.filter((c) => c.slug in service.local);
   const lower = service.name.toLowerCase();
 
   return (
     <>
-      {/* Service FAQs are marked up here, on the page that owns them; /faq marks up only the general ones. */}
+      {/* Hub FAQs are marked up here; each city's own questions are marked up on its city page. */}
       <JsonLd data={[serviceJsonLd(service), faqJsonLd(service.faqs)]} />
       <PageHero
-        crumbs={[{ name: "Services", path: "/services" }, { name: service.name, path: `/services/${service.slug}` }]}
+        crumbs={[{ name: "Services", path: "/services" }, { name: service.name, path: servicePath(service) }]}
         title={accentCity(service.title)}
         intro={service.intro}
         image={service.image}
@@ -51,7 +56,7 @@ export default async function ServicePage({ params }: Params) {
         emoji={emojis[index % emojis.length]}
         tint={tints[index % tints.length]}
       >
-        <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book an inspection →</Link>
+        <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book a site visit →</Link>
       </PageHero>
 
       <div className="container-page mt-16 grid gap-12 lg:grid-cols-[1.5fr_1fr]">
@@ -82,16 +87,24 @@ export default async function ServicePage({ params }: Params) {
 
         <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
           <div className="card bg-ink p-7 text-on-ink">
-            <h2 className="text-2xl font-normal">Get an itemised quote</h2>
-            <p className="mt-2 text-on-ink/70">Book a site inspection anywhere in our {site.city} service area.</p>
-            <a href="#book-inspection" className="btn-primary mt-6 w-full">Book inspection</a>
+            <h2 className="text-2xl font-normal">Where we offer it</h2>
+            <ul className="mt-3 space-y-1">
+              {offeredIn.map((c) => (
+                <li key={c.slug}>
+                  <Link href={servicePath(service, c)} className="inline-flex min-h-11 items-center font-semibold text-on-ink underline decoration-golden decoration-2 underline-offset-4">
+                    {serviceCityTitle(service, c)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <a href="#book-inspection" className="btn-primary mt-6 w-full">Book a site visit</a>
           </div>
           <div className="card p-7">
             <h2 className="text-lg font-normal">Other services</h2>
             <ul className="mt-3 space-y-2">
               {others.map((o) => (
                 <li key={o.slug}>
-                  <Link href={`/services/${o.slug}`} className="inline-flex min-h-11 items-center font-semibold underline decoration-tangerine decoration-2 underline-offset-4 hover:text-tangerine">
+                  <Link href={servicePath(o)} className="inline-flex min-h-11 items-center font-semibold underline decoration-tangerine decoration-2 underline-offset-4 hover:text-tangerine">
                     {o.title}
                   </Link>
                 </li>
@@ -99,10 +112,14 @@ export default async function ServicePage({ params }: Params) {
             </ul>
           </div>
           <div className="card p-7">
-            <h2 className="text-lg font-normal">Painting across {site.city}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{site.areas.join(", ")}.</p>
+            <h2 className="text-lg font-normal">House painting by city</h2>
             <p className="mt-3 text-sm">
-              <Link href="/areas" className={`inline-flex min-h-11 items-center ${linkClass}`}>Areas we serve</Link>
+              {cities.map((c, i) => (
+                <span key={c.slug}>
+                  {i > 0 && <span aria-hidden className="mx-2 text-muted">·</span>}
+                  <Link href={cityPath(c)} className={`inline-flex min-h-11 items-center ${linkClass}`}>House painting in {c.name}</Link>
+                </span>
+              ))}
               <span aria-hidden className="mx-2 text-muted">·</span>
               <Link href="/faq" className={`inline-flex min-h-11 items-center ${linkClass}`}>Painting FAQs</Link>
             </p>
@@ -114,7 +131,7 @@ export default async function ServicePage({ params }: Params) {
         <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
           <div>
             <h2 id="book-inspection-heading" className="text-[clamp(32px,4vw,48px)] leading-[1.08]">
-              Book {lower} in <em>{site.city}</em>
+              Book {lower} <em>online</em>
             </h2>
             <p className="mt-4 max-w-md leading-relaxed text-muted">
               Share a few details and we&apos;ll call to fix a time for the inspection. The inspector measures your walls, brings shade cards and sends an itemised quotation. Nothing is booked until you approve it.
@@ -129,7 +146,7 @@ export default async function ServicePage({ params }: Params) {
           </div>
         </div>
       </section>
-      <CtaBanner heading={<>Ready for {lower} in <em className="text-terracotta">{site.city}?</em></>} />
+      <CtaBanner heading={<>Ready for {lower}? <em className="text-terracotta">Book a site visit.</em></>} />
     </>
   );
 }

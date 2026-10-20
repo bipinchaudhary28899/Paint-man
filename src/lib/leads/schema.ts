@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { bookingDateRange, isCalendarDate } from "./dates";
+import { cities } from "@/config/site";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "./options";
 
 export { floorOptions, homeSizes, propertyTypes, serviceTypes };
@@ -82,6 +83,21 @@ export const contactSchema = z.object({
   message: trimmed(1000).min(5, "Tell us a little about what you need"),
 });
 
-export const leadSchema = z.discriminatedUnion("type", [bookingSchema, contactSchema]);
+/** City slugs a quick site-visit request can name (live cities book a visit; "soon" cities join the waitlist). */
+export const citySlugs = cities.map((c) => c.slug) as [string, ...string[]];
+
+/**
+ * The quick "Book site visit" form (home page hero, city pages): name, mobile and city, plus an
+ * optional locality. The team takes the job details on the call. For a city that is not live yet
+ * the same request is a waitlist entry.
+ */
+export const visitSchema = z.object({
+  type: z.literal("visit"),
+  ...common,
+  city: z.enum(citySlugs, { message: "Choose your city" }),
+  locality: z.preprocess((v) => (typeof v === "string" ? v.trim() || undefined : v), trimmed(80).optional()),
+});
+
+export const leadSchema = z.discriminatedUnion("type", [bookingSchema, contactSchema, visitSchema]);
 
 export type LeadInput = z.infer<typeof leadSchema>;

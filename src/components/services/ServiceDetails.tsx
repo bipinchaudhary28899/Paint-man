@@ -11,13 +11,23 @@ const sqft = (n: number) => `${n.toLocaleString("en-IN")} sq ft`;
 const linkClass = "underline decoration-terracotta decoration-2 underline-offset-4 hover:text-terracotta";
 
 /** "Interior Wall Painting Services in Agra" with the city as the heading's one italic accent. */
-export function accentCity(title: string): React.ReactNode {
-  const suffix = ` in ${site.city}`;
-  if (!title.endsWith(suffix)) return title;
+export function accentCity(title: string, city: string = site.city): React.ReactNode {
+  // a city page ("… in Agra") accents the city; a hub title with no city accents its last word
+  const suffix = ` in ${city}`;
+  if (title.endsWith(suffix)) {
+    return (
+      <>
+        {title.slice(0, -city.length)}
+        <em>{city}</em>
+      </>
+    );
+  }
+  const cut = title.lastIndexOf(" ");
+  if (cut < 0) return <em>{title}</em>;
   return (
     <>
-      {title.slice(0, -site.city.length)}
-      <em>{site.city}</em>
+      {title.slice(0, cut + 1)}
+      <em>{title.slice(cut + 1)}</em>
     </>
   );
 }

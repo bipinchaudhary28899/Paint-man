@@ -49,14 +49,14 @@ describe("HeroImage", () => {
 });
 
 describe("AreaLinks", () => {
-  it("links every locality to its own entry on /areas, using the shared slug from site.ts", () => {
+  it("links every locality to its own entry on the Agra page, using the shared slug from site.ts", () => {
     render(<AreaLinks areas={site.areas} />);
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(site.areas.length);
     for (const a of site.areas) {
-      expect(screen.getByRole("link", { name: `Painters in ${a}` })).toHaveAttribute("href", `/areas#${areaSlug(a)}`);
+      expect(screen.getByRole("link", { name: `Painters in ${a}` })).toHaveAttribute("href", `/services/house-painting/agra#${areaSlug(a)}`);
     }
-    expect(screen.getByRole("link", { name: "Painters in Fatehabad Road" })).toHaveAttribute("href", "/areas#fatehabad-road");
+    expect(screen.getByRole("link", { name: "Painters in Fatehabad Road" })).toHaveAttribute("href", "/services/house-painting/agra#fatehabad-road");
   });
 });
 

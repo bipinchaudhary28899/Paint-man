@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_UPDATED } from "@/config/seo-dates";
-import { services, site, type Service } from "@/config/site";
+import { liveCities, serviceCityTitle, servicePath, services, site, type City, type Service } from "@/config/site";
 
 /** Appended to every page title by the root layout's title template ("{Topic} in Agra | Paint Saathi"). */
 export const TITLE_SUFFIX = ` | ${site.name}`;
@@ -253,7 +253,25 @@ export function websiteJsonLd() {
   };
 }
 
-export function serviceJsonLd(service: Service) {
+/**
+ * A Service entity. The hub (no city) serves every live city; a city page's Service is that service
+ * in that city, with its own @id and name, both provided by the one business.
+ */
+export function serviceJsonLd(service: Service, city?: City) {
+  if (city) {
+    const url = abs(servicePath(service, city));
+    return {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "@id": `${url}#service`,
+      name: serviceCityTitle(service, city),
+      serviceType: service.name,
+      description: service.local[city.slug]?.description ?? service.description,
+      url,
+      provider: { "@id": BUSINESS_ID },
+      areaServed: city.slug === "agra" ? agraPlace() : { "@type": "City", name: city.name },
+    };
+  }
   return {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -263,7 +281,7 @@ export function serviceJsonLd(service: Service) {
     description: service.description,
     url: serviceUrl(service),
     provider: { "@id": BUSINESS_ID },
-    areaServed: agraPlace(),
+    areaServed: liveCities().map((c) => (c.slug === "agra" ? agraPlace() : { "@type": "City", name: c.name })),
   };
 }
 

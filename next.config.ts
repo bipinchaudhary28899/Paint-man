@@ -55,10 +55,14 @@ const nextConfig: NextConfig = {
   // experimental.inlineCss was measured and left off: the stylesheet (~12 KB brotli) is fetched
   // once on the page's own connection and cached for every later page, while inlining copied it
   // three times into every HTML document and every RSC prefetch (/faq: 8.8 KB -> 22 KB brotli).
-  // The photo visualizer was retired: old links (including ?shade=…) land on the colour finder,
-  // where every shade is previewed on the room photo.
+  // Retired URLs: the photo visualizer (shades are previewed on the finder's room photo) and the
+  // /areas hub (now the city page).
   async redirects() {
-    return [{ source: "/visualizer", destination: "/colours", permanent: true }];
+    return [
+      { source: "/visualizer", destination: "/colours", permanent: true },
+      // the Agra localities hub became Agra's main painting page (city-scoped URLs: /services/house-painting/<city>)
+      { source: "/areas", destination: "/services/house-painting/agra", permanent: true },
+    ];
   },
   async headers() {
     return [

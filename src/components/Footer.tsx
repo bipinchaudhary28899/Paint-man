@@ -1,62 +1,49 @@
 import Link from "next/link";
+import { footerColumns } from "@/config/nav";
 import { StackedLogo } from "./Logo";
-import { services, site } from "@/config/site";
+import { promises, site } from "@/config/site";
 
-const explore = [
-  { href: "/services", label: "Services" },
-  { href: "/#how", label: "How it works" },
-  { href: "/colours", label: "Colour finder" },
-  { href: "/palettes", label: "Colour palettes" },
-  { href: "/areas", label: "Areas we serve" },
-  { href: "/about", label: "About us" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contact", label: "Contact" },
-  { href: "/book", label: "Book painters online" },
-];
-
+// The footer is the site's link hub (as on the big painting sites): every service hub, every page
+// for each live city, the cities, the colour tools and the company pages, from src/config/nav.ts.
 export function Footer() {
   const year = new Date().getFullYear();
+  const columns = footerColumns();
   return (
     <footer className="bg-ink pb-[120px] text-on-ink-muted min-[721px]:pb-0">
-      <div className="container-page grid gap-12 py-[72px] md:grid-cols-[1.3fr_1fr_1fr_1fr] md:pb-14">
+      <div className="container-page grid gap-12 py-[72px] md:pb-14 lg:grid-cols-[1.2fr_2.8fr]">
         <div>
           <p><StackedLogo /></p>
-          <p className="mt-3 max-w-[300px] text-[15px] leading-relaxed">
-            {site.tagline}. Interiors, exteriors and complete homes, inspected, quoted line by line and supervised.
+          <p className="mt-3 max-w-[320px] text-[15px] leading-relaxed">
+            Managed house painting: inspected, quoted line by line and supervised. {promises[0].title}, a full estimate before work
+            starts.
           </p>
-        </div>
-        <div className="text-[15px] leading-[1.9]">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-golden">Visit &amp; call</p>
-          <address className="not-italic">
-            {site.address.street ? <p>{site.address.street}, {site.city} {site.address.postalCode}</p> : <p>{site.city}, {site.region}</p>}
-            {site.phone && <p><a href={`tel:${site.phone}`} className="hover:text-on-ink">{site.phoneDisplay || site.phone}</a></p>}
-            {site.email && <p><a href={`mailto:${site.email}`} className="hover:text-on-ink">{site.email}</a></p>}
-            <p>{site.hoursDisplay}</p>
+          <address className="mt-6 text-[15px] not-italic leading-[1.9]">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-golden">Visit &amp; call</span>
+            {site.address.street ? <span className="block">{site.address.street}, {site.city} {site.address.postalCode}</span> : <span className="block">{site.city}, {site.region}</span>}
+            {site.phone && <a href={`tel:${site.phone}`} className="block hover:text-on-ink">{site.phoneDisplay || site.phone}</a>}
+            {site.email && <a href={`mailto:${site.email}`} className="block hover:text-on-ink">{site.email}</a>}
+            <span className="block">{site.hoursDisplay}</span>
           </address>
         </div>
-        <div className="text-[15px]">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-golden">Services</p>
-          <ul className="md:space-y-1">
-            {services.map((s) => (
-              <li key={s.slug}>
-                <Link href={`/services/${s.slug}`} className="flex min-h-11 items-center hover:text-on-ink md:block md:min-h-0 md:py-1.5">
-                  {s.name} in {site.city}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <nav aria-label="Footer" className="flex flex-col text-[15px]">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-golden">Explore</p>
-          {explore.map((l) => (
-            <Link key={l.href} href={l.href} className="flex min-h-11 items-center hover:text-on-ink md:block md:min-h-0 md:py-1.5">
-              {l.label}
-            </Link>
+        <nav aria-label="Footer" className="grid gap-10 text-[15px] sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+          {columns.map((col) => (
+            <div key={col.heading}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-golden">{col.heading}</p>
+              <ul>
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="flex min-h-11 items-center hover:text-on-ink md:block md:min-h-0 md:py-1.5">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
         </nav>
       </div>
       <div className="container-page flex flex-col gap-3 border-t border-on-ink/10 py-6 text-xs md:flex-row md:items-center md:justify-between">
-        <p>Serving {site.areas.join(" · ")}</p>
+        <p>Painting in {site.city}: {site.areas.join(" · ")}</p>
         {/* Legal links get a 44px tall tap target. On phones the 44px rows space the wrapped lines; on wider
             screens the negative margin keeps the row at the Staff login pill's 26px, so the strip keeps its height. */}
         <p className="flex flex-wrap items-center gap-x-5 md:-my-[9px]">

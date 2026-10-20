@@ -1,15 +1,8 @@
 import Link from "next/link";
+import { navMenus } from "@/config/nav";
 import { site } from "@/config/site";
 import { Wordmark } from "./Logo";
-
-const nav = [
-  { href: "/services", label: "Services" },
-  { href: "/#how", label: "How it works" },
-  { href: "/colours", label: "Colours" },
-  // The home page's example finishes (stock photos, not our jobs), so not "Projects".
-  { href: "/#work", label: "Finishes" },
-  { href: "/faq", label: "FAQ" },
-];
+import { NavMenu } from "./NavMenu";
 
 export function Header() {
   return (
@@ -19,12 +12,11 @@ export function Header() {
           <Wordmark eager />
           <span className="sr-only"> – painters in {site.city}</span>
         </Link>
-        <nav aria-label="Main" className="hidden items-center gap-9 text-[15px] font-medium min-[721px]:flex">
-          {nav.map((item) => (
-            <Link key={item.href} href={item.href} className="text-ink transition hover:text-terracotta">
-              {item.label}
-            </Link>
+        <nav aria-label="Main" className="hidden items-center gap-7 text-[15px] font-medium min-[721px]:flex lg:gap-9">
+          {navMenus().map((m) => (
+            <NavMenu key={m.label} menu={m} />
           ))}
+          <Link href="/faq" className="inline-flex min-h-11 items-center text-ink transition hover:text-terracotta">FAQ</Link>
         </nav>
         <div className="hidden items-center gap-6 min-[721px]:flex">
           {site.phone && (
@@ -33,7 +25,7 @@ export function Header() {
             </a>
           )}
           <Link href="/book" className="btn-primary !min-h-[46px] !px-5 text-sm">
-            Get a free estimate
+            Book site visit
           </Link>
         </div>
       </div>

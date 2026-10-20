@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import sitemap from "@/app/sitemap";
 import { getPalette } from "@/config/palettes";
-import { areaSlug, generalFaqs, getService, jobDuration, jobSize, services, site, type Service } from "@/config/site";
+import { areaSlug, cities, cityPath, generalFaqs, getCity, getService, homeCity, jobDuration, jobSize, liveCities, serviceCityTitle, servicePath, services, servicesIn, site, type Service } from "@/config/site";
 import { getBrandShade } from "@/lib/colours/brands";
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import { serviceTypes } from "@/lib/leads/options";
@@ -28,7 +28,10 @@ function specificCopy(s: Service): string[] {
   ];
 }
 
-const allCopy = (s: Service) => [...specificCopy(s), s.title, s.description, ...s.faqs.flatMap((f) => [f.q, f.a])];
+/** Every city section of a service: its intro, notes and FAQs. */
+const localCopy = (s: Service) =>
+  Object.values(s.local).flatMap((l) => [l.description, l.intro, ...l.notes.flatMap((n) => [n.title, n.body]), ...l.faqs.flatMap((f) => [f.q, f.a])]);
+const allCopy = (s: Service) => [...specificCopy(s), s.title, s.description, ...s.faqs.flatMap((f) => [f.q, f.a]), ...localCopy(s)];
 
 // Routes a link in site.ts may point to: every page in the real sitemap, plus the real pages kept
 // out of it on purpose (noindex). A link to anything else dangles, so a renamed or removed route
@@ -36,12 +39,13 @@ const allCopy = (s: Service) => [...specificCopy(s), s.title, s.description, ...
 const unlistedRoutes = ["/thank-you"];
 const knownRoutes = new Set([...sitemap().map((e) => e.url.replace(site.url, "") || "/"), ...unlistedRoutes]);
 
-/** Why an internal href would not land on a page (or a locality on /areas); undefined when it does. */
+/** Why an internal href would not land on a page (or a locality on a city page); undefined when it does. */
 function danglingReason(href: string): string | undefined {
   if (!href.startsWith("/") || href.startsWith("//")) return "not a root-relative internal link";
   const url = new URL(href, "http://site.test");
   if (!knownRoutes.has(url.pathname)) return `no page at ${url.pathname}`;
-  if (url.pathname === "/areas" && url.hash && !site.areas.some((a) => `#${areaSlug(a)}` === url.hash)) return `no locality ${url.hash} on /areas`;
+  const city = cities.find((c) => cityPath(c) === url.pathname);
+  if (city && url.hash && url.hash !== "#localities" && !city.areas.some((a) => `#${areaSlug(a)}` === url.hash)) return `no locality ${url.hash} on ${url.pathname}`;
   return undefined;
 }
 
@@ -62,7 +66,7 @@ describe("areas", () => {
 
 describe("known routes", () => {
   it("come from the sitemap, plus unlisted pages that exist", () => {
-    for (const path of ["/", "/book", "/areas", "/faq", "/contact", ...services.map((s) => `/services/${s.slug}`)]) {
+    for (const path of ["/", "/book", "/faq", "/contact", "/services/house-painting", "/services/house-painting/agra", ...services.flatMap((s) => [`/services/${s.slug}`, `/services/${s.slug}/agra`])]) {
       expect(knownRoutes.has(path), path).toBe(true);
     }
     for (const path of unlistedRoutes) {
@@ -72,9 +76,12 @@ describe("known routes", () => {
 
   it("accept query strings and locality anchors, and reject anything that dangles", () => {
     expect(danglingReason("/book?service=interior-painting")).toBeUndefined();
-    expect(danglingReason(`/areas#${areaSlug(site.areas[0])}`)).toBeUndefined();
-    expect(danglingReason("/areas#nowhere")).toBe("no locality #nowhere on /areas");
-    expect(danglingReason("/areas/kamla-nagar")).toBe("no page at /areas/kamla-nagar");
+    expect(danglingReason(`/services/house-painting/agra#${areaSlug(site.areas[0])}`)).toBeUndefined();
+    expect(danglingReason("/services/house-painting/agra#localities")).toBeUndefined();
+    expect(danglingReason("/services/house-painting/agra#nowhere")).toBe("no locality #nowhere on /services/house-painting/agra");
+    expect(danglingReason("/areas")).toBe("no page at /areas"); // retired: 308s to the Agra page
+    // a city that is not live yet is a noindex waitlist page, kept out of the sitemap
+    expect(danglingReason("/services/house-painting/bangalore")).toBe("no page at /services/house-painting/bangalore");
     expect(danglingReason("/projects")).toBe("no page at /projects");
     expect(danglingReason("https://example.com/")).toBe("not a root-relative internal link");
   });
@@ -92,15 +99,28 @@ describe("services", () => {
     }
   });
 
-  it.each(services.map((s) => [s.slug, s] as const))("%s: title is '{Topic} in Agra' and fits 60 characters with the suffix", (_slug, s) => {
-    expect(s.title.endsWith(` in ${site.city}`)).toBe(true);
+  it.each(services.map((s) => [s.slug, s] as const))("%s: the hub title names no city; every city title is '{Topic} in {City}' within 60 characters", (_slug, s) => {
+    for (const c of cities) expect(s.title).not.toContain(c.name);
     expect((s.title + SUFFIX).length).toBeLessThanOrEqual(60);
+    for (const c of cities) {
+      expect(serviceCityTitle(s, c)).toBe(`${s.title} in ${c.name}`);
+      expect((serviceCityTitle(s, c) + SUFFIX).length).toBeLessThanOrEqual(60);
+    }
   });
 
-  it.each(services.map((s) => [s.slug, s] as const))("%s: description is 140-155 characters and names the city", (_slug, s) => {
+  it.each(services.map((s) => [s.slug, s] as const))("%s: descriptions are 140-155 characters; the hub's names no city, each city's names its city", (_slug, s) => {
     expect(s.description.length).toBeGreaterThanOrEqual(140);
     expect(s.description.length).toBeLessThanOrEqual(155);
-    expect(s.description).toContain(site.city);
+    for (const c of cities) expect(s.description).not.toContain(c.name);
+    for (const [slug, local] of Object.entries(s.local)) {
+      const city = getCity(slug)!;
+      expect(city, slug).toBeDefined();
+      expect(local.description.length, slug).toBeGreaterThanOrEqual(140);
+      expect(local.description.length, slug).toBeLessThanOrEqual(155);
+      expect(local.description).toContain(city.name);
+      expect(local.intro).toContain(city.name);
+      expect(local.notes.length).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it.each(services.map((s) => [s.slug, s] as const))("%s: has 300+ words of its own copy, not counting FAQs", (_slug, s) => {
@@ -197,7 +217,7 @@ describe("job lengths", () => {
 
   it("say one thing everywhere: a crew sized to the home, for about a week", () => {
     const j = jobSize(900);
-    const interior = getService("interior-painting")!.faqs.find((f) => f.q.startsWith("How long"))!;
+    const interior = getService("interior-painting")!.local.agra.faqs.find((f) => f.q.startsWith("How long"))!;
     expect(interior.a).toContain(`takes ${j.duration} with a crew sized to the job, usually ${j.painters} painters`);
     expect(interior.a).toContain("less when the walls need little putty work");
     const price = generalFaqs.find((f) => f.q === "How is the price calculated?")!;
@@ -214,7 +234,7 @@ describe("job lengths", () => {
 });
 
 describe("FAQs", () => {
-  const all = [...generalFaqs, ...services.flatMap((s) => s.faqs)];
+  const all = [...generalFaqs, ...services.flatMap((s) => [...s.faqs, ...Object.values(s.local).flatMap((l) => l.faqs)])];
 
   it("every question is unique across the general and service FAQs", () => {
     expect(new Set(all.map((f) => f.q)).size).toBe(all.length);
@@ -256,5 +276,69 @@ describe("booking FAQs (/book)", () => {
     const others = new Set([...generalFaqs, ...services.flatMap((s) => s.faqs)].map((f) => f.q));
     for (const f of bookingFaqs) expect(others.has(f.q), f.q).toBe(false);
     expect(bookingFaqs.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+
+describe("cities (city-scoped URLs: /services/<service>/<city>)", () => {
+  it("have unique URL-safe slugs and names, and Agra is live", () => {
+    expect(new Set(cities.map((c) => c.slug)).size).toBe(cities.length);
+    expect(new Set(cities.map((c) => c.name)).size).toBe(cities.length);
+    for (const c of cities) expect(c.slug).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    expect(homeCity.slug).toBe("agra");
+    expect(homeCity.status).toBe("live");
+    expect(cities.map((c) => c.slug)).toEqual(expect.arrayContaining(["agra", "delhi-ncr", "bangalore"]));
+  });
+
+  it("a live city has localities and every service written for it; a coming city has neither", () => {
+    for (const c of cities) {
+      expect(c.description.length, c.slug).toBeGreaterThanOrEqual(140);
+      expect(c.description.length, c.slug).toBeLessThanOrEqual(155);
+      if (c.status === "live") {
+        expect(c.areas.length).toBeGreaterThan(0);
+        expect(servicesIn(c).map((s) => s.slug)).toEqual(services.map((s) => s.slug));
+      } else {
+        expect(c.areas).toEqual([]);
+        expect(servicesIn(c)).toEqual([]);
+        for (const s of services) expect(c.slug in s.local, `${s.slug} in ${c.slug}`).toBe(false);
+      }
+    }
+    expect(liveCities().every((c) => c.status === "live")).toBe(true);
+  });
+
+  it("builds the URLs every page, menu and sitemap entry uses", () => {
+    const interior = getService("interior-painting")!;
+    expect(servicePath(interior)).toBe("/services/interior-painting");
+    expect(servicePath(interior, homeCity)).toBe("/services/interior-painting/agra");
+    expect(cityPath(homeCity)).toBe("/services/house-painting/agra");
+  });
+
+  it("every city's weather links resolve", () => {
+    for (const c of cities) for (const w of c.weather) if (w.link) expect(danglingReason(w.link.href), w.link.href).toBeUndefined();
+  });
+});
+
+describe("header menus and footer link hub (src/config/nav.ts)", () => {
+  it("every link lands on a real page; coming-soon cities link to their (noindex) waitlist page", async () => {
+    const { navMenus, footerColumns } = await import("@/config/nav");
+    const soonPaths = new Set(cities.filter((c) => c.status === "soon").map(cityPath));
+    const links = [...navMenus().flatMap((m) => [{ href: m.href }, ...m.groups.flatMap((g) => g.links)]), ...footerColumns().flatMap((c) => c.links)];
+    expect(links.length).toBeGreaterThan(20);
+    for (const { href } of links) {
+      if (soonPaths.has(href)) continue;
+      expect(danglingReason(href), href).toBeUndefined();
+    }
+  });
+
+  it("names a menu and a footer column for every live city's services", async () => {
+    const { footerColumns } = await import("@/config/nav");
+    const agra = footerColumns().find((c) => c.heading === "Painting in Agra")!;
+    for (const s of services) expect(agra.links.map((l) => l.href)).toContain(`/services/${s.slug}/agra`);
+  });
+
+  it("only offers shade cards for brands that are in the colour data", async () => {
+    const { shadeCardBrands } = await import("@/config/nav");
+    const { isBrand } = await import("@/lib/colours/brands");
+    for (const b of shadeCardBrands) expect(isBrand(b.slug), b.slug).toBe(true);
   });
 });

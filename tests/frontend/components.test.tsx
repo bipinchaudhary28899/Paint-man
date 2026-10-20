@@ -24,20 +24,16 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("Header and Footer", () => {
-  it("header links to the main pages and the booking page", () => {
+  it("header: Services, Cities and Colours menus, FAQ, and a Book site visit button", () => {
     render(<Header />);
     const main = screen.getByRole("navigation", { name: "Main" });
-    for (const href of ["/services", "/#how", "/colours", "/#work", "/faq"]) {
-      expect(main.querySelector(`a[href="${href}"]`)).not.toBeNull();
+    for (const name of ["Services", "Cities", "Colours"]) expect(within(main).getByRole("button", { name })).toHaveAttribute("aria-expanded", "false");
+    // every menu link is in the HTML (crawlable) even while the menu is closed
+    for (const href of ["/services/house-painting", "/services/interior-painting", "/services/house-painting/agra", "/services/house-painting/bangalore", "/colours", "/palettes", "/colours?brand=asian-paints"]) {
+      expect(main.querySelector(`a[href="${href}"]`), href).not.toBeNull();
     }
-    expect(screen.getByRole("link", { name: "Get a free estimate" })).toHaveAttribute("href", "/book");
-  });
-
-  it("header names the home page's example-finishes section 'Finishes', not 'Projects'", () => {
-    render(<Header />);
-    const main = screen.getByRole("navigation", { name: "Main" });
-    expect(within(main).getByRole("link", { name: "Finishes" })).toHaveAttribute("href", "/#work");
-    expect(within(main).queryByRole("link", { name: /projects/i })).toBeNull();
+    expect(within(main).getByRole("link", { name: "FAQ" })).toHaveAttribute("href", "/faq");
+    expect(screen.getByRole("link", { name: "Book site visit" })).toHaveAttribute("href", "/book");
   });
 
   it("header shows the phone number once site.ts has one", async () => {
@@ -52,11 +48,13 @@ describe("Header and Footer", () => {
     expect(screen.getByRole("link", { name: fakeContact.phone })).toHaveAttribute("href", `tel:${fakeContact.phone}`);
   });
 
-  it("footer links every service page and the legal pages", () => {
+  it("footer links every service hub, every service in each live city, and the legal pages", () => {
     render(<Footer />);
     for (const s of services) {
-      expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}`);
+      expect(screen.getByRole("link", { name: s.title })).toHaveAttribute("href", `/services/${s.slug}`);
+      expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}/agra`);
     }
+    expect(screen.getByRole("link", { name: "Bangalore (coming soon)" })).toHaveAttribute("href", "/services/house-painting/bangalore");
     expect(screen.getByRole("link", { name: "Privacy policy" })).toHaveAttribute("href", "/privacy-policy");
     expect(screen.getByRole("link", { name: "Terms of service" })).toHaveAttribute("href", "/terms");
   });
@@ -143,8 +141,9 @@ describe("Header and Footer", () => {
     render(<Footer />);
     expect(screen.getByRole("link", { name: "About us" })).toHaveAttribute("href", "/about");
     expect(screen.getByRole("link", { name: "Contact" })).toHaveAttribute("href", "/contact");
-    expect(screen.getByRole("link", { name: "Areas we serve" })).toHaveAttribute("href", "/areas");
-    expect(screen.getByText(new RegExp(`Serving ${site.areas[0]}`))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: `Areas we serve in ${site.city}` })).toHaveAttribute("href", "/services/house-painting/agra#localities");
+    expect(screen.getByText(new RegExp(`Painting in ${site.city}: ${site.areas[0]}`))).toBeInTheDocument();
+    expect(screen.getByText(/Zero advance payment/)).toBeInTheDocument();
   });
 
   it("footer legal links have a 44px tall tap target", () => {

@@ -326,3 +326,22 @@ describe("leadLoadErrorMessage (shown to the signed-in admin)", () => {
     vi.restoreAllMocks();
   });
 });
+
+describe("toRow: quick site visits and the waitlist", () => {
+  it("files a live-city request as a site visit, with the city in the locality column", async () => {
+    const { toRow, LEAD_COLUMNS } = await import("@/lib/leads/store");
+    const row = toRow({ type: "visit", name: "Asha", phone: "9876543210", city: "agra", locality: "Kamla Nagar" }, "L3", new Date());
+    expect(row).toHaveLength(LEAD_COLUMNS.length);
+    expect(row.slice(2, 6)).toEqual(["visit", "Asha", "9876543210", "Kamla Nagar, Agra"]);
+    expect(row[9]).toMatch(/Quick site-visit request/);
+    expect(row.slice(6, 9)).toEqual(["", "", ""]); // property, service and date are taken on the call
+  });
+
+  it("files a request for a city that is not live as a waitlist entry", async () => {
+    const { toRow } = await import("@/lib/leads/store");
+    const row = toRow({ type: "visit", name: "Ravi", phone: "9123456789", city: "bangalore" }, "L4", new Date());
+    expect(row[2]).toBe("waitlist");
+    expect(row[5]).toBe("Bangalore");
+    expect(row[9]).toMatch(/Waitlist: not painting in Bangalore yet/);
+  });
+});

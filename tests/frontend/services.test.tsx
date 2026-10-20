@@ -5,7 +5,7 @@ import { PageHero } from "@/components/PageHero";
 import { accentCity, finderSearchHref, JobSizeTable, ServiceDetails, ServiceShades } from "@/components/services/ServiceDetails";
 import { images } from "@/config/images";
 import { getPalette, shadeDisplayName } from "@/config/palettes";
-import { generalFaqs, getService, jobSize, services, site } from "@/config/site";
+import { areaSlug, generalFaqs, getService, jobSize, services, site } from "@/config/site";
 
 // The shared next/image mock drops `preload` before it reaches the <img>, so record the props
 // PageHero actually passes: the hero (LCP) photo must ask Next to load it first.
@@ -40,15 +40,21 @@ function expectOrderedOutline(root: HTMLElement, start: number) {
 }
 
 describe("accentCity", () => {
-  it("puts the city in the heading's one italic accent", () => {
-    const { container } = render(<h1>{accentCity(interior.title)}</h1>);
-    expect(screen.getByRole("heading", { level: 1, name: interior.title })).toBeInTheDocument();
+  it("puts the city in the heading's one italic accent on a city page", () => {
+    const title = `${interior.title} in ${site.city}`;
+    const { container } = render(<h1>{accentCity(title)}</h1>);
+    expect(screen.getByRole("heading", { level: 1, name: title })).toBeInTheDocument();
     expect(container.querySelectorAll("em")).toHaveLength(1);
     expect(container.querySelector("em")).toHaveTextContent(site.city);
+    const other = render(<h2>{accentCity("Painting in Bangalore", "Bangalore")}</h2>).container;
+    expect(other.querySelector("em")).toHaveTextContent("Bangalore");
   });
 
-  it("leaves a title that does not end with the city as plain text", () => {
-    expect(accentCity("Painting services")).toBe("Painting services");
+  it("accents the last word of a title with no city (a hub), or a one-word title whole", () => {
+    const { container } = render(<h1>{accentCity("Painting services")}</h1>);
+    expect(container.querySelector("em")).toHaveTextContent("services");
+    expect(container).toHaveTextContent("Painting services");
+    expect(render(<p>{accentCity("Painting")}</p>).container.querySelector("em")).toHaveTextContent("Painting");
   });
 });
 
@@ -188,10 +194,12 @@ describe("service page", () => {
     expect(screen.getByLabelText("Service needed")).toHaveValue(s.leadService);
     expect(container.querySelector("#book-inspection form")).not.toBeNull();
     const links = hrefs(container);
-    expect(links).toEqual(expect.arrayContaining(["/faq", "/areas", "/palettes", `/book?service=${slug}`]));
+    expect(links).toEqual(expect.arrayContaining(["/faq", "/services/house-painting/agra", "/palettes", `/book?service=${slug}`, `/services/${slug}/agra`]));
     for (const other of services.filter((o) => o.slug !== slug)) expect(links).toContain(`/services/${other.slug}`);
     const ld = [...container.querySelectorAll('script[type="application/ld+json"]')].map((n) => n.textContent).join("");
     for (const f of s.faqs) expect(ld).toContain(f.q);
+    // a city's own questions belong to the city page, not the hub
+    for (const f of s.local.agra.faqs) expect(ld).not.toContain(f.q);
   });
 
   it("404s an unknown slug", async () => {
@@ -222,5 +230,50 @@ describe("/services metadata", () => {
     const { metadata } = await import("@/app/(site)/services/page");
     const { fullTitle, MAX_TITLE_LENGTH } = await import("@/lib/seo");
     expect(fullTitle(String(metadata.title)).length).toBeLessThanOrEqual(MAX_TITLE_LENGTH);
+  });
+});
+
+describe("service in a city (/services/<service>/agra)", () => {
+  it.each(services.map((s) => [s.slug, s] as const))("%s: a city h1, local notes, city FAQs marked up here, localities and the booking form", async (slug, s) => {
+    const { default: Page, generateMetadata, generateStaticParams } = await import("@/app/(site)/services/[slug]/[city]/page");
+    expect(generateStaticParams()).toContainEqual({ slug, city: "agra" });
+    expect(generateStaticParams().some((p) => p.city === "bangalore")).toBe(false); // not live yet
+    const meta = await generateMetadata({ params: Promise.resolve({ slug, city: "agra" }) });
+    expect(meta.title).toBe(`${s.title} in ${site.city}`);
+    expect(meta.description).toBe(s.local.agra.description);
+    const { container } = render(await Page({ params: Promise.resolve({ slug, city: "agra" }) }));
+    const h1s = container.querySelectorAll("h1");
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent(`${s.title} in ${site.city}`);
+    expectOrderedOutline(container, 1);
+    for (const n of s.local.agra.notes) expect(screen.getByRole("heading", { level: 3, name: n.title })).toBeInTheDocument();
+    const links = hrefs(container);
+    expect(links).toContain(`/services/${slug}`); // the hub: how the work is done
+    expect(links).toContain(`/services/house-painting/agra#${areaSlug(site.areas[0])}`);
+    expect(screen.getByLabelText("Service needed")).toHaveValue(s.leadService);
+    const ld = [...container.querySelectorAll('script[type="application/ld+json"]')].map((n) => n.textContent).join("");
+    for (const f of s.local.agra.faqs) expect(ld).toContain(f.q);
+    expect(ld).toContain(`/services/${slug}/agra#service`);
+  });
+
+  it("returns no metadata and 404s for a city the service is not written for", async () => {
+    const { default: Page, generateMetadata } = await import("@/app/(site)/services/[slug]/[city]/page");
+    expect(await generateMetadata({ params: Promise.resolve({ slug: "interior-painting", city: "bangalore" }) })).toEqual({});
+    await expect(Page({ params: Promise.resolve({ slug: "interior-painting", city: "bangalore" }) })).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+});
+
+describe("national house-painting hub (/services/house-painting)", () => {
+  it("links every service hub and every city, with the quick form and promises", async () => {
+    const { default: Page, metadata } = await import("@/app/(site)/services/house-painting/page");
+    expect(String(metadata.title)).toBe("House Painting Services in India");
+    const { container } = render(<Page />);
+    expect(container.querySelectorAll("h1")).toHaveLength(1);
+    expectOrderedOutline(container, 1);
+    const links = hrefs(container);
+    for (const s of services) expect(links).toContain(`/services/${s.slug}`);
+    for (const c of ["agra", "delhi-ncr", "bangalore"]) expect(links).toContain(`/services/house-painting/${c}`);
+    expect(screen.getByRole("button", { name: "Book site visit" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Zero advance payment" })).toBeInTheDocument();
   });
 });

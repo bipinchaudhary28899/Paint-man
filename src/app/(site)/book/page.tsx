@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Blob } from "@/components/Decor";
 import { images } from "@/config/images";
 import { FaqList } from "@/components/FaqList";
+import { Promises } from "@/components/Promises";
 import { JsonLd } from "@/components/JsonLd";
 import { bookingFaqs, bookingSteps, services, site } from "@/config/site";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
@@ -76,6 +77,8 @@ export default function BookPage() {
           </aside>
         </div>
 
+        <Promises className="mt-20 md:mt-24" />
+
         <section className="mt-20 md:mt-24" aria-labelledby="how-booking-works">
           <h2 id="how-booking-works" className="text-3xl font-normal md:text-5xl">
             How booking painters online <em>works</em>
@@ -99,7 +102,7 @@ export default function BookPage() {
             </h2>
             <p className="mt-4 text-muted">
               More answers on the <Link href="/faq" className="font-bold text-ink underline">painting FAQ</Link>, or see the{" "}
-              <Link href="/areas" className="font-bold text-ink underline">areas we serve in {site.city}</Link>.
+              <Link href="/services/house-painting/agra#localities" className="font-bold text-ink underline">areas we serve in {site.city}</Link>.
             </p>
           </div>
           <FaqList faqs={bookingFaqs} />

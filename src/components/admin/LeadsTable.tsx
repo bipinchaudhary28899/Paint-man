@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { crewEstimate, formatSqft } from "@/lib/leads/estimate";
 import type { LeadRecord } from "@/lib/leads/store";
 
-type Filter = "all" | "booking" | "contact";
+type Filter = "all" | "booking" | "visit" | "waitlist" | "contact";
 
 /** "2 floors · 3 BHK · 1,200 sq ft/floor" from the job-size columns (blank for messages). */
 export function jobSize(l: LeadRecord): string {
@@ -67,6 +67,8 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
         <select id="lead-type" value={type} onChange={(e) => setType(e.target.value as Filter)} className="field w-auto">
           <option value="all">All types</option>
           <option value="booking">Bookings</option>
+          <option value="visit">Quick site visits</option>
+          <option value="waitlist">Waitlist (new cities)</option>
           <option value="contact">Messages</option>
         </select>
         <p className="text-sm text-muted" aria-live="polite">{shown.length} shown</p>

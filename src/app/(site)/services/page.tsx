@@ -3,12 +3,12 @@ import Link from "next/link";
 import { CtaBanner } from "@/components/CtaBanner";
 import { PageHero } from "@/components/PageHero";
 import { images } from "@/config/images";
-import { services, site } from "@/config/site";
+import { cities, cityPath, homeCity, serviceCityTitle, servicePath, services, servicesIn } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Interior & Exterior Painting Services in ${site.city}`,
-  description: `Interior, exterior and rental property painting in ${site.city}, managed from start to finish. Every job starts with an on-site inspection and itemised quote.`,
+  title: "Interior & Exterior Painting Services",
+  description: "Interior, exterior and rental property painting, managed from start to finish. Every job starts with an on-site inspection and a full itemised quote.",
   path: "/services",
 });
 
@@ -19,7 +19,7 @@ export default function ServicesPage() {
     <>
       <PageHero
         crumbs={[{ name: "Services", path: "/services" }]}
-        title={<>Painting services in <span className="text-gradient">{site.city}</span></>}
+        title={<>Painting <em>services</em></>}
         intro="Every job follows the same process: site inspection, itemised quote, supervised painting and a final walkthrough with you."
         image={images.muralBuckets}
         shape="blob"
@@ -36,7 +36,7 @@ export default function ServicesPage() {
             </div>
             <div className="p-8 md:p-10">
               <h2 className="text-3xl font-normal">
-                <Link href={`/services/${s.slug}`} className="hover:text-tangerine-text">{s.title}</Link>
+                <Link href={servicePath(s)} className="hover:text-tangerine-text">{s.title}</Link>
               </h2>
               <p className="mt-4 leading-relaxed text-muted">{s.intro}</p>
               <ul className="mt-6 grid gap-2.5 text-sm font-semibold sm:grid-cols-2">
@@ -45,9 +45,18 @@ export default function ServicesPage() {
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href={`/book?service=${s.slug}`} className="btn-primary">Book inspection</Link>
-                <Link href={`/services/${s.slug}`} className="btn-secondary">Details</Link>
+                <Link href={`/book?service=${s.slug}`} className="btn-primary">Book site visit</Link>
+                <Link href={servicePath(s)} className="btn-secondary">Details</Link>
               </div>
+              <p className="mt-5 text-sm text-muted">
+                In your city:{" "}
+                {cities.filter((c) => servicesIn(c).includes(s)).map((c, j) => (
+                  <span key={c.slug}>
+                    {j > 0 && " · "}
+                    <Link href={servicePath(s, c)} className={linkClass}>{serviceCityTitle(s, c)}</Link>
+                  </span>
+                ))}
+              </p>
             </div>
           </article>
         ))}
@@ -71,8 +80,9 @@ export default function ServicesPage() {
         <div>
           <h2 className="text-2xl font-normal">Where we <em>work</em></h2>
           <p className="mt-3 leading-relaxed text-muted">
-            Homes, rental flats and shops across {site.city}, including {site.areas.slice(0, 4).join(", ")} and more.{" "}
-            <Link href="/areas" className={linkClass}>See all areas</Link>.
+            Homes, rental flats and shops across {homeCity.name}, including {homeCity.areas.slice(0, 4).join(", ")} and more, with{" "}
+            {cities.filter((c) => c.status === "soon").map((c) => c.name).join(" and ")} coming next.{" "}
+            <Link href={cityPath(homeCity)} className={linkClass}>House painting in {homeCity.name}</Link>.
           </p>
         </div>
       </section>

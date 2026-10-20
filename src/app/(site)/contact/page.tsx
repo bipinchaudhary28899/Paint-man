@@ -39,7 +39,7 @@ export default function ContactPage() {
       emoji: "house" as const,
       // A 44px tall tap target on a 28px line: the 8px negative margins above and below keep the row's height.
       node: (
-        <Link href="/areas" className="-my-2 inline-flex min-h-11 items-center hover:text-tangerine">
+        <Link href="/services/house-painting/agra#localities" className="-my-2 inline-flex min-h-11 items-center hover:text-tangerine">
           {site.city}, {site.region}
         </Link>
       ),
@@ -119,14 +119,14 @@ export default function ContactPage() {
           <h2 className="text-2xl md:text-3xl">Localities we cover</h2>
           <p className="mt-3 leading-[1.65] text-muted">{site.areas.join(" · ")}</p>
           <p className="mt-3 text-sm text-muted">Not on the list? Ask anyway. We&apos;ll tell you honestly whether we can supervise your job.</p>
-          <Link href="/areas" className="link-arrow mt-4 min-h-11">Areas we serve in {site.city} <span aria-hidden>→</span></Link>
+          <Link href="/services/house-painting/agra#localities" className="link-arrow mt-4 min-h-11">Areas we serve in {site.city} <span aria-hidden>→</span></Link>
         </div>
         <div className="card p-7 md:p-9">
           <h2 className="text-2xl md:text-3xl">What we paint</h2>
           <ul className="mt-3">
             {services.map((s) => (
               <li key={s.slug}>
-                <Link href={`/services/${s.slug}`} className="link-arrow min-h-11">{s.name} in {site.city} <span aria-hidden>→</span></Link>
+                <Link href={`/services/${s.slug}/agra`} className="link-arrow min-h-11">{s.name} in {site.city} <span aria-hidden>→</span></Link>
               </li>
             ))}
           </ul>

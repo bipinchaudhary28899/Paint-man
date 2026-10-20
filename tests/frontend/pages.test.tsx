@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { describe, expect, it, vi } from "vitest";
 import { AreaLinks } from "@/components/home/AreaLinks";
 import AboutPage, { metadata as aboutMeta } from "@/app/(site)/about/page";
-import AreasPage, { metadata as areasMeta } from "@/app/(site)/areas/page";
+import CityPage, { generateMetadata as cityMetadata } from "@/app/(site)/services/house-painting/[city]/page";
 import BookPage, { metadata as bookMeta } from "@/app/(site)/book/page";
 import ColoursPage, { metadata as coloursMeta } from "@/app/(site)/colours/page";
 import ContactPage, { metadata as contactMeta } from "@/app/(site)/contact/page";
@@ -24,7 +24,6 @@ vi.mock("next/navigation", () => ({
 // a heading outline without skipped levels, and alt text on every image.
 const pages: { path: string; Page: () => React.ReactNode; metadata: Metadata; h1: RegExp }[] = [
   { path: "/about", Page: AboutPage, metadata: aboutMeta, h1: new RegExp(`house painting in ${site.city}`, "i") },
-  { path: "/areas", Page: AreasPage, metadata: areasMeta, h1: new RegExp(`^areas we serve in ${site.city}`, "i") },
   { path: "/book", Page: BookPage, metadata: bookMeta, h1: new RegExp(`book painters online in ${site.city}`, "i") },
   { path: "/colours", Page: ColoursPage, metadata: coloursMeta, h1: new RegExp(`find a wall colour in ${site.city}`, "i") },
   { path: "/contact", Page: ContactPage, metadata: contactMeta, h1: new RegExp(`house painters in ${site.city}`, "i") },
@@ -65,10 +64,13 @@ describe.each(pages)("$path", ({ path, Page, metadata, h1 }) => {
 /** Every id in the rendered page; a repeated id breaks label/anchor lookups. */
 const ids = (root: HTMLElement) => [...root.querySelectorAll("[id]")].map((el) => el.id);
 
-describe("/areas", () => {
-  it("gives every locality an anchored entry and a booking link, linked from the jump list", () => {
-    const { container } = render(<AreasPage />);
-    const jump = screen.getByRole("navigation", { name: "Jump to a locality" });
+/** The Agra city page (formerly /areas), rendered as Next renders it. */
+const agraPage = async () => CityPage({ params: Promise.resolve({ city: "agra" }) });
+
+describe("/services/house-painting/agra (the city page, formerly /areas)", () => {
+  it("gives every locality an anchored entry and a booking link, linked from the jump list", async () => {
+    const { container } = render(await agraPage());
+    const jump = screen.getByRole("navigation", { name: `Jump to a locality in ${site.city}` });
     for (const area of site.areas) {
       const id = areaSlug(area);
       const entry = container.querySelector(`#${id}`) as HTMLElement;
@@ -81,8 +83,8 @@ describe("/areas", () => {
     expect(new Set(ids(container)).size).toBe(ids(container).length);
   });
 
-  it("states the shared process once, not once per locality, and has no landmark per locality", () => {
-    const { container } = render(<AreasPage />);
+  it("states the shared process once, not once per locality, and has no landmark per locality", async () => {
+    const { container } = render(await agraPage());
     const text = container.textContent ?? "";
     expect(text.match(/the same supervised crew as anywhere else/g)).toHaveLength(1);
     // one list of localities, not ten labelled <section> regions
@@ -91,22 +93,22 @@ describe("/areas", () => {
     expect(container.querySelectorAll("section[aria-labelledby]").length).toBeLessThan(site.areas.length);
   });
 
-  it("every home page 'Painters in {area}' link lands on an entry on the rendered /areas page", () => {
+  it("every home page 'Painters in {area}' link lands on an entry on the rendered city page", async () => {
     const { container: home } = render(<AreaLinks areas={site.areas} />);
     const hrefs = [...home.querySelectorAll("a")].map((a) => a.getAttribute("href")!);
     expect(hrefs).toHaveLength(site.areas.length);
-    const { container: areas } = render(<AreasPage />);
+    const { container: areas } = render(await agraPage());
     const pageIds = new Set(ids(areas));
     for (const href of hrefs) {
       const url = new URL(href, "http://site.test");
-      expect(url.pathname, href).toBe("/areas");
+      expect(url.pathname, href).toBe("/services/house-painting/agra");
       expect(pageIds.has(decodeURIComponent(url.hash.slice(1))), href).toBe(true);
     }
   });
 
-  it("links the services, the colour tools and booking, and has substantial copy", () => {
-    const { container } = render(<AreasPage />);
-    for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}`);
+  it("links the services, the colour tools and booking, and has substantial copy", async () => {
+    const { container } = render(await agraPage());
+    for (const s of services) expect(screen.getAllByRole("link", { name: `${s.name} in ${site.city}` })[0]).toHaveAttribute("href", `/services/${s.slug}/agra`);
     for (const href of ["/colours", "/palettes"]) expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     expect(screen.getByRole("heading", { level: 2, name: /weather/ })).toBeInTheDocument();
     // /colours can search and sort shades, not filter by washability: the link promises only light shades
@@ -114,6 +116,29 @@ describe("/areas", () => {
     expect(screen.queryByRole("link", { name: /washable/i })).toBeNull();
     const words = (container.textContent ?? "").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThan(500);
+  });
+});
+
+describe("city page metadata and coming-soon cities", () => {
+  it("indexes a live city and keeps a coming city out of search", async () => {
+    const agra = await cityMetadata({ params: Promise.resolve({ city: "agra" }) });
+    expect(agra.title).toBe(`House Painting Services in ${site.city}`);
+    expect(agra.robots).toBeUndefined();
+    const soon = await cityMetadata({ params: Promise.resolve({ city: "bangalore" }) });
+    expect(String(soon.title)).toMatch(/Bangalore: Coming Soon/);
+    expect(soon.robots).toMatchObject({ index: false });
+    expect(await cityMetadata({ params: Promise.resolve({ city: "nowhere" }) })).toEqual({});
+  });
+
+  it("a coming city shows the waitlist form and points to where we paint today", async () => {
+    const { container } = render(await CityPage({ params: Promise.resolve({ city: "delhi-ncr" }) }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("House painting in Delhi NCR is coming soon");
+    expect(screen.getByRole("button", { name: "Join the waitlist" })).toBeInTheDocument();
+    expect(container.querySelector('a[href="/services/house-painting/agra"]')).not.toBeNull();
+  });
+
+  it("404s a city that does not exist", async () => {
+    await expect(CityPage({ params: Promise.resolve({ city: "nowhere" }) })).rejects.toThrow();
   });
 });
 
@@ -147,7 +172,7 @@ describe("/contact", () => {
   it("gives the service-area link a 44px tap target without changing the row height", () => {
     render(<ContactPage />);
     const link = screen.getByRole("link", { name: `${site.city}, ${site.region}` });
-    expect(link).toHaveAttribute("href", "/areas");
+    expect(link).toHaveAttribute("href", "/services/house-painting/agra#localities");
     // min-h-11 is 44px on the 28px line; -my-2 takes the extra 16px back out of the row
     expect(link).toHaveClass("inline-flex", "min-h-11", "items-center", "-my-2");
   });
@@ -157,8 +182,8 @@ describe("/contact", () => {
     // the call back happens during the published working hours, not a promised response time
     expect(screen.getByText(new RegExp(`we call you back during working hours, ${site.hoursDisplay}`))).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "You get an itemised quotation" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: `Areas we serve in ${site.city}` })).toHaveAttribute("href", "/areas");
-    for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}`);
+    expect(screen.getByRole("link", { name: `Areas we serve in ${site.city}` })).toHaveAttribute("href", "/services/house-painting/agra#localities");
+    for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}/agra`);
   });
 });
 

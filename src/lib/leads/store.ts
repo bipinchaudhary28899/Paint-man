@@ -1,4 +1,5 @@
 import "server-only";
+import { getCity } from "@/config/site";
 import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { JWT } from "google-auth-library";
@@ -39,20 +40,33 @@ export function columnLetter(n: number): string {
 }
 const LAST_COLUMN = columnLetter(LEAD_COLUMNS.length);
 
+/** A quick site-visit request's locality column and note: the city (and locality), and whether it is a waitlist entry. */
+function visitDetails(lead: Extract<LeadInput, { type: "visit" }>) {
+  const city = getCity(lead.city);
+  const name = city?.name ?? lead.city;
+  const live = city?.status === "live";
+  return {
+    locality: lead.locality ? `${lead.locality}, ${name}` : name,
+    note: live ? "Quick site-visit request: take the job details on the call." : `Waitlist: not painting in ${name} yet. Call when bookings open there.`,
+    type: live ? "visit" : "waitlist",
+  };
+}
+
 export function toRow(lead: LeadInput, id: string, submittedAt: Date): string[] {
   const t = lead.tracking ?? {};
   const isBooking = lead.type === "booking";
+  const visit = lead.type === "visit" ? visitDetails(lead) : undefined;
   return [
     submittedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
     id,
-    lead.type,
+    visit?.type ?? lead.type,
     lead.name,
     lead.phone,
-    isBooking ? lead.locality : "",
+    isBooking ? lead.locality : (visit?.locality ?? ""),
     isBooking ? lead.propertyType : "",
     isBooking ? lead.service : "",
     isBooking ? (lead.preferredDate ?? "") : "",
-    lead.message ?? "",
+    lead.type === "visit" ? visit!.note : (lead.message ?? ""),
     lead.page ?? "",
     t.utmSource ?? "",
     t.utmMedium ?? "",
