@@ -30,7 +30,7 @@ export function retiredShadeApi(code?: string) {
   return apiError(
     410,
     "gone",
-    `Our former own shade codes (PM-xxx) were retired. Search brand paint shades (Asian Paints, Berger, Nerolac and more) at ${shadeApiSuccessors.search}; the brands are listed at ${shadeApiSuccessors.brands}.${replacement ? ` The nearest shade to this one is ${replacement.id}: ${replacement.self}.` : ""}`,
+    `Our former own shade codes (PM-xxx) were retired. Search brand paint shades (Asian Paints, Berger, Nerolac and Nippon Paint) at ${shadeApiSuccessors.search}; the brands are listed at ${shadeApiSuccessors.brands}.${replacement ? ` The nearest shade to this one is ${replacement.id}: ${replacement.self}.` : ""}`,
     replacement ? { ...shadeApiSuccessors, replacement } : shadeApiSuccessors,
     publicCache,
   );
@@ -44,7 +44,7 @@ export function retiredWebColoursApi() {
   return apiError(
     410,
     "gone",
-    `The named-colour search served the photo visualizer, which was retired. Search brand paint shades (Asian Paints, Berger, Nerolac and more) at ${shadeApiSuccessors.search}; each is previewed on a room at ${shadeApiSuccessors.html}.`,
+    `The named-colour search served the photo visualizer, which was retired. Search brand paint shades (Asian Paints, Berger, Nerolac and Nippon Paint) at ${shadeApiSuccessors.search}; each is previewed on a room at ${shadeApiSuccessors.html}.`,
     shadeApiSuccessors,
     publicCache,
   );

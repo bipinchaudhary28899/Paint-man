@@ -121,7 +121,7 @@ const BrandTile = memo(function BrandTile({ shade: s, selected, showBrand, onSel
   );
 });
 
-// The shade finder: 50,000+ real shades from 25 paint brands (PaintDB), searched on the server
+// The shade finder: 8,500+ real shades from India's major paint brands (PaintDB), searched on the server
 // one page at a time (/api/v1/colours/paint). Pick a brand (each is a real link, so the static
 // page links every brand), then a primary colour or scroll its whole shade card, or search by
 // code, name or hex. A tap shows the shade on the same room, pinned on phones and beside the list

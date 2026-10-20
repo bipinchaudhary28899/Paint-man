@@ -2,10 +2,10 @@ import "server-only";
 import raw from "@/data/paintdb.json";
 import { hexToRgb, rgbToOklab } from "@/lib/colours/oklab";
 
-// Brand paint shades: 50,000+ real shades from 25 paint brands (Asian Paints, Berger, Nerolac,
-// Dulux, Sherwin-Williams…), from PaintDB's open dataset (CC BY 4.0), vendored as
-// src/data/paintdb.json by scripts/import-paintdb.mjs. Searched in memory on the server; the
-// browser only ever sees one page of results through /api/v1/colours/paint.
+// Brand paint shades: 8,500+ real shades from the major brands sold in India (Asian Paints,
+// Berger, Kansai Nerolac, Nippon Paint), from PaintDB's open dataset (CC BY 4.0), vendored as
+// src/data/paintdb.json by scripts/import-paintdb.mjs (which keeps only INDIA_BRANDS). Searched in
+// memory on the server; the browser only ever sees one page of results through /api/v1/colours/paint.
 
 type Raw = {
   source: string;
@@ -46,7 +46,7 @@ export type BrandShade = {
 };
 
 /** Indian brands first (our customers ask for these by code), then A–Z. */
-const BRAND_FIRST = ["asian-paints", "berger", "nerolac"];
+const BRAND_FIRST = ["asian-paints", "berger", "nerolac", "nippon-paint"];
 const brandRank = (slug: string) => {
   const i = BRAND_FIRST.indexOf(slug);
   return i < 0 ? BRAND_FIRST.length : i;
@@ -234,9 +234,10 @@ export function splitBrand(q: string): { brand?: string; rest: string } {
     if (b.slug === "nerolac") names.push("nerolac");
     if (b.slug === "berger") names.push("berger");
     if (b.slug === "asian-paints") names.push("asian");
+    if (b.slug === "nippon-paint") names.push("nippon");
     return names.map((n) => ({ slug: b.slug, n }));
   });
-  // longest name first, so "dulux australia" wins over "dulux"
+  // longest name first, so "nippon paint" wins over "nippon"
   for (const { slug, n } of candidates.sort((a, b) => b.n.length - a.n.length)) {
     if (lower === n || lower.startsWith(`${n} `)) return { brand: slug, rest: lower.slice(n.length).trim() };
   }

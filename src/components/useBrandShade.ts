@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 // Resolves a brand paint shade id (`brand-slug:code`, e.g. "asian-paints:7982") in the browser
-// through the public catalogue API. The 50,000-shade dataset is server-only, so client pages
+// through the public catalogue API. The 8,500-shade dataset is server-only, so client pages
 // (the booking prefill) look one shade up instead of importing it.
 
 /** The fields of an /api/v1/colours/paint item that the pages use. */

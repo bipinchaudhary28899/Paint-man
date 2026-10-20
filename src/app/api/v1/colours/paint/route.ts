@@ -6,12 +6,12 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/v1/colours/paint?q=asian+paints+7982&brand=asian-paints&family=yellow&sort=shade&page=1&perPage=48
- * Searches 50,000+ real paint shades from 25 brands (Asian Paints, Berger, Nerolac, Dulux,
- * Sherwin-Williams…) by brand, shade code, name or hex. A brand name at the start of `q` narrows
+ * Searches 8,500+ real paint shades from India's major brands (Asian Paints, Berger, Kansai Nerolac,
+ * Nippon Paint) by brand, shade code, name or hex. A brand name at the start of `q` narrows
  * to that brand. Without `q`, `sort` sets the order: "shade" (default: shade-card order, similar
  * colours together, light → dark), "code" (numeric) or "name". Items: { id, brand, brandName, code, name, hex, lrv, family, undertone,
  * interior, exterior }. Data: PaintDB (paintdb.com), CC BY 4.0; colours are approximate.
- * Example: GET /api/v1/colours/paint?q=SW%207005 → Pure White (Sherwin-Williams) first.
+ * Example: GET /api/v1/colours/paint?q=berger+3P0050 → A Blessing (Berger Paints 3P0050) first.
  */
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;

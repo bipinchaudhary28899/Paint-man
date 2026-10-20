@@ -14,7 +14,7 @@ describe("GET /api/v1/colours/paint", () => {
     expect(body).toMatchObject({ apiVersion: "v1", kind: "paint-colour" });
     expect(body.label).toMatch(/matching "7982", from Asian Paints/);
     expect(body.data[0]).toMatchObject({ id: "asian-paints:7982", code: "7982", name: "Mecca Gold", brandName: "Asian Paints" });
-    expect(body.meta).toMatchObject({ query: { brand: "asian-paints" }, license: "CC BY 4.0", attribution: expect.stringContaining("PaintDB"), catalogueSize: 50762 });
+    expect(body.meta).toMatchObject({ query: { brand: "asian-paints" }, license: "CC BY 4.0", attribution: expect.stringContaining("PaintDB"), catalogueSize: 8539 });
     expect(body.links.html).toBe("/colours?q=asian+paints+7982"); // the finder reads the same query
   });
 
@@ -49,11 +49,11 @@ describe("GET /api/v1/colours/paint", () => {
 });
 
 describe("GET /api/v1/colours/brands", () => {
-  it("lists the 25 brands with counts, families and attribution", async () => {
+  it("lists the 4 Indian brands with counts, families and attribution", async () => {
     const res = brandsGET();
     const body = await res.json();
     expect(body.kind).toBe("paint-brand");
-    expect(body.label).toBe("25 paint brands, 50,762 shades in all");
+    expect(body.label).toBe("4 paint brands, 8,539 shades in all");
     expect(body.data[0]).toEqual({ slug: "asian-paints", name: "Asian Paints", count: 2221 });
     expect(body.meta.families).toContain("blue");
     expect(body.meta.license).toBe("CC BY 4.0");

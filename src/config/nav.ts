@@ -8,12 +8,15 @@ export type NavLink = { href: string; label: string; note?: string };
 export type NavGroup = { heading?: string; links: NavLink[] };
 export type NavMenu = { label: string; href: string; groups: NavGroup[] };
 
-/** Brand shade cards opened in the colour finder (the Indian brands customers ask for by code). */
+/** The brand shade cards (/shade-cards/<slug>): the major brands sold in India, the ones we supply. */
 export const shadeCardBrands = [
   { slug: "asian-paints", name: "Asian Paints" },
   { slug: "berger", name: "Berger Paints" },
   { slug: "nerolac", name: "Kansai Nerolac" },
+  { slug: "nippon-paint", name: "Nippon Paint" },
 ] as const;
+
+export const shadeCardHref = (slug: string) => `/shade-cards/${slug}`;
 
 const regions = () => [...new Set(cities.map((c) => c.region))];
 
@@ -48,13 +51,16 @@ export function navMenus(): NavMenu[] {
         {
           heading: "Find a shade",
           links: [
-            { href: "/colours", label: "Colour finder", note: "50,000+ shades by code, name or hex" },
+            { href: "/colours", label: "Colour finder", note: "8,500+ shades by code, name or hex" },
             { href: "/palettes", label: "Colour combinations" },
           ],
         },
         {
           heading: "Shade cards",
-          links: shadeCardBrands.map((b) => ({ href: `/colours?brand=${b.slug}`, label: `${b.name} shade card` })),
+          links: [
+            ...shadeCardBrands.map((b) => ({ href: shadeCardHref(b.slug), label: `${b.name} shade card` })),
+            { href: "/shade-cards", label: "All shade cards" },
+          ],
         },
       ],
     },
@@ -85,7 +91,7 @@ export function footerColumns(): { heading: string; links: NavLink[] }[] {
       heading: "Colours",
       links: [
         { href: "/colours", label: "Colour finder" },
-        ...shadeCardBrands.map((b) => ({ href: `/colours?brand=${b.slug}`, label: `${b.name} shade card` })),
+        ...shadeCardBrands.map((b) => ({ href: shadeCardHref(b.slug), label: `${b.name} shade card` })),
         { href: "/palettes", label: "Colour combinations" },
       ],
     },

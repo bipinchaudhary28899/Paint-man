@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { contentUpdated } from "@/config/seo-dates";
 import { cityPath, liveCities, servicePath, services, servicesIn, site } from "@/config/site";
+import { shadeCardPaths } from "@/lib/colours/shade-cards";
 
 // Every indexable page, with the date its content last changed (src/config/seo-dates.ts).
 // There are no /colours/<code> pages: the old Paint Man shade URLs 308 to the finder (src/proxy.ts).
@@ -14,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...services.map((s) => servicePath(s)),
     ...liveCities().flatMap((c) => [cityPath(c), ...servicesIn(c).map((s) => servicePath(s, c))]),
     "/colours",
+    ...shadeCardPaths(),
     "/palettes",
     "/book",
     "/about",

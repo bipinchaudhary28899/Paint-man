@@ -7,9 +7,9 @@ import { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
 import { hexToRgb, rgbToOklab } from "@/lib/colours/oklab";
 
 describe("brand shade data (PaintDB, vendored)", () => {
-  it("has every shade from all 25 brands, with valid, unique entries", () => {
-    expect(shadeCount()).toBe(50762);
-    expect(brandList()).toHaveLength(25);
+  it("has every shade from the four Indian brands, with valid, unique entries", () => {
+    expect(shadeCount()).toBe(8539);
+    expect(brandList()).toHaveLength(4);
     const d = raw as unknown as { shades: [number, string, string, string, number, number, number, number][]; brands: unknown[]; families: string[] };
     const ids = new Set<string>();
     for (const [b, code, name, hex, lrv, f] of d.shades) {
@@ -27,12 +27,12 @@ describe("brand shade data (PaintDB, vendored)", () => {
 
   it("shows brand shade names as text, with the HTML entities from PaintDB decoded", () => {
     const all = searchBrandShades({ perPage: 100_000 }).items;
-    expect(all).toHaveLength(50762);
+    expect(all).toHaveLength(8539);
     const leaks = all.filter((s) => /&#|&amp;|&reg;|&quot;|&lt;|&gt;/.test(s.name)).map((s) => `${s.id}: ${s.name}`);
     expect(leaks).toEqual([]);
     expect(brandList().every((b) => !/&#|&amp;/.test(b.name))).toBe(true);
     expect(getBrandShade("nerolac:152")?.name).toBe("Dove's Wing-w"); // was "Dove&#039;s Wing-w" in the raw data
-    expect(all.find((s) => s.code === "N7350G")?.name).toBe("Spick & Span");
+    expect(getBrandShade("nippon-paint:NP R 2336P")?.name).toBe("Annie’s Cap"); // "Annie&#8217;s Cap"
     // decoded names are still searchable by their words
     expect(searchBrandShades({ q: "Dove's Wing", brand: "nerolac" }).items[0].code).toBe("152");
   });
@@ -68,20 +68,22 @@ describe("brand shade data (PaintDB, vendored)", () => {
     expect(PAINTDB).toEqual({ source: paintdb.source, licenseUrl: paintdb.licenseUrl });
   });
 
-  it("keeps the rounded count in client copy true (\"50,000+ brand shades\")", () => {
+  it("keeps the rounded count in client copy true (\"8,500+ brand shades\")", () => {
     const floor = Number(BRAND_SHADES_ROUNDED.replace(/[^0-9]/g, ""));
     expect(BRAND_SHADES_ROUNDED).toMatch(/^\d{1,3}(,\d{3})*\+$/);
     expect(shadeCount()).toBeGreaterThanOrEqual(floor);
-    expect(shadeCount() - floor).toBeLessThan(5000); // still a fair round-down, not a stale one
+    expect(shadeCount() - floor).toBeLessThan(500); // still a fair round-down, not a stale one
   });
 
-  it("lists Indian brands first with their counts", () => {
-    expect(brandList().slice(0, 3)).toEqual([
+  it("lists the four Indian brands, biggest names first, with their counts", () => {
+    expect(brandList()).toEqual([
       { slug: "asian-paints", name: "Asian Paints", count: 2221 },
       { slug: "berger", name: "Berger Paints", count: 1575 },
       { slug: "nerolac", name: "Kansai Nerolac", count: 2023 },
+      { slug: "nippon-paint", name: "Nippon Paint", count: 2720 },
     ]);
-    expect(isBrand("behr")).toBe(true);
+    expect(isBrand("nippon-paint")).toBe(true);
+    expect(isBrand("behr")).toBe(false); // only brands we can supply in India
     expect(isBrand("acme")).toBe(false);
   });
 
@@ -96,7 +98,7 @@ describe("brand shade data (PaintDB, vendored)", () => {
 describe("finding brand shades", () => {
   it("looks a shade up by brand and code, ignoring spaces and case", () => {
     expect(getBrandShade("asian-paints:7982")).toMatchObject({ name: "Mecca Gold", hex: "#e7975b", brandName: "Asian Paints" });
-    expect(getBrandShade("sherwin-williams:sw7005")?.name).toBe("Pure White");
+    expect(getBrandShade("nippon-paint:npac3432a")?.name).toBe("Cosmic Navy"); // printed "NP AC 3432A"
     expect(getBrandShade("asian-paints:nope")).toBeUndefined();
     expect(getBrandShade("no-colon")).toBeUndefined();
     expect(getBrandShade("asian-paints:")).toBeUndefined();
@@ -107,17 +109,18 @@ describe("finding brand shades", () => {
     expect(splitBrand("asian 7982")).toEqual({ brand: "asian-paints", rest: "7982" });
     expect(splitBrand("Berger 3P0050")).toEqual({ brand: "berger", rest: "3p0050" });
     expect(splitBrand("nerolac")).toEqual({ brand: "nerolac", rest: "" });
-    expect(splitBrand("Dulux Australia white")).toEqual({ brand: "dulux-australia", rest: "white" });
-    expect(splitBrand("hale navy")).toEqual({ rest: "hale navy" });
+    expect(splitBrand("Nippon Paint cosmic navy")).toEqual({ brand: "nippon-paint", rest: "cosmic navy" });
+    expect(splitBrand("nippon NP AC 3432A")).toEqual({ brand: "nippon-paint", rest: "np ac 3432a" });
+    expect(splitBrand("cosmic navy")).toEqual({ rest: "cosmic navy" });
   });
 
   it("ranks an exact code first, then names", () => {
     const r = searchBrandShades({ q: "Asian Paints 7982" });
     expect(r.brand).toBe("asian-paints");
     expect(r.items[0]).toMatchObject({ code: "7982", name: "Mecca Gold" });
-    const byName = searchBrandShades({ q: "hale navy" });
-    expect(byName.items[0].name.toLowerCase()).toBe("hale navy");
-    expect(searchBrandShades({ q: "SW 7005" }).items[0].name).toBe("Pure White");
+    const byName = searchBrandShades({ q: "cosmic navy" });
+    expect(byName.items[0].name.toLowerCase()).toBe("cosmic navy");
+    expect(searchBrandShades({ q: "NP AC 3432A" }).items[0].name).toBe("Cosmic Navy");
   });
 
   it("finds the nearest shades to a hex", () => {
@@ -132,7 +135,7 @@ describe("finding brand shades", () => {
     expect(blues.pages).toBe(8);
     expect(blues.items.every((s) => s.brand === "asian-paints" && s.family === "blue")).toBe(true);
     const all = searchBrandShades({ perPage: 2 });
-    expect(all.total).toBe(50762);
+    expect(all.total).toBe(8539);
     expect(all.items[0].brand).toBe("asian-paints");
     expect(searchBrandShades({ brand: "asian-paints", family: "blue", perPage: 48, page: 99 }).page).toBe(8);
     expect(searchBrandShades({ q: "zzzzqqqq" }).total).toBe(0);

@@ -1,7 +1,7 @@
 // Ready three-shade combinations, written the way our inspector proposes them on a site visit:
 // one main wall colour, the white that goes with it, and an accent. Every shade is a real
 // Asian Paints shade-card code from the vendored PaintDB data (src/data/paintdb.json, CC BY 4.0),
-// copied here so client pages (the booking prefill) can name them without loading the 50,000-shade
+// copied here so client pages (the booking prefill) can name them without loading the 8,500-shade
 // catalogue; tests/backend/palettes.test.ts checks each one against the catalogue.
 
 export const rooms = ["Living room", "Bedroom", "Kitchen", "Kids room", "Pooja room", "Exterior", "Balcony", "Rental refresh"] as const;

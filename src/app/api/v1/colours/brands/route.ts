@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/v1/colours/brands
- * The 25 paint brands in the brand-shade catalogue with their shade counts (Indian brands
+ * The 4 paint brands (India's major brands) in the brand-shade catalogue with their shade counts (Indian brands
  * first), plus the colour families to filter by. Data: PaintDB (paintdb.com), CC BY 4.0.
  * Example item: { "slug": "asian-paints", "name": "Asian Paints", "count": 2221 }
  */

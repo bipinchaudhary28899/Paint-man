@@ -29,7 +29,7 @@ describe("Header and Footer", () => {
     const main = screen.getByRole("navigation", { name: "Main" });
     for (const name of ["Services", "Cities", "Colours"]) expect(within(main).getByRole("button", { name })).toHaveAttribute("aria-expanded", "false");
     // every menu link is in the HTML (crawlable) even while the menu is closed
-    for (const href of ["/services/house-painting", "/services/interior-painting", "/services/house-painting/agra", "/services/house-painting/bangalore", "/colours", "/palettes", "/colours?brand=asian-paints"]) {
+    for (const href of ["/services/house-painting", "/services/interior-painting", "/services/house-painting/agra", "/services/house-painting/bangalore", "/colours", "/palettes", "/shade-cards/asian-paints", "/shade-cards"]) {
       expect(main.querySelector(`a[href="${href}"]`), href).not.toBeNull();
     }
     expect(within(main).getByRole("link", { name: "FAQ" })).toHaveAttribute("href", "/faq");

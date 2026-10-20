@@ -9,11 +9,11 @@ import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
 import { site } from "@/config/site";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
-// Counts in the metadata stay modest on purpose ("50,000+", three named brands): the data has
-// 50,762 shades from 25 brands, and tests/backend/colours-brands.test.ts keeps the rounding true.
+// Counts in the metadata stay modest on purpose ("8,500+"): the data has 8,539 shades from India's
+// four major brands, and tests/backend/colours-brands.test.ts keeps the rounding true.
 export const metadata = pageMetadata({
   title: `Wall Colour Finder & Shade Codes in ${site.city}`,
-  description: `Search ${BRAND_SHADES_ROUNDED} paint shades from Asian Paints, Berger, Nerolac and more by code and see each on a room wall. We bring the shade card to your ${site.city} home.`,
+  description: `Search ${BRAND_SHADES_ROUNDED} paint shades from Asian Paints, Berger, Nerolac and Nippon by code and see each on a room wall. We bring the shade card to your ${site.city} home.`,
   path: "/colours",
 });
 
@@ -57,9 +57,10 @@ export default function ColoursPage() {
                 Find a wall colour in {site.city} <span className="brush">by shade code</span>, brand or name
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
-                {shadeCount().toLocaleString("en-IN")} shades from Asian Paints, Berger, Nerolac and {brands.length - 3} more brands, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
-                Pick one and we bring the real shade card to your home in {site.city}. Want combinations instead?{" "}
-                <Link href="/palettes" className="font-bold text-ink underline">See ready palettes</Link>.
+                {shadeCount().toLocaleString("en-IN")} shades from Asian Paints, Berger, Nerolac and Nippon Paint, the major brands in India, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
+                Pick one and we bring the real shade card to your home in {site.city}. Prefer the paper-card layout?{" "}
+                <Link href="/shade-cards" className="font-bold text-ink underline">Browse the shade cards</Link>. Want combinations
+                instead? <Link href="/palettes" className="font-bold text-ink underline">See ready palettes</Link>.
               </p>
             </div>
             <Emoji name="artist-palette" size={120} className="hidden animate-float md:block" />

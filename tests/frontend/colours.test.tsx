@@ -15,7 +15,7 @@ const brands = [
   { slug: "asian-paints", name: "Asian Paints", count: 2221 },
   { slug: "berger", name: "Berger Paints", count: 1575 },
 ];
-const props = { brands, brandFamilies: ["white", "blue"], brandTotal: 50762, attribution: { text: "Shade data: PaintDB", source: "https://paintdb.com", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" } };
+const props = { brands, brandFamilies: ["white", "blue"], brandTotal: 8539, attribution: { text: "Shade data: PaintDB", source: "https://paintdb.com", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" } };
 const shade = (i: number, extra: Partial<BrandShadeItem> = {}): BrandShadeItem => ({
   id: `asian-paints:${7000 + i}`, brand: "asian-paints", brandName: "Asian Paints", code: String(7000 + i), name: `Shade ${i}`,
   hex: "#e7975b", lrv: 40, family: "blue", undertone: "Cool Blue", interior: true, exterior: true, ...extra,
@@ -93,7 +93,7 @@ describe("ColourFinder: the brands", () => {
     const links = within(brandGrid()).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/colours?brand=asian-paints", "/colours?brand=berger"]);
     expect(links[0]).toHaveTextContent("Asian Paints2,221 shades");
-    expect(screen.getByText(/50,762 shades from 2 brands\. Choose a brand/)).toBeInTheDocument();
+    expect(screen.getByText(/8,539 shades from 2 brands\. Choose a brand/)).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
     // nothing of Paint Man's own catalogue is left
     expect(screen.queryByRole("group", { name: "Catalogue" })).toBeNull();
@@ -412,7 +412,7 @@ describe("/colours page", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /visualizer/i })).toBeNull();
     expect(screen.getByRole("link", { name: "See ready palettes" })).toHaveClass("text-ink");
-    expect(within(brandGrid()).getAllByRole("link")).toHaveLength(25);
+    expect(within(brandGrid()).getAllByRole("link")).toHaveLength(4);
     expect(document.body.textContent).not.toMatch(/PM codes|Paint Man shades/);
   });
 });

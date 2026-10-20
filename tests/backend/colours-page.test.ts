@@ -24,7 +24,7 @@ describe("/colours", () => {
     expect(finderMetadata.title).toBe("Wall Colour Finder & Shade Codes in Agra");
     expect(`${finderMetadata.title} | Paint Saathi`.length).toBeLessThanOrEqual(60);
     const description = String(finderMetadata.description);
-    expect(description).toBe("Search 50,000+ paint shades from Asian Paints, Berger, Nerolac and more by code and see each on a room wall. We bring the shade card to your Agra home.");
+    expect(description).toBe("Search 8,500+ paint shades from Asian Paints, Berger, Nerolac and Nippon by code and see each on a room wall. We bring the shade card to your Agra home.");
     expect(description.length).toBeGreaterThanOrEqual(140);
     expect(description.length).toBeLessThanOrEqual(155);
     expect(finderMetadata.alternates?.canonical).toBe("/colours");
@@ -33,12 +33,12 @@ describe("/colours", () => {
   it("prerenders a link to every brand's shade card and no Paint Man shade", () => {
     const html = renderToStaticMarkup(ColoursPage());
     const links = hrefs(html);
-    for (const slug of ["asian-paints", "berger", "nerolac", "sherwin-williams"]) expect(links).toContain(`/colours?brand=${slug}`);
-    expect(links.filter((h) => h.startsWith("/colours?brand=")).length).toBe(25);
+    for (const slug of ["asian-paints", "berger", "nerolac", "nippon-paint"]) expect(links).toContain(`/colours?brand=${slug}`);
+    expect(links.filter((h) => h.startsWith("/colours?brand=")).length).toBe(4);
     expect(links.some((h) => /^\/colours\/./.test(h))).toBe(false);
     const text = textOf(html);
     expect(text).not.toMatch(/Paint Man shades|PM codes|PM-\d/);
-    expect(text).toContain("50,762 shades from Asian Paints, Berger, Nerolac and 22 more brands");
+    expect(text).toContain("8,539 shades from Asian Paints, Berger, Nerolac and Nippon Paint, the major brands in India");
     expect(text).toMatch(/PaintDB.*CC BY 4\.0/);
   });
 

@@ -192,7 +192,7 @@ export default async function CityPage({ params }: Params) {
         </div>
         <ul className="grid gap-x-8 sm:grid-cols-2">
           {[
-            { href: "/colours", title: "Colour finder", text: "Search the shade cards of Asian Paints, Berger, Nerolac and more by code, name or hex." },
+            { href: "/colours", title: "Colour finder", text: "Search the shade cards of Asian Paints, Berger, Nerolac and Nippon Paint by code, name or hex." },
             { href: "/palettes", title: "Wall colour combinations", text: "A feature wall, its matching white and an accent, shown on a room." },
             { href: "/services/house-painting", title: "How we paint homes", text: "Every service, the process and what moves the price, in any city." },
             { href: "/faq", title: "Painting FAQs", text: "Booking, pricing, timelines and what happens during the job." },

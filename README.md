@@ -8,7 +8,7 @@ A Next.js website for a managed painting service in Agra. It collects inspection
 |---|---|
 | `/` | Home: services, process, reasons to choose us, service areas, FAQs |
 | `/book` | Inspection booking form (`?service=interior-painting` pre-selects a service; `?palette=` and `?shade=asian-paints:8386` fill in the message) |
-| `/colours` | Colour finder over 50,000+ brand shades (`?brand=`, `?q=`, `?family=`, `?sort=`); old `/colours/PM-xxx` links redirect here |
+| `/colours` | Colour finder over 8,500+ shades from India's major brands (`?brand=`, `?q=`, `?family=`, `?sort=`); old `/colours/PM-xxx` links redirect here |
 | `/palettes` | Ready three-shade palettes of Asian Paints shades, with the closest Berger and Nerolac shades |
 | `/services`, `/services/[slug]` | Service overview plus interior, exterior and rental property pages |
 | `/about`, `/faq`, `/contact` | Supporting SEO pages (the contact page has its own form) |

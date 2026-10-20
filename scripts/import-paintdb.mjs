@@ -73,10 +73,17 @@ const indexOf = (list, map, value) => {
   return map.get(value);
 };
 
+// Only the major brands customers in India buy and we can supply, and only where PaintDB's codes
+// are the ones printed on that brand's Indian shade card. Dulux is left out because PaintDB's Dulux
+// codes are UK ones; Jotun and the American, European, Australian and South African brands are
+// not what Indian homes are painted with.
+export const INDIA_BRANDS = ["asian-paints", "berger", "nerolac", "nippon-paint"];
+
 const seen = new Set();
 const shades = [];
 for (const r of data) {
   const slug = r[C.brand_slug].trim();
+  if (!INDIA_BRANDS.includes(slug)) continue;
   const code = r[C.code].trim();
   const hex = r[C.hex].trim().replace(/^#/, "").toLowerCase();
   if (!slug || !code || !/^[0-9a-f]{6}$/.test(hex)) continue; // skip malformed rows
