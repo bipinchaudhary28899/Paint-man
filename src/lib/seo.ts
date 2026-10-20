@@ -68,8 +68,8 @@ export function pageMetadata({ title, description, path, noindex, absoluteTitle,
 export const ICON_SIZES = [192, 512] as const;
 export type IconSize = (typeof ICON_SIZES)[number];
 export const iconPath = (size: IconSize) => `/brand/05-app-icon/app-icon-light-${size}.png`;
-/** The swatch-fan mark (no lettering) on a transparent background: the LocalBusiness logo Google shows. */
-export const LOGO_PATH = "/brand/04-icon/paintman-icon-color-512.png";
+/** The Paint Saathi swatch-fan mark on a transparent background: the LocalBusiness logo Google shows. */
+export const LOGO_PATH = "/brand/04-icon/paintsaathi-icon-color-512.png";
 
 /** The name written together ("PaintSaathi"), published as an alternate name of the same entity. */
 export const ALTERNATE_NAME = "PaintSaathi";

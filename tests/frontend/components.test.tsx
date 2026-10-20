@@ -292,23 +292,28 @@ describe("ThankYouMessage", () => {
   });
 });
 
-describe("Wordmark (text logo until the Paint Saathi logo files arrive)", () => {
-  it("writes the name as real text with one italic accent word, in ink or reversed", async () => {
-    const { Wordmark } = await import("@/components/Logo");
-    const { container, rerender } = render(<Wordmark />);
-    const mark = container.firstElementChild as HTMLElement;
-    expect(mark).toHaveTextContent("Paint Saathi");
-    expect(mark).toHaveClass("text-ink");
-    expect(mark.querySelector("em")).toHaveTextContent("Saathi");
-    expect(mark.querySelector("em")).toHaveClass("text-terracotta");
-    rerender(<Wordmark variant="reversed" className="text-3xl" />);
-    expect(container.firstElementChild).toHaveClass("text-on-ink", "text-3xl");
-    expect(container.querySelector("em")).toHaveClass("text-golden");
+describe("Wordmark (the Paint Saathi horizontal logo)", () => {
+  it("shows the colour logo on cream and the reversed one on ink, named Paint Saathi", async () => {
+    const { Wordmark, BRAND } = await import("@/components/Logo");
+    const { rerender } = render(<Wordmark />);
+    expect(screen.getByAltText("Paint Saathi")).toHaveAttribute("src", BRAND.horizontal.color);
+    rerender(<Wordmark variant="reversed" />);
+    expect(screen.getByAltText("Paint Saathi")).toHaveAttribute("src", BRAND.horizontal.reversed);
+  });
+
+  it("uses only files that exist in the brand pack, at the stated size", async () => {
+    const { BRAND } = await import("@/components/Logo");
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const size = (p: string) => { const png = readFileSync(join(process.cwd(), "public", p)); return [png.readUInt32BE(16), png.readUInt32BE(20)]; };
+    expect(size(BRAND.horizontal.color)).toEqual([BRAND.horizontalSize.width, BRAND.horizontalSize.height]);
+    expect(size(BRAND.horizontal.reversed)).toEqual([BRAND.horizontalSize.width, BRAND.horizontalSize.height]);
+    expect(size(BRAND.mark)).toEqual([256, 256]);
   });
 
   it("names the home link in the header", async () => {
     const { Header } = await import("@/components/Header");
     render(<Header />);
-    expect(screen.getByRole("link", { name: "Paint Saathi home" })).toHaveTextContent("Paint Saathi");
+    expect(screen.getByRole("link", { name: "Paint Saathi home" })).toBeInTheDocument();
   });
 });
