@@ -249,9 +249,11 @@ function ComingSoon({ city }: { city: City }) {
         </div>
       </div>
     </section>
+    {/* the last section on this page (no closing banner), so it keeps its own space above the footer */}
     <BookingSection
       id="waitlist"
       type="contact"
+      className="container-page mt-20 mb-24 md:mb-32"
       defaultMessage={`Please call me when you start painting in ${city.name}.`}
       heading={<>Join the <em>{city.name}</em> waitlist</>}
       text={
