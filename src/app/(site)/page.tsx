@@ -99,8 +99,6 @@ export default function HomePage() {
           <Tilt max={6} className="relative aspect-[1160/1024] w-full">
             {/* The painter cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
             <HeroImage image={illustrations.painter} className="object-contain object-bottom" />
-            {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
-            <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
         </div>
       </section>
