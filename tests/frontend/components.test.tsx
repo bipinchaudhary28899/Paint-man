@@ -292,23 +292,47 @@ describe("ThankYouMessage", () => {
   });
 });
 
-describe("Wordmark (the Paint Saathi horizontal logo)", () => {
-  it("shows the colour logo on cream and the reversed one on ink, named Paint Saathi", async () => {
-    const { Wordmark, BRAND } = await import("@/components/Logo");
-    const { rerender } = render(<Wordmark />);
-    expect(screen.getByAltText("Paint Saathi")).toHaveAttribute("src", BRAND.horizontal.color);
-    rerender(<Wordmark variant="reversed" />);
-    expect(screen.getByAltText("Paint Saathi")).toHaveAttribute("src", BRAND.horizontal.reversed);
-  });
-
-  it("uses only files that exist in the brand pack, at the stated size", async () => {
-    const { BRAND } = await import("@/components/Logo");
+describe("Paint Saathi logos (one lock-up per screen size)", () => {
+  const sizeOf = async (p: string) => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
-    const size = (p: string) => { const png = readFileSync(join(process.cwd(), "public", p)); return [png.readUInt32BE(16), png.readUInt32BE(20)]; };
-    expect(size(BRAND.horizontal.color)).toEqual([BRAND.horizontalSize.width, BRAND.horizontalSize.height]);
-    expect(size(BRAND.horizontal.reversed)).toEqual([BRAND.horizontalSize.width, BRAND.horizontalSize.height]);
-    expect(size(BRAND.mark)).toEqual([256, 256]);
+    const png = readFileSync(join(process.cwd(), "public", p));
+    return [png.readUInt32BE(16), png.readUInt32BE(20)];
+  };
+
+  it("header: the short PS logo on phones, the full horizontal logo from the wide breakpoint", async () => {
+    const { Wordmark, BRAND, WIDE_MEDIA } = await import("@/components/Logo");
+    const { container } = render(<Wordmark eager />);
+    const img = screen.getByAltText("Paint Saathi");
+    expect(decodeURIComponent(img.getAttribute("src")!)).toContain(BRAND.short.color.src);
+    expect(img).toHaveAttribute("width", String(BRAND.short.color.width));
+    expect(img).toHaveAttribute("loading", "eager");
+    expect(img.className).toMatch(/h-10 .*min-\[721px\]:h-11 .*lg:h-12/); // smaller on phones, bigger on desktop
+    const source = container.querySelector("picture source")!;
+    expect(source).toHaveAttribute("media", WIDE_MEDIA);
+    expect(decodeURIComponent(source.getAttribute("srcset")!)).toContain(BRAND.horizontal.color.src);
+    // the wide logo's own size, so its space is reserved before it loads
+    expect(source).toHaveAttribute("width", String(BRAND.horizontal.color.width));
+    expect(source).toHaveAttribute("height", String(BRAND.horizontal.color.height));
+  });
+
+  it("reversed variants exist for dark backgrounds, and the footer uses the stacked logo", async () => {
+    const { Wordmark, StackedLogo, BRAND } = await import("@/components/Logo");
+    const { container, unmount } = render(<Wordmark variant="reversed" />);
+    expect(decodeURIComponent(container.querySelector("source")!.getAttribute("srcset")!)).toContain(BRAND.horizontal.reversed.src);
+    unmount();
+    render(<StackedLogo />);
+    const img = screen.getByAltText("Paint Saathi");
+    expect(img).toHaveAttribute("src", BRAND.stacked.reversed.src);
+    expect(img.className).toContain("md:h-24");
+  });
+
+  it("every logo the site uses exists in the brand pack at its stated size", async () => {
+    const { BRAND } = await import("@/components/Logo");
+    for (const set of [BRAND.horizontal, BRAND.short, BRAND.stacked]) {
+      for (const art of Object.values(set)) expect(await sizeOf(art.src), art.src).toEqual([art.width, art.height]);
+    }
+    expect(await sizeOf(BRAND.mark)).toEqual([256, 256]);
   });
 
   it("names the home link in the header", async () => {
@@ -317,3 +341,4 @@ describe("Wordmark (the Paint Saathi horizontal logo)", () => {
     expect(screen.getByRole("link", { name: "Paint Saathi home" })).toBeInTheDocument();
   });
 });
+
