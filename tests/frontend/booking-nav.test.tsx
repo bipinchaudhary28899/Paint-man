@@ -93,6 +93,26 @@ describe("NavMenu (header dropdowns)", () => {
     expect(screen.getByRole("link", { name: "Fatehabad Road" })).toHaveAttribute("href", "/services/house-painting/agra#fatehabad-road");
   });
 
+  it("stays open when a click follows the hover that opened it, however the two are timed", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<NavMenu menu={services} />);
+    const button = screen.getByRole("button", { name: "Services" });
+    // the hover opens it first, then the click lands: still open
+    await user.hover(button);
+    act(() => vi.advanceTimersByTime(100));
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    await user.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    // a later click (well after the hover) closes it, and a pending hover timer cannot reopen it
+    act(() => vi.advanceTimersByTime(1000));
+    await user.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    act(() => vi.advanceTimersByTime(300));
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    vi.useRealTimers();
+  });
+
   it("groups the cities by region and marks the ones coming soon", () => {
     const cities = navMenus().find((m) => m.label === "Cities")!;
     expect(cities.groups.map((g) => g.heading)).toEqual(["Uttar Pradesh", "Delhi NCR", "Karnataka", "Localities in Agra"]);

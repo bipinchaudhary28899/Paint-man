@@ -8,12 +8,17 @@ import type { NavMenu as Menu } from "@/config/nav";
 // One header dropdown (Services, Cities, Colours). The panel's links are always in the HTML
 // (hidden until opened), so search engines crawl every hub and city page from every page. Opens on
 // click or hover; Escape, a click outside, leaving with Tab or following a link closes it.
+/** A click this soon after hovering opened the menu keeps it open. */
+const HOVER_CLICK_GRACE_MS = 400;
+
 export function NavMenu({ menu }: { menu: Menu }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // when hovering last opened the menu: a click that follows straight after keeps it open
+  const hoverOpenedAt = useRef(0);
   const pathname = usePathname();
 
   useEffect(() => setOpen(false), [pathname]);
@@ -29,7 +34,10 @@ export function NavMenu({ menu }: { menu: Menu }) {
 
   const hover = (next: boolean) => {
     clearTimeout(hoverTimer.current);
-    hoverTimer.current = setTimeout(() => setOpen(next), next ? 60 : 180);
+    hoverTimer.current = setTimeout(() => {
+      if (next) hoverOpenedAt.current = Date.now();
+      setOpen(next);
+    }, next ? 60 : 180);
   };
 
   return (
@@ -53,7 +61,14 @@ export function NavMenu({ menu }: { menu: Menu }) {
         type="button"
         aria-expanded={open}
         aria-controls={id}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          // the click decides: a pending hover can no longer flip the menu after it
+          clearTimeout(hoverTimer.current);
+          // a mouse user who hovers and then clicks expects the menu to stay open, not to close it again
+          if (Date.now() - hoverOpenedAt.current < HOVER_CLICK_GRACE_MS) setOpen(true);
+          else setOpen((o) => !o);
+          hoverOpenedAt.current = 0;
+        }}
         className="inline-flex min-h-11 items-center gap-1 text-ink transition hover:text-terracotta"
       >
         {menu.label}
