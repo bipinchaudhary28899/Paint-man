@@ -1,3 +1,5 @@
+import Image from "next/image";
+import { illustrations } from "@/config/images";
 import { LeadForm } from "./LeadForm";
 
 // Paint Saathi's own booking form (LeadForm) with a heading and a short note beside it, as on the
@@ -23,6 +25,14 @@ export function BookingSection({ id = "book-visit", heading, text, type = "booki
             {heading}
           </h2>
           <div className="mt-4 max-w-md leading-relaxed text-muted">{text}</div>
+          <Image
+            src={illustrations.paintCan.src}
+            alt={illustrations.paintCan.alt}
+            width={illustrations.paintCan.width}
+            height={illustrations.paintCan.height}
+            sizes="(min-width: 1024px) 360px, 240px"
+            className="mt-8 hidden h-auto w-60 sm:block lg:w-[360px]"
+          />
         </div>
         <div className="card p-6 md:p-8">
           <LeadForm type={type} defaultMessage={defaultMessage} />

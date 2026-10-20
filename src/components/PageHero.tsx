@@ -1,7 +1,6 @@
 import Image from "next/image";
 import type { SiteImage } from "@/config/images";
 import { Breadcrumbs } from "./Breadcrumbs";
-import { Emoji, type EmojiName } from "./Emoji";
 import type { CropShape } from "./PhotoCrop";
 
 type Props = {
@@ -11,13 +10,12 @@ type Props = {
   image?: SiteImage;
   shape?: CropShape;
   backdrop?: string;
-  emoji?: EmojiName;
   tint?: string;
   children?: React.ReactNode;
 };
 
 // Shared editorial hero for inner pages: eyebrow-less serif title, muted intro, one framed photo.
-// `shape`, `backdrop`, `emoji` and `tint` are accepted for compatibility with older callers.
+// `shape`, `backdrop` and `tint` are accepted for compatibility with older callers.
 export function PageHero({ title, intro, crumbs, image, children }: Props) {
   return (
     <section className="relative border-b border-line-soft">
@@ -39,5 +37,3 @@ export function PageHero({ title, intro, crumbs, image, children }: Props) {
   );
 }
 
-export type { EmojiName };
-export { Emoji };

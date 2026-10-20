@@ -1,4 +1,5 @@
-import { Emoji } from "@/components/Emoji";
+import Image from "next/image";
+import { illustrations } from "@/config/images";
 import Link from "next/link";
 import { ThankYouMessage } from "@/components/ThankYouMessage";
 import { pageMetadata } from "@/lib/seo";
@@ -15,7 +16,15 @@ export const metadata = pageMetadata({
 export default function ThankYouPage() {
   return (
     <div className="container-page max-w-2xl py-20 text-center">
-      <Emoji name="party-popper" size={120} className="mx-auto animate-wiggle" />
+      <Image
+        src={illustrations.toolbox.src}
+        alt={illustrations.toolbox.alt}
+        width={illustrations.toolbox.width}
+        height={illustrations.toolbox.height}
+        sizes="240px"
+        loading="eager"
+        className="mx-auto h-auto w-60"
+      />
       <ThankYouMessage />
       <div className="mt-8 flex justify-center gap-3">
         <Link href="/" className="btn-secondary text-brand-700">Back to home</Link>

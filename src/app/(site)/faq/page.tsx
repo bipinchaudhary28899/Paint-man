@@ -29,7 +29,6 @@ export default function FaqPage() {
           </>
         }
         tint="bg-cream-wash"
-        emoji="light-bulb"
       />
       <div className="container-page mt-14 max-w-3xl">
         <h2 className="text-2xl font-normal">General</h2>

@@ -1,8 +1,8 @@
 import Image, { getImageProps } from "next/image";
 import { preload } from "react-dom";
-import type { SiteImage } from "@/config/images";
+type HeroSource = { src: string; alt: string };
 
-// The home hero photo. It is only the LCP element where it sits beside the copy: the hero is a
+// The home hero image (the Paint Saathi painter). It is only the LCP element where it sits beside the copy: the hero is a
 // wrapping flex row of a 500px and a 420px column with a 72px gap inside 2 × 32px padding, so the
 // two sit side by side from a 1056px layout width, which is up to 1073px of media width once a
 // classic scrollbar is counted. Below that the photo is stacked under the h1, about 1000px down a
@@ -22,7 +22,7 @@ const HERO_PHOTO_MAX_WIDTH = 524;
 /** One `sizes` for both the <img> and the preload, so the browser picks the same file for each. */
 export const heroSizes = `${heroSideBySide} ${HERO_PHOTO_MAX_WIDTH}px, 100vw`;
 
-export function HeroImage({ image }: { image: SiteImage }) {
+export function HeroImage({ image, className = "object-cover" }: { image: HeroSource; className?: string }) {
   const { props } = getImageProps({ src: image.src, alt: image.alt, fill: true, sizes: heroSizes });
   preload(props.src, {
     as: "image",
@@ -31,5 +31,5 @@ export function HeroImage({ image }: { image: SiteImage }) {
     media: heroSideBySide,
     fetchPriority: "high",
   });
-  return <Image src={image.src} alt={image.alt} fill loading="eager" sizes={heroSizes} className="object-cover" />;
+  return <Image src={image.src} alt={image.alt} fill loading="eager" sizes={heroSizes} className={className} />;
 }

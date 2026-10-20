@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import { illustrations } from "@/config/images";
 import { site } from "@/config/site";
 
 // Sand panel that closes every page: eyebrow, serif headline with an italic accent, two actions.
@@ -6,6 +8,14 @@ export function CtaBanner({ heading }: { heading?: React.ReactNode }) {
   return (
     <section id="book" className="container-page reveal mt-24 md:mt-40">
       <div className="rounded-t-[28px] bg-sand px-6 py-[72px] text-center text-ink md:rounded-t-[32px] md:px-14 md:py-32">
+        <Image
+          src={illustrations.painter.src}
+          alt={illustrations.painter.alt}
+          width={illustrations.painter.width}
+          height={illustrations.painter.height}
+          sizes="(min-width: 768px) 320px, 220px"
+          className="mx-auto mb-8 h-auto w-[220px] md:w-[320px]"
+        />
         <p className="eyebrow justify-center">Free estimate</p>
         <h2 className="mx-auto mt-6 max-w-[820px] text-[clamp(40px,5vw,72px)] leading-[1.04] tracking-[-0.02em]">
           {heading ?? (

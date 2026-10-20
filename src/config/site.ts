@@ -1,6 +1,5 @@
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import type { serviceTypes } from "@/lib/leads/options";
-import type { EmojiName } from "@/components/Emoji";
 import { images, type SiteImage } from "./images";
 
 // Central business details. Fill the TODO fields before launch: they feed the
@@ -687,7 +686,7 @@ export function getService(slug: string): Service | undefined {
 }
 
 /** A weather note on a city page, with an optional link (to a service in that city or a tool). */
-export type CityWeather = { title: string; emoji: EmojiName; text: string; link?: { href: string; label: string } };
+export type CityWeather = { title: string; text: string; link?: { href: string; label: string } };
 
 /**
  * A city we paint in. Every city gets /services/house-painting/<slug> (its main page) and
@@ -725,18 +724,15 @@ export const cities: City[] = [
     weather: [
       {
         title: "Summer heat and dust",
-        emoji: "sun",
         text: `Summers in ${site.city} are long, hot and dusty. Walls are cleaned before primer goes on, and a washable finish is worth it in living rooms, kitchens and kids' rooms, where dust and hand marks get wiped off often. Very dark exterior shades take in more heat and fade faster in strong sun.`,
         link: { href: "/colours", label: "Find light shades" },
       },
       {
         title: "Monsoon damp",
-        emoji: "cloud-with-rain",
         text: "Paint applied over a damp wall blisters and peels. The inspector checks for seepage from the roof, bathrooms and plumbing; the cause should be fixed and the wall dried and primed before any finish coat. Repairs found at the inspection are listed separately in your quotation.",
       },
       {
         title: "Exterior walls",
-        emoji: "house-with-garden",
         text: "Outer walls need cracks filled, an exterior primer and weather-resistant finish coats. Dry months, roughly October to March, are the best time; exterior paint is not applied in heavy rain because moisture affects adhesion and finish.",
         link: { href: "/services/exterior-painting/agra", label: `Exterior painting in ${site.city}` },
       },

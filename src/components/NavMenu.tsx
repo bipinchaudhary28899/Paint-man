@@ -68,9 +68,9 @@ export function NavMenu({ menu }: { menu: Menu }) {
       >
         <div className={`grid gap-6 ${menu.groups.length > 1 ? "sm:grid-cols-2" : ""} ${menu.groups.length > 2 ? "lg:grid-cols-3" : ""}`}>
           {menu.groups.map((g, i) => (
-            <div key={g.heading ?? i}>
+            <div key={g.heading ?? i} className={g.wide ? "sm:col-span-full border-t border-line pt-4" : undefined}>
               {g.heading && <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted">{g.heading}</p>}
-              <ul>
+              <ul className={g.wide ? "grid grid-cols-2 gap-x-2 sm:grid-cols-3" : undefined}>
                 {g.links.map((l) => (
                   <li key={l.href}>
                     <Link href={l.href} onClick={() => setOpen(false)} className="flex min-h-11 flex-col justify-center rounded-xl px-2 py-1.5 hover:bg-cream-wash">

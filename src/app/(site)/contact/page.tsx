@@ -1,4 +1,3 @@
-import { Emoji, type EmojiName } from "@/components/Emoji";
 import Link from "next/link";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero } from "@/components/PageHero";
@@ -20,13 +19,13 @@ const steps = [
 export default function ContactPage() {
   // Phone, WhatsApp, email and street address appear only once they are filled in src/config/site.ts.
   const rows = [
-    site.phone && { label: "Phone", tint: "bg-sunshine", emoji: "telephone-receiver" as const, node: <a href={`tel:${site.phone}`} className="hover:text-tangerine">{site.phoneDisplay || site.phone}</a> },
-    site.whatsapp && { label: "WhatsApp", tint: "bg-sky-wash", emoji: "speech-balloon" as const, node: <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="hover:text-tangerine">Chat on WhatsApp</a> },
-    site.email && { label: "Email", tint: "bg-rose-wash", emoji: "mobile-phone" as const, node: <a href={`mailto:${site.email}`} className="hover:text-tangerine">{site.email}</a> },
+    site.phone && { label: "Phone", tint: "bg-sunshine", node: <a href={`tel:${site.phone}`} className="hover:text-tangerine">{site.phoneDisplay || site.phone}</a> },
+    site.whatsapp && { label: "WhatsApp", tint: "bg-sky-wash", node: <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="hover:text-tangerine">Chat on WhatsApp</a> },
+    site.email && { label: "Email", tint: "bg-rose-wash", node: <a href={`mailto:${site.email}`} className="hover:text-tangerine">{site.email}</a> },
     site.address.street && {
       label: "Address",
       tint: "bg-peach-wash",
-      emoji: "round-pushpin" as const,
+     
       node: (
         <address className="not-italic">
           {site.address.street}, {site.city}, {site.region} {site.address.postalCode}
@@ -36,7 +35,7 @@ export default function ContactPage() {
     {
       label: "Service area",
       tint: "bg-cream-wash",
-      emoji: "house" as const,
+     
       // A 44px tall tap target on a 28px line: the 8px negative margins above and below keep the row's height.
       node: (
         <Link href="/services/house-painting/agra#localities" className="-my-2 inline-flex min-h-11 items-center hover:text-tangerine">
@@ -44,8 +43,8 @@ export default function ContactPage() {
         </Link>
       ),
     },
-    { label: "Hours", tint: "bg-cream-wash", emoji: "alarm-clock" as const, node: site.hoursDisplay },
-  ].filter(Boolean) as { label: string; tint: string; emoji: EmojiName; node: React.ReactNode }[];
+    { label: "Hours", tint: "bg-cream-wash", node: site.hoursDisplay },
+  ].filter(Boolean) as { label: string; tint: string; node: React.ReactNode }[];
 
   return (
     <>
@@ -54,7 +53,6 @@ export default function ContactPage() {
         title={<>Contact our house painters in <span className="text-gradient">{site.city}</span></>}
         intro={`Questions about painting your home in ${site.city}? Send a message or book an inspection, and we call you back during working hours, ${site.hoursDisplay}.`}
         tint="bg-rose-wash"
-        emoji="speech-balloon"
       >
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/book" className="btn-primary">Book an inspection</Link>
@@ -72,7 +70,6 @@ export default function ContactPage() {
         <dl className="space-y-4 lg:self-start">
           {rows.map((r) => (
             <div key={r.label} className={`reveal flex items-center gap-4 rounded-3xl border border-line p-5 ${r.tint}`}>
-              <Emoji name={r.emoji} size={48} className="shrink-0" />
               <div>
                 <dt className="text-xs font-bold uppercase tracking-widest text-ink/60">{r.label}</dt>
                 <dd className="mt-1 font-display text-xl font-bold">{r.node}</dd>

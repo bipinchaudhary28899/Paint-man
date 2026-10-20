@@ -12,7 +12,7 @@ import { Promises } from "@/components/Promises";
 import { BookingSection } from "@/components/BookingSection";
 import { Tilt } from "@/components/Tilt";
 import { WorkFlow } from "@/components/WorkFlow";
-import { images } from "@/config/images";
+import { illustrations, images } from "@/config/images";
 import { cityPath, generalFaqs, homeCity, promises, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -96,15 +96,12 @@ export default function HomePage() {
           </dl>
         </div>
         <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
-          <Tilt max={6} className="frame-shadow relative h-[420px] overflow-hidden rounded-3xl md:h-[640px]">
-            <HeroImage image={images.livingMoody} />
+          <Tilt max={6} className="relative h-[420px] overflow-hidden rounded-3xl bg-sand md:h-[640px]">
+            {/* The painter cut-out: the yellow wall runs off the right edge, the figure stands on the bottom */}
+            <HeroImage image={illustrations.painter} className="object-cover object-[22%_bottom]" />
             {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
             <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
-          <p className="mx-1 mt-4 flex justify-between text-[13px] text-muted">
-            <span>Example finish</span>
-            <span>Warm white walls</span>
-          </p>
         </div>
       </section>
 

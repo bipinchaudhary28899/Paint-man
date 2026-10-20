@@ -1,10 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BookPrefill } from "@/components/BookPrefill";
-import { Emoji } from "@/components/Emoji";
-import { PhotoCrop } from "@/components/PhotoCrop";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Blob } from "@/components/Decor";
-import { images } from "@/config/images";
+import { illustrations } from "@/config/images";
 import { FaqList } from "@/components/FaqList";
 import { Promises } from "@/components/Promises";
 import { JsonLd } from "@/components/JsonLd";
@@ -18,9 +17,9 @@ export const metadata = pageMetadata({
 });
 
 const next = [
-  { text: "We call you to confirm your requirements and inspection time.", tint: "bg-sunshine", emoji: "telephone-receiver" as const },
-  { text: "Our inspector visits, measures the walls and checks their condition.", tint: "bg-pink", emoji: "magnifying-glass-tilted-left" as const },
-  { text: "You receive an itemised quotation. Nothing is booked until you approve it.", tint: "bg-cobalt", emoji: "receipt" as const },
+  { text: "We call you to confirm your requirements and inspection time.", tint: "bg-sunshine" },
+  { text: "Our inspector visits, measures the walls and checks their condition.", tint: "bg-pink" },
+  { text: "You receive an itemised quotation. Nothing is booked until you approve it.", tint: "bg-cobalt" },
 ];
 
 // Static page: ?service=, ?palette= and ?shade= are read in the browser by BookPrefill.
@@ -49,25 +48,28 @@ export default function BookPage() {
           </div>
           <aside className="space-y-6">
             <div className="relative mx-auto hidden w-full max-w-sm lg:block">
-              <PhotoCrop image={images.swatchFan} shape="splat" backdrop="#f49bc7" sizes="380px" className="aspect-square w-full" />
-              <Emoji name="artist-palette" size={80} className="absolute -left-4 bottom-4 animate-float [--r:-8deg]" />
+              <Image
+                src={illustrations.paintCan.src}
+                alt={illustrations.paintCan.alt}
+                width={illustrations.paintCan.width}
+                height={illustrations.paintCan.height}
+                sizes="380px"
+                className="h-auto w-full"
+              />
             </div>
             <div className="card bg-cream-wash p-7">
               <h2 className="text-2xl font-normal">What happens next</h2>
               <ol className="mt-5 space-y-4">
                 {next.map((n, i) => (
                   <li key={n.text} className="flex gap-4">
-                    <span className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-line ${n.tint}`}>
-                      <Emoji name={n.emoji} size={30} />
-                      <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ink font-display text-[10px] font-normal text-on-ink">{i + 1}</span>
-                    </span>
+                    <span aria-hidden className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-line font-display text-xl ${n.tint}`}>{i + 1}</span>
                     <span className="pt-1 leading-relaxed">{n.text}</span>
                   </li>
                 ))}
               </ol>
             </div>
             <div className="rounded-[1.75rem] border border-dashed border-line-strong p-6 text-sm">
-              <p className="flex items-center gap-2 font-display text-lg font-bold"><Emoji name="mobile-phone" size={28} /> Prefer to talk?</p>
+              <p className="font-display text-lg font-bold">Prefer to talk?</p>
               {site.phone ? (
                 <p className="mt-2 text-muted">Call <a className="font-bold text-tangerine-text" href={`tel:${site.phone}`}>{site.phoneDisplay || site.phone}</a>, {site.hoursDisplay.toLowerCase()}.</p>
               ) : (

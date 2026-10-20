@@ -25,3 +25,31 @@ export const images = {
 } as const;
 
 export type SiteImage = (typeof images)[keyof typeof images];
+
+/**
+ * The owner's Paint Saathi illustrations: transparent WebP cut-outs in public/brand/illustrations
+ * (the painter and the paint can came with a checkerboard drawn into the picture, which was removed;
+ * the toolbox was already transparent). Our own brand art, so the alt names the brand.
+ */
+export const illustrations = {
+  painter: {
+    src: "/brand/illustrations/painter-roller.webp",
+    width: 1160,
+    height: 1024,
+    alt: "Paint Saathi painter in a white branded uniform and cap rolling yellow paint onto a wall",
+  },
+  paintCan: {
+    src: "/brand/illustrations/paint-can.webp",
+    width: 1345,
+    height: 909,
+    alt: "Open Paint Saathi paint can with yellow paint dripping down its side and its lid beside it",
+  },
+  toolbox: {
+    src: "/brand/illustrations/toolbox.webp",
+    width: 1259,
+    height: 974,
+    alt: "Yellow Paint Saathi toolbox holding tins of paint, with brushes and rollers beside it",
+  },
+} as const;
+
+export type Illustration = (typeof illustrations)[keyof typeof illustrations];

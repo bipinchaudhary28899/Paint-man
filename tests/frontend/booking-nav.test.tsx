@@ -7,7 +7,8 @@ import { Promises } from "@/components/Promises";
 import { ThankYouMessage } from "@/components/ThankYouMessage";
 import { navMenus } from "@/config/nav";
 import { WorkFlow } from "@/components/WorkFlow";
-import { promises, workFlow } from "@/config/site";
+import { illustrations } from "@/config/images";
+import { areaSlug, promises, site, workFlow } from "@/config/site";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }));
 const pathname = vi.hoisted(() => ({ value: "/" }));
@@ -79,9 +80,22 @@ describe("NavMenu (header dropdowns)", () => {
     vi.useRealTimers();
   });
 
+  it("lists every Agra locality under Cities, each linking to its entry on the Agra page", async () => {
+    const user = userEvent.setup();
+    const cities = navMenus().find((m) => m.label === "Cities")!;
+    const localities = cities.groups.find((g) => g.heading === "Localities in Agra")!;
+    expect(localities.wide).toBe(true);
+    expect(localities.links.map((l) => l.label)).toEqual([...site.areas]);
+    expect(localities.links.map((l) => l.href)).toEqual(site.areas.map((a) => `/services/house-painting/agra#${areaSlug(a)}`));
+    render(<NavMenu menu={cities} />);
+    await user.click(screen.getByRole("button", { name: "Cities" }));
+    expect(screen.getByRole("link", { name: "Kamla Nagar" })).toHaveAttribute("href", "/services/house-painting/agra#kamla-nagar");
+    expect(screen.getByRole("link", { name: "Fatehabad Road" })).toHaveAttribute("href", "/services/house-painting/agra#fatehabad-road");
+  });
+
   it("groups the cities by region and marks the ones coming soon", () => {
     const cities = navMenus().find((m) => m.label === "Cities")!;
-    expect(cities.groups.map((g) => g.heading)).toEqual(["Uttar Pradesh", "Delhi NCR", "Karnataka"]);
+    expect(cities.groups.map((g) => g.heading)).toEqual(["Uttar Pradesh", "Delhi NCR", "Karnataka", "Localities in Agra"]);
     const links = cities.groups.flatMap((g) => g.links);
     expect(links.find((l) => l.href === "/services/house-painting/agra")?.note).toBeUndefined();
     expect(links.find((l) => l.href === "/services/house-painting/bangalore")?.note).toBe("Coming soon");
@@ -119,13 +133,14 @@ describe("WorkFlow (how the work gets done)", () => {
     expect(steps[0]).toBe("Book online");
     expect(steps.at(-1)).toBe("Walkthrough and handover");
     expect(screen.getByRole("link", { name: "Book a site visit" })).toHaveAttribute("href", "#book-visit");
-    // no illustrations until the owner's PNGs arrive
-    expect(screen.queryByRole("img")).toBeNull();
+    // the toolbox illustration beside the heading; the steps have none of their own yet
+    expect(screen.getAllByRole("img").map((i) => i.getAttribute("alt"))).toEqual([illustrations.toolbox.alt]);
   });
 
   it("shows a step's illustration with its alt text, and no button without a cta", () => {
     render(<WorkFlow steps={[{ title: "Preparation", text: "Cracks filled.", image: { src: "/flow/prep.png", alt: "Painter filling a crack in a wall in Agra" } }]} />);
     expect(screen.getByRole("img", { name: "Painter filling a crack in a wall in Agra" })).toBeInTheDocument();
+    expect(screen.getAllByRole("img")).toHaveLength(2);
     expect(screen.queryByRole("link")).toBeNull();
   });
 });

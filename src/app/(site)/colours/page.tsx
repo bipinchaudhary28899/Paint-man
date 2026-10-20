@@ -1,8 +1,9 @@
+import Image from "next/image";
+import { illustrations } from "@/config/images";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { ColourFinderFromUrl } from "@/components/colours/ColourFinder";
-import { Emoji } from "@/components/Emoji";
 import { JsonLd } from "@/components/JsonLd";
 import { brandList, paintdb, shadeCount, shadeFamilies } from "@/lib/colours/brands";
 import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
@@ -63,7 +64,14 @@ export default function ColoursPage() {
                 instead? <Link href="/palettes" className="font-bold text-ink underline">See ready palettes</Link>.
               </p>
             </div>
-            <Emoji name="artist-palette" size={120} className="hidden animate-float md:block" />
+            <Image
+              src={illustrations.paintCan.src}
+              alt={illustrations.paintCan.alt}
+              width={illustrations.paintCan.width}
+              height={illustrations.paintCan.height}
+              sizes="260px"
+              className="hidden h-auto w-[260px] md:block"
+            />
           </div>
         </div>
       </section>

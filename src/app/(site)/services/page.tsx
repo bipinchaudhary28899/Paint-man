@@ -24,7 +24,6 @@ export default function ServicesPage() {
         image={images.muralBuckets}
         shape="blob"
         backdrop="#ff6538"
-        emoji="paintbrush"
         tint="bg-cream-wash"
       />
       <div className="container-page mt-16 space-y-10">

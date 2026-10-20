@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CtaBanner } from "@/components/CtaBanner";
-import { Emoji } from "@/components/Emoji";
 import { FaqList } from "@/components/FaqList";
 import { JsonLd } from "@/components/JsonLd";
 import { LeadForm } from "@/components/LeadForm";
@@ -42,7 +41,6 @@ export async function generateMetadata({ params }: Params) {
 
 const tints = ["bg-sky-wash", "bg-peach-wash", "bg-rose-wash"];
 const shapes = ["arch", "blob", "scallop"] as const;
-const emojis = ["house", "house-with-garden", "key"] as const;
 const linkClass = "font-semibold underline decoration-terracotta decoration-2 underline-offset-4 hover:text-terracotta";
 
 export default async function ServiceCityPage({ params }: Params) {
@@ -69,7 +67,6 @@ export default async function ServiceCityPage({ params }: Params) {
         intro={local.intro}
         image={service.image}
         shape={shapes[index % shapes.length]}
-        emoji={emojis[index % emojis.length]}
         tint={tints[index % tints.length]}
       >
         <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book a site visit in {city.name} →</Link>
@@ -81,7 +78,7 @@ export default async function ServiceCityPage({ params }: Params) {
           <ul className="mt-6 grid gap-3 sm:grid-cols-2">
             {service.includes.map((inc) => (
               <li key={inc} className="flex items-center gap-3 rounded-2xl border border-line bg-paper p-4 font-semibold">
-                <Emoji name="check-mark-button" size={28} className="shrink-0" />
+                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-terracotta" />
                 {inc}
               </li>
             ))}

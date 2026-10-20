@@ -1,11 +1,12 @@
-import { cities, cityPath, servicePath, services } from "./site";
+import { areaSlug, cities, cityPath, servicePath, services } from "./site";
 
 // The header menus and the footer link hub, built from the services and cities in site.ts so a
 // new city or service shows up everywhere at once. Like the big painting sites, every page links
 // to the hubs and the city pages (crawlable links), but only to pages that exist and say true things.
 
 export type NavLink = { href: string; label: string; note?: string };
-export type NavGroup = { heading?: string; links: NavLink[] };
+/** `wide`: the group spans the whole menu and lays its links out in columns (a city's localities). */
+export type NavGroup = { heading?: string; links: NavLink[]; wide?: boolean };
 export type NavMenu = { label: string; href: string; groups: NavGroup[] };
 
 /** The brand shade cards (/shade-cards/<slug>): the major brands sold in India, the ones we supply. */
@@ -37,12 +38,18 @@ export function navMenus(): NavMenu[] {
     {
       label: "Cities",
       href: "/services/house-painting",
-      groups: regions().map((region) => ({
-        heading: region,
-        links: cities
-          .filter((c) => c.region === region)
-          .map((c) => ({ href: cityPath(c), label: `House painting in ${c.name}`, note: c.status === "live" ? undefined : "Coming soon" })),
-      })),
+      groups: [
+        ...regions().map((region) => ({
+          heading: region,
+          links: cities
+            .filter((c) => c.region === region)
+            .map((c) => ({ href: cityPath(c), label: `House painting in ${c.name}`, note: c.status === "live" ? undefined : "Coming soon" })),
+        })),
+        // each live city's localities, linking to their entries on the city page
+        ...cities
+          .filter((c) => c.status === "live" && c.areas.length > 0)
+          .map((c) => ({ heading: `Localities in ${c.name}`, wide: true, links: c.areas.map((a) => ({ href: `${cityPath(c)}#${areaSlug(a)}`, label: a })) })),
+      ],
     },
     {
       label: "Colours",

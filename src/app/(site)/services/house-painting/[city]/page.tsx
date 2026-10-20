@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
-import { Emoji } from "@/components/Emoji";
 import { Promises } from "@/components/Promises";
 import { BookingSection } from "@/components/BookingSection";
 import { areaSlug, cities, cityPath, getCity, homeCity, serviceCityTitle, servicePath, services, servicesIn, site, type City } from "@/config/site";
@@ -174,8 +173,7 @@ export default async function CityPage({ params }: Params) {
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
             {city.weather.map((c) => (
               <div key={c.title} className="card p-6 md:p-8">
-                <Emoji name={c.emoji} size={48} />
-                <h3 className="mt-3 text-2xl">{c.title}</h3>
+                <h3 className="text-2xl">{c.title}</h3>
                 <p className="mt-2 leading-[1.65] text-muted">{c.text}</p>
                 {c.link && (
                   <Link href={c.link.href} className="link-arrow mt-2 min-h-11 text-[15px]">

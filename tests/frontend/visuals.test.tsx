@@ -85,7 +85,7 @@ describe("Tilt", () => {
 describe("PageHero", () => {
   const crumbs = [{ name: "About", path: "/about" }];
   it("renders the title, intro and children without a photo", () => {
-    const { container } = render(<PageHero title="About us" intro="Hello" crumbs={crumbs} emoji="rocket"><span>child</span></PageHero>);
+    const { container } = render(<PageHero title="About us" intro="Hello" crumbs={crumbs}><span>child</span></PageHero>);
     expect(screen.getByRole("heading", { level: 1, name: "About us" })).toBeInTheDocument();
     expect(screen.getByText("Hello")).toBeInTheDocument();
     expect(screen.getByText("child")).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("PageHero", () => {
   });
 
   it("renders the framed photo when an image is given", () => {
-    render(<PageHero title="Services" crumbs={crumbs} image={images.trays} shape="blob" emoji="paintbrush" />);
+    render(<PageHero title="Services" crumbs={crumbs} image={images.trays} shape="blob" />);
     expect(screen.getByAltText(images.trays.alt)).toBeInTheDocument();
   });
 });

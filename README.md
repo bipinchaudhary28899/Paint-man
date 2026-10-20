@@ -29,7 +29,7 @@ Without Google Sheets settings, leads are written to `data/leads.csv` on your ma
 
 1. **Business details:** edit [src/config/site.ts](src/config/site.ts). Fill every `TODO`: phone, WhatsApp, email, address and Google Business Profile URL. Empty fields are hidden on the site and left out of the structured data.
 2. **Photos:** placeholder stock photos from Pexels (free licence) are listed in [src/config/images.ts](src/config/images.ts). Replace them with photos of your own jobs before launch.
-3. **Emoji:** 3D emoji images from [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT licence) are stored in `public/emoji/`. To add another one, download it from that repository into the folder and add its name to `src/components/Emoji.tsx`.
+3. **Illustrations:** the owner's Paint Saathi artwork (the painter, the paint can, the toolbox) lives in `public/brand/illustrations/` as transparent WebP, listed in `illustrations` in `src/config/images.ts`. The site uses no icons or emoji.
 4. **Environment:** copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SITE_URL` to the live domain.
 
 ### Google Sheets lead storage

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Emoji } from "@/components/Emoji";
 import { PhotoCrop } from "@/components/PhotoCrop";
 import { CtaBanner } from "@/components/CtaBanner";
 import { PageHero } from "@/components/PageHero";
@@ -14,10 +13,10 @@ export const metadata = pageMetadata({
 });
 
 const principles = [
-  { title: "Itemised quotations", text: "Inclusions, exclusions and a payment schedule, in writing.", tint: "bg-sunshine", emoji: "receipt" as const },
-  { title: "No silent swaps", text: "The paint brand and range you approve is what goes on the wall.", tint: "bg-sky-wash", emoji: "artist-palette" as const },
-  { title: "Approved changes only", text: "Any change in scope is priced and approved before it's charged.", tint: "bg-rose-wash", emoji: "handshake" as const },
-  { title: "Checked before closing", text: "A quality checklist and a walkthrough with you before we hand over.", tint: "bg-peach-wash", emoji: "check-mark-button" as const },
+  { title: "Itemised quotations", text: "Inclusions, exclusions and a payment schedule, in writing.", tint: "bg-sunshine" },
+  { title: "No silent swaps", text: "The paint brand and range you approve is what goes on the wall.", tint: "bg-sky-wash" },
+  { title: "Approved changes only", text: "Any change in scope is priced and approved before it's charged.", tint: "bg-rose-wash" },
+  { title: "Checked before closing", text: "A quality checklist and a walkthrough with you before we hand over.", tint: "bg-peach-wash" },
 ];
 
 export default function AboutPage() {
@@ -30,7 +29,6 @@ export default function AboutPage() {
         image={images.painterWindow}
         shape="scallop"
         backdrop="#244fe5"
-        emoji="star-struck"
         tint="bg-sky-wash"
       />
 
@@ -54,8 +52,7 @@ export default function AboutPage() {
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {principles.map((p) => (
             <div key={p.title} className={`reveal card p-6 ${p.tint}`}>
-              <Emoji name={p.emoji} size={56} />
-              <h3 className="mt-3 text-xl font-normal">{p.title}</h3>
+              <h3 className="text-xl font-normal">{p.title}</h3>
               <p className="mt-2 text-muted">{p.text}</p>
             </div>
           ))}
@@ -64,7 +61,7 @@ export default function AboutPage() {
 
       <section className="container-page mt-24">
         <div className="card bg-ink p-8 text-on-ink md:p-12">
-          <h2 className="flex items-center gap-3 text-3xl font-normal md:text-4xl"><Emoji name="round-pushpin" size={48} /> Where we work</h2>
+          <h2 className="text-3xl font-normal md:text-4xl">Where we <em>work</em></h2>
           <p className="mt-4 max-w-3xl text-on-ink/75">
             We are starting with selected localities of {site.city} so our supervisors can visit every site and fix
             problems quickly:

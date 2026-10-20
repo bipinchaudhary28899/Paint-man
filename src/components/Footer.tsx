@@ -52,10 +52,6 @@ export function Footer() {
           <span className="whitespace-nowrap">© {year} {site.legalName || site.name}</span>
           {/* Staff entry to the private leads page. nofollow keeps crawlers out; the page itself requires sign-in. */}
           <Link href="/admin" rel="nofollow" prefetch={false} className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-on-ink/20 px-3 py-1 hover:border-golden hover:text-golden">
-            <svg aria-hidden viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="4" y="11" width="16" height="10" rx="2" />
-              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-            </svg>
             Staff login
           </Link>
         </p>

@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
-import { Emoji } from "@/components/Emoji";
 import { FaqList } from "@/components/FaqList";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -236,14 +235,6 @@ describe("visual components", () => {
   it("PhotoCrop respects absolute positioning classes", () => {
     const { container } = render(<PhotoCrop image={images.heroPainter} shape="arch" sizes="100px" className="absolute top-0" />);
     expect(container.firstElementChild!.className).not.toMatch(/\brelative\b/);
-  });
-
-  it("Emoji images are decorative and hidden from screen readers", () => {
-    const { container } = render(<Emoji name="sparkles" size={32} />);
-    const img = container.querySelector("img")!;
-    expect(img).toHaveAttribute("alt", "");
-    expect(img).toHaveAttribute("aria-hidden", "true");
-    expect(img).toHaveAttribute("src", "/emoji/sparkles.png");
   });
 });
 

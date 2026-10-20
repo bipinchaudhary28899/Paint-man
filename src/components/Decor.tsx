@@ -1,4 +1,3 @@
-import { Emoji } from "./Emoji";
 import { site } from "@/config/site";
 
 // Rotating circular text badge.
@@ -14,9 +13,6 @@ export function SpinBadge({ className = "" }: { className?: string }) {
           <textPath href="#badge-circle">BOOK AN INSPECTION • {site.city.toUpperCase()} •</textPath>
         </text>
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center">
-        <Emoji name="paintbrush" size={44} className="animate-wiggle" />
-      </span>
     </div>
   );
 }

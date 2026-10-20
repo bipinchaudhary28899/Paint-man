@@ -1,8 +1,9 @@
+import Image from "next/image";
+import { illustrations } from "@/config/images";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { WallPreview } from "@/components/colours/WallPreview";
-import { Emoji } from "@/components/Emoji";
 import { palettes, shadeDisplayName, type PaletteShade } from "@/config/palettes";
 import { site } from "@/config/site";
 import { getBrandShade, hasShadeCardCode, matchLabel, nearestBrandShades, paintdb } from "@/lib/colours/brands";
@@ -49,7 +50,14 @@ export default function PalettesPage() {
                 each one on the same room.
               </p>
             </div>
-            <Emoji name="rainbow" size={120} className="hidden animate-float md:block" />
+            <Image
+              src={illustrations.toolbox.src}
+              alt={illustrations.toolbox.alt}
+              width={illustrations.toolbox.width}
+              height={illustrations.toolbox.height}
+              sizes="240px"
+              className="hidden h-auto w-60 md:block"
+            />
           </div>
           <nav aria-label="Jump to a palette" className="mt-8 flex flex-wrap gap-2">
             {all.map((p) => (
@@ -113,9 +121,8 @@ export default function PalettesPage() {
                     ))}
                   </ul>
 
-                  <p className="mt-5 flex gap-3 rounded-2xl bg-cream-wash p-3 text-[13px] leading-relaxed md:mt-6 md:p-4 md:text-sm">
-                    <Emoji name="light-bulb" size={24} className="shrink-0 self-start" />
-                    <span><strong>Inspector&apos;s tip:</strong> {p.tip}</span>
+                  <p className="mt-5 rounded-2xl bg-cream-wash p-3 text-[13px] leading-relaxed md:mt-6 md:p-4 md:text-sm">
+                    <strong>Inspector&apos;s tip:</strong> {p.tip}
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-3 md:mt-8">
