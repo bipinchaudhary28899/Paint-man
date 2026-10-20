@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ColourTools } from "@/components/ColourTools";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { BookingSection } from "@/components/BookingSection";
@@ -29,6 +30,7 @@ export default function ShadeCardsPage() {
               and ordered light to dark, so you can shortlist before the site visit and quote exact codes.
             </p>
           </div>
+          <ColourTools current="shade-cards" className="mt-8 md:mt-10" />
         </div>
       </section>
 

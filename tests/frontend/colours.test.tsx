@@ -411,7 +411,11 @@ describe("/colours page", () => {
     expect(h1).toHaveTextContent("Find a wall colour in Agra by shade code, brand or name");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /visualizer/i })).toBeNull();
-    expect(screen.getByRole("link", { name: "See ready palettes" })).toHaveClass("text-ink");
+    // the other colour tools are cards in the hero; this page is marked, not linked
+    const tools = screen.getByRole("navigation", { name: "Colour tools" });
+    expect(within(tools).getByRole("link", { name: /Brand shade cards/ })).toHaveAttribute("href", "/shade-cards");
+    expect(within(tools).getByRole("link", { name: /Colour combinations/ })).toHaveAttribute("href", "/palettes");
+    expect(within(tools).getByText("Colour finder").closest("[aria-current]")).toHaveAttribute("aria-current", "page");
     expect(within(brandGrid()).getAllByRole("link")).toHaveLength(4);
     expect(document.body.textContent).not.toMatch(/PM codes|Paint Man shades/);
   });

@@ -128,8 +128,8 @@ describe("ColourExplorer", () => {
     expect(swatchIndices).toEqual([1, 3, 8, 12, 13, 16, 19, 21, 23, 25, 27, 30]);
     expect(screen.getByRole("button", { name: "Terracotta" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("#C76B4A · Terracottas")).toBeInTheDocument();
-    expect(screen.getByText(/Discuss this shade with us/)).toHaveAttribute("href", "/book");
-    expect(screen.getByText("Search 8,500+ brand shades")).toHaveAttribute("href", "/colours");
+    expect(screen.getByRole("link", { name: /See shades at home/ })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: /Search 8,500\+ brand shades/ })).toHaveAttribute("href", "/colours");
     // the home page names a PaintDB shade (the pinned reveal), so the credit sits with the shade links
     expect(screen.getByRole("link", { name: "PaintDB" })).toHaveAttribute("href", "https://paintdb.com");
     expect(screen.getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");

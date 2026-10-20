@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
+import { ColourTools } from "@/components/ColourTools";
+import { PAINTDB } from "@/lib/colours/catalogue";
 import { clamp01, useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
 // Wheel of 36 illustrative shades that turns only with the scroll: it starts the moment the
@@ -106,14 +106,8 @@ export function ColourExplorer() {
             Brand shade data: <a href={PAINTDB.source} className="underline" rel="noopener" target="_blank">PaintDB</a>,{" "}
             <a href={PAINTDB.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>.
           </p>
-          <div className="mt-2 flex flex-col items-start tab:mt-4 tab:flex-row tab:flex-wrap tab:gap-x-7 tab:gap-y-1 desk:mt-5 desk:gap-x-8 desk:gap-y-2">
-            <Link href="/book" className="link-arrow max-desk:min-h-11">
-              Discuss this shade with us <Arrow />
-            </Link>
-            <Link href="/colours" className="link-arrow max-desk:min-h-11">
-              Search {BRAND_SHADES_ROUNDED} brand shades <Arrow />
-            </Link>
-          </div>
+          {/* Every colour tool, as cards (the finder, the shade cards, combinations, a visit) */}
+          <ColourTools columns={2} className="mt-5 tab:mt-6 desk:mt-7" />
         </div>
 
         {/* The wheel turns only with the scroll (.wheel in globals.css). Phones: none. Tablets: a
@@ -131,13 +125,5 @@ export function ColourExplorer() {
         </div>
       </div>
     </section>
-  );
-}
-
-function Arrow() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
   );
 }

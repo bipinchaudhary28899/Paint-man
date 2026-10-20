@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { illustrations } from "@/config/images";
 import Link from "next/link";
+import { ColourTools } from "@/components/ColourTools";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { WallPreview } from "@/components/colours/WallPreview";
@@ -59,6 +60,7 @@ export default function PalettesPage() {
               className="hidden h-auto w-60 md:block"
             />
           </div>
+          <ColourTools current="palettes" className="mt-8 md:mt-10" />
           <nav aria-label="Jump to a palette" className="mt-8 flex flex-wrap gap-2">
             {all.map((p) => (
               <a key={p.slug} href={`#${p.slug}`} className="inline-flex min-h-11 items-center rounded-full border border-line bg-paper px-4 text-sm font-bold transition hover:bg-sunshine">

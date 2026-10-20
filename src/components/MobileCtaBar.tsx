@@ -15,7 +15,7 @@ type Item = { label: string; hue: string; on: string; home: string; href: string
 export const items: Item[] = [
   { label: "Home", hue: "#71856a", on: "#f8f5ef", home: "#top", href: "/", match: (p) => p === "/" },
   { label: "Services", hue: "#e9b949", on: "#242522", home: "#services", href: "/services", match: (p) => p.startsWith("/services") },
-  { label: "Colours", hue: "#c76b4a", on: "#f8f5ef", home: "#colour", href: "/colours", match: (p) => p.startsWith("/colours") || p.startsWith("/palettes") },
+  { label: "Colours", hue: "#c76b4a", on: "#f8f5ef", home: "#colour", href: "/colours", match: (p) => p.startsWith("/colours") || p.startsWith("/palettes") || p.startsWith("/shade-cards") },
   // cream on the charcoal bar (a charcoal dot would vanish into it)
   { label: "Estimate", hue: "#f8f5ef", on: "#242522", home: "/book", href: "/book", match: (p) => p.startsWith("/book") || p.startsWith("/contact") },
 ];

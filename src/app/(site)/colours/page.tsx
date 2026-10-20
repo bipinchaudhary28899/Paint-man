@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { illustrations } from "@/config/images";
-import Link from "next/link";
+import { ColourTools } from "@/components/ColourTools";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { ColourFinderFromUrl } from "@/components/colours/ColourFinder";
@@ -59,9 +59,7 @@ export default function ColoursPage() {
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
                 {shadeCount().toLocaleString("en-IN")} shades from Asian Paints, Berger, Nerolac and Nippon Paint, the major brands in India, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
-                Pick one and we bring the real shade card to your home in {site.city}. Prefer the paper-card layout?{" "}
-                <Link href="/shade-cards" className="font-bold text-ink underline">Browse the shade cards</Link>. Want combinations
-                instead? <Link href="/palettes" className="font-bold text-ink underline">See ready palettes</Link>.
+                Pick one and we bring the real shade card to your home in {site.city}.
               </p>
             </div>
             <Image
@@ -73,6 +71,8 @@ export default function ColoursPage() {
               className="hidden h-auto w-[260px] md:block"
             />
           </div>
+          {/* The other colour tools, as cards, so the shade cards and combinations are easy to find */}
+          <ColourTools current="finder" className="mt-8 md:mt-10" />
         </div>
       </section>
 

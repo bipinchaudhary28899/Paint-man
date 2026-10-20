@@ -34,10 +34,10 @@ describe("ColourExplorer layouts", () => {
     expect(swatches.filter((b) => b.getAttribute("aria-pressed") === "true").map((b) => b.getAttribute("aria-label"))).toEqual(["Lagoon"]);
   });
 
-  it("keeps the wheel decorative and the two shade links pointing at real pages", () => {
+  it("keeps the wheel decorative and offers every colour tool as a card pointing at a real page", () => {
     const { container } = render(<ColourExplorer />);
     expect(container.querySelector(".wheel-wrap")).toHaveAttribute("aria-hidden");
-    expect(screen.getByRole("link", { name: /Discuss this shade with us/ })).toHaveAttribute("href", "/book");
-    expect(screen.getByRole("link", { name: /Search 8,500\+ brand shades/ })).toHaveAttribute("href", "/colours");
+    const tools = screen.getByRole("navigation", { name: "Colour tools" });
+    expect(within(tools).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/colours", "/shade-cards", "/palettes", "/book"]);
   });
 });
