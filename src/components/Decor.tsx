@@ -59,22 +59,3 @@ export function Blob({ className = "", color = "#ffd84d" }: { className?: string
     </svg>
   );
 }
-
-// Huge outlined words scrolling the opposite way: 46px on phones, 72px on tablets, up to 96px on desktop.
-export function OutlineMarquee({ words }: { words: string[] }) {
-  const row = [...words, ...words, ...words, ...words];
-  return (
-    <div className="overflow-hidden pb-3.5 pt-1.5 tab:pb-[22px] tab:pt-2.5 desk:pb-[26px]" aria-hidden>
-      <div className="flex w-max animate-marquee gap-7 whitespace-nowrap pl-5 text-[46px] font-bold leading-[1.1] tracking-[-0.03em] tab:gap-12 tab:pl-10 tab:text-[72px] desk:gap-20 desk:pl-20 desk:text-[clamp(56px,6.6vw,96px)]">
-        {row.map((w, i) => (
-          <span
-            key={i}
-            className={`font-sans ${i % 2 ? (Math.floor(i / 2) % 2 ? "text-gradient-warm" : "text-gradient") : "text-outline-ink max-tab:[-webkit-text-stroke-width:2px]!"}`}
-          >
-            {w}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}

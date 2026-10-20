@@ -6,7 +6,7 @@ import { promises, site } from "@/config/site";
 export function HomeBooking() {
   return (
     <BookingSection
-      className="container-page relative z-[1] mt-0 mb-14 pt-2 tab:mb-20 tab:pt-6 desk:mb-24 desk:pt-0"
+      className="container-page relative z-[1] mt-0 mb-9 pt-4 tab:mb-20 tab:pt-6 desk:mb-24 desk:pt-0"
       heading={<>Book a site visit <em>online</em></>}
       text={
         <p>

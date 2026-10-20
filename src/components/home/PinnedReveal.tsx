@@ -82,14 +82,14 @@ export function PinnedReveal() {
 
   return (
     <section ref={track} id="how-a-wall-changes" aria-label="Watch the colour go on" className="pin-track relative" data-js={needsJs || undefined} style={trackStyle}>
-      {/* Three layouts, one markup. Phones: one column sized to fit between the sticky header and
-          the bottom nav: heading on top, the room in the middle of the screen, the stages as a
+      {/* Three layouts, one markup. Phones: one column pinned under the sticky header and sized to
+          fit above the bottom nav: heading on top (a fixed 20px under the header), the room filling the middle, the stages as a
           compact strip under it (the active one carries a terracotta rule). The text block is
           `display: contents` on phones so its children can be ordered around the image without
           duplicating any heading. Tablets: the intro and the stage list beside a room of up to
           360px, centred below the header. Desktop: text and a larger room side by side. */}
-      <div ref={panel} className="pin-panel sticky top-0 flex h-[100svh] flex-col justify-center pb-[128px] pt-[76px] tab:h-[min(860px,100vh)] tab:flex-row tab:items-center tab:pb-0 tab:pt-[86px] desk:pt-0">
-        <div className="container-page flex w-full flex-col tab:grid tab:grid-cols-[minmax(0,1fr)_min(360px,47%)] tab:items-center tab:gap-10 desk:flex desk:flex-row desk:flex-wrap desk:gap-[72px]">
+      <div ref={panel} className="pin-panel sticky top-[73px] flex h-[calc(100svh_-_73px)] flex-col justify-start pb-24 pt-5 tab:top-0 tab:h-[min(860px,100vh)] tab:flex-row tab:items-center tab:justify-center tab:pb-0 tab:pt-[86px] desk:pt-0">
+        <div className="container-page flex min-h-0 w-full flex-1 flex-col tab:flex-none tab:grid tab:grid-cols-[minmax(0,1fr)_min(360px,47%)] tab:items-center tab:gap-10 desk:flex desk:flex-row desk:flex-wrap desk:gap-[72px]">
           <div className="contents tab:block tab:min-w-0 desk:flex-[1_1_380px]">
             <div className="order-1 tab:order-none">
               <p className="eyebrow max-tab:text-[11px]">How a wall changes</p>
@@ -131,10 +131,10 @@ export function PinnedReveal() {
             </p>
           </div>
 
-          {/* The room: on phones its height is what is left of the screen after the header, heading,
-              stage strip and bottom nav (at most 300px), so the pinned panel always fits; 7:8 from
-              tablets up. The wall mask is cover-cropped like the photo, so the two stay aligned. */}
-          <div className="frame-shadow scene relative order-2 mt-4 h-[clamp(180px,calc(100svh_-_390px),300px)] w-full min-w-0 overflow-hidden rounded-[22px] bg-[#d9d2c5] tab:order-none tab:mt-0 tab:aspect-[7/8] tab:h-auto tab:rounded-3xl desk:max-w-[560px] desk:flex-[1_1_440px]">
+          {/* The room: on phones it fills what is left of the panel (pinned under the 73px header, its
+              bottom padding clearing the bottom nav) after the heading and the stage strip, so the panel
+              always fits and the gaps around it stay fixed; 7:8 from tablets up. The wall mask is cover-cropped like the photo, so the two stay aligned. */}
+          <div className="frame-shadow scene relative order-2 mt-4 min-h-[180px] w-full min-w-0 flex-1 overflow-hidden tab:flex-none rounded-[22px] bg-[#d9d2c5] tab:order-none tab:mt-0 tab:aspect-[7/8] tab:h-auto tab:rounded-3xl desk:max-w-[560px] desk:flex-[1_1_440px]">
             <Image src={photo.src} alt={`Living room with the walls being painted ${wallShade.name}`} fill sizes="(min-width: 1080px) 560px, (min-width: 721px) 360px, 100vw" className="object-cover" />
             <div aria-hidden className="pin-before absolute inset-0" style={js ? { clipPath: `inset(0 0 ${js.fill}% 0)` } : undefined}>
               <span className="tint" style={{ background: putty, ...maskStyle }} />

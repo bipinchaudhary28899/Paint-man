@@ -1,6 +1,5 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OutlineMarquee } from "@/components/Decor";
 import { PinnedReveal, stages, wallShade } from "@/components/home/PinnedReveal";
 
 // The shared setup drops `sizes`; keep it here so the room photo's per-screen sizes can be checked.
@@ -95,18 +94,5 @@ describe("PinnedReveal on every screen", () => {
     const items = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(items.map((li) => li.style.opacity)).toEqual(["0.55", "0.55", "1", "0.3"]);
     raf.mockRestore();
-  });
-});
-
-describe("OutlineMarquee (the word strip)", () => {
-  it("is decorative: hidden from assistive tech, with no headings, the words repeated for a seamless loop", () => {
-    const { container } = render(<OutlineMarquee words={["Texture", "Shine", "Colour", "Finish"]} />);
-    const strip = container.firstElementChild as HTMLElement;
-    expect(strip).toHaveAttribute("aria-hidden", "true");
-    expect(within(strip).queryByRole("heading", { hidden: true })).toBeNull();
-    const words = [...strip.querySelectorAll("span")].map((s) => s.textContent);
-    expect(words).toHaveLength(16);
-    expect(words.slice(0, 4)).toEqual(["Texture", "Shine", "Colour", "Finish"]);
-    expect(words.slice(4, 8)).toEqual(words.slice(0, 4));
   });
 });

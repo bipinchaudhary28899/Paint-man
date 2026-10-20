@@ -1,5 +1,4 @@
 import { CtaBanner } from "@/components/CtaBanner";
-import { OutlineMarquee } from "@/components/Decor";
 import { AreasSection } from "@/components/home/AreasSection";
 import { ColourExplorer } from "@/components/home/ColourExplorer";
 import { Diagnose } from "@/components/home/Diagnose";
@@ -36,22 +35,19 @@ export default function HomePage() {
 
       <HomeBooking />
 
-      {/* ---------- Word strip ---------- */}
-      <div className="relative z-[1] border-y border-line-soft">
-        <OutlineMarquee words={["Texture", "Shine", "Colour", "Finish"]} />
-      </div>
-
       <div className="relative z-[1]">
         <PinnedReveal />
       </div>
 
       {/* ---------- Promises ---------- */}
-      <div className="container-page relative z-[1] mt-16 md:mt-[120px]">
+      {/* Phones: the reveal panel above ends in 96px of padding (it clears the bottom nav while pinned),
+          so the promises pull up 40px to keep the 56px gap between sections. */}
+      <div className="container-page relative z-[1] -mt-10 tab:mt-16 md:mt-[120px]">
         <Promises />
       </div>
 
       {/* ---------- How the work gets done ---------- */}
-      <WorkFlow className="container-page relative z-[1] mt-16 md:mt-[120px]" cta={{ href: "#book-visit", label: "Book a site visit" }} />
+      <WorkFlow className="container-page relative z-[1] mt-14 tab:mt-16 md:mt-[120px]" cta={{ href: "#book-visit", label: "Book a site visit" }} />
 
       <Diagnose />
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { Blob, ColourMarquee, OutlineMarquee, SpinBadge } from "@/components/Decor";
+import { Blob, ColourMarquee, SpinBadge } from "@/components/Decor";
 import { Header } from "@/components/Header";
 import { HouseFill } from "@/components/HouseFill";
 import { LeadForm } from "@/components/LeadForm";
@@ -46,14 +46,9 @@ describe("Decor", () => {
     expect(container.textContent).toContain("Terracotta");
   });
 
-  it("Blob takes a colour and OutlineMarquee alternates outline and gradient words", () => {
+  it("Blob takes a colour", () => {
     const { container } = render(<Blob color="#123456" />);
     expect(container.querySelector("path")).toHaveAttribute("fill", "#123456");
-    const { container: m } = render(<OutlineMarquee words={["Colour", "Finish"]} />);
-    const words = m.querySelectorAll("span");
-    expect(words).toHaveLength(8);
-    expect(words[0].className).toContain("text-outline-ink");
-    expect(words[1].className).toContain("text-gradient");
   });
 });
 

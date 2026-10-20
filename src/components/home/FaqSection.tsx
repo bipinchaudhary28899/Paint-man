@@ -6,7 +6,7 @@ import { generalFaqs } from "@/config/site";
 // desktop sets the heading beside the accordion.
 export function FaqSection() {
   return (
-    <section id="faq" className="container-page relative z-[1] pb-14 tab:pb-[88px] desk:flex desk:flex-wrap desk:gap-[72px] desk:pb-40" aria-labelledby="faq-heading">
+    <section id="faq" className="container-page relative z-[1] pb-14 pt-1.5 tab:pb-[88px] tab:pt-0 desk:flex desk:flex-wrap desk:gap-[72px] desk:pb-40" aria-labelledby="faq-heading">
       <div className="tab:max-desk:flex tab:max-desk:items-end tab:max-desk:justify-between tab:max-desk:gap-6 desk:flex-[1_1_320px]">
         <h2 id="faq-heading" className="text-[32px] leading-[1.06] tab:text-[44px] desk:text-[clamp(36px,4vw,52px)]">
           Good <em>questions.</em>

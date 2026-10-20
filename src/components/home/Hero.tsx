@@ -59,14 +59,15 @@ export function Hero() {
           them (justify-evenly), beside the copy and never taller than the first screen under the header
           (86px) and the hero's top padding (40px), so both are in view on load. The picture's edges fade
           into the page (a CSS mask), so it sits on the canvas without a frame. Phones and tablets: the
-          picture sits in a framed chalk panel (the frame is display:contents on desktop). Its box keeps
+          picture sits in a framed chalk panel (the frame is display:contents on desktop), its edges fading
+          into the panel with the same mask. Its box keeps
           the picture's proportions, so nothing shifts. */}
       <div className="contents min-w-0 flex-[1_1_420px] flex-col [perspective:1600px] desk:flex desk:max-h-[calc(100svh-150px)] desk:justify-evenly">
         <div className="mt-5 rounded-[24px] border border-line-soft bg-cream-wash p-3 [perspective:1600px] tab:col-span-2 tab:row-start-3 tab:mt-10 tab:rounded-[28px] tab:px-6 tab:pb-14 tab:pt-6 desk:contents">
           <Tilt max={6} className="relative aspect-[1790/968] w-full">
             <HeroImage
               image={illustrations.paintBrands}
-              className="object-contain desk:[mask-composite:intersect] desk:[mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent),linear-gradient(to_bottom,transparent,#000_8%,#000_90%,transparent)]"
+              className="object-contain [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent),linear-gradient(to_bottom,transparent,#000_8%,#000_90%,transparent)]"
             />
           </Tilt>
         </div>

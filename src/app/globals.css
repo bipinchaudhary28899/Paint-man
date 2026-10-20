@@ -217,7 +217,7 @@ h1 em, h2 em, h3 em, .accent {
   outline-offset: 3px;
 }
 
-/* ---------- Text effects (word strip) ---------- */
+/* ---------- Text effects (decorative spans inside headings) ---------- */
 /* Outlined word: stroke first, then fill in the page colour so Manrope's overlapping
    contours never show inside the letters. The stroke is doubled because the fill covers its inner half. */
 .text-outline-ink {
@@ -537,6 +537,11 @@ h1 em, h2 em, h3 em, .accent {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-terracotta);
+}
+/* Phones: a block, so it does not sit on the parent's text line (whose strut pushed it 6px down
+   and made the gap above a section that opens with an eyebrow uneven). */
+@media (width < 45.0625rem) {
+  .eyebrow { display: flex; }
 }
 
 /* Quiet chip (proof points, filter tags) */
