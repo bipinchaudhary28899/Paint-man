@@ -5,9 +5,18 @@ import { areaSlug, cities, cityPath, servicePath, services } from "./site";
 // to the hubs and the city pages (crawlable links), but only to pages that exist and say true things.
 
 export type NavLink = { href: string; label: string; note?: string };
-/** `wide`: the group spans the whole menu and lays its links out in columns (a city's localities). */
-export type NavGroup = { heading?: string; links: NavLink[]; wide?: boolean };
-export type NavMenu = { label: string; href: string; groups: NavGroup[] };
+export type NavGroup = { heading?: string; links: NavLink[] };
+/** An entry that opens the next level beside it: a region, its cities, a city's localities. */
+export type NavNode = { label: string; href?: string; note?: string; children?: NavNode[] };
+/** A menu shows `groups` as columns of links, or, with a `tree`, cascading columns (Cities). */
+export type NavMenu = { label: string; href: string; groups: NavGroup[]; tree?: NavNode[] };
+
+/** Every link a menu holds, at every level. */
+export function menuLinks(menu: NavMenu): NavLink[] {
+  const walk = (nodes: NavNode[]): NavLink[] =>
+    nodes.flatMap((n) => [...(n.href ? [{ href: n.href, label: n.label, note: n.note }] : []), ...walk(n.children ?? [])]);
+  return [...menu.groups.flatMap((g) => g.links), ...walk(menu.tree ?? [])];
+}
 
 /** The brand shade cards (/shade-cards/<slug>): the major brands sold in India, the ones we supply. */
 export const shadeCardBrands = [
@@ -38,18 +47,19 @@ export function navMenus(): NavMenu[] {
     {
       label: "Cities",
       href: "/services/house-painting",
-      groups: [
-        ...regions().map((region) => ({
-          heading: region,
-          links: cities
-            .filter((c) => c.region === region)
-            .map((c) => ({ href: cityPath(c), label: `House painting in ${c.name}`, note: c.status === "live" ? undefined : "Coming soon" })),
-        })),
-        // each live city's localities, linking to their entries on the city page
-        ...cities
-          .filter((c) => c.status === "live" && c.areas.length > 0)
-          .map((c) => ({ heading: `Localities in ${c.name}`, wide: true, links: c.areas.map((a) => ({ href: `${cityPath(c)}#${areaSlug(a)}`, label: a })) })),
-      ],
+      groups: [],
+      // region › city › localities; a city we do not paint in yet has no localities, only its waitlist page
+      tree: regions().map((region) => ({
+        label: region,
+        children: cities
+          .filter((c) => c.region === region)
+          .map((c) => ({
+            label: c.name,
+            href: cityPath(c),
+            note: c.status === "live" ? undefined : "Coming soon",
+            children: c.status === "live" ? c.areas.map((a) => ({ label: a, href: `${cityPath(c)}#${areaSlug(a)}` })) : [],
+          })),
+      })),
     },
     {
       label: "Colours",

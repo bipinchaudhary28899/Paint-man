@@ -320,9 +320,9 @@ describe("cities (city-scoped URLs: /services/<service>/<city>)", () => {
 
 describe("header menus and footer link hub (src/config/nav.ts)", () => {
   it("every link lands on a real page; coming-soon cities link to their (noindex) waitlist page", async () => {
-    const { navMenus, footerColumns } = await import("@/config/nav");
+    const { navMenus, footerColumns, menuLinks } = await import("@/config/nav");
     const soonPaths = new Set(cities.filter((c) => c.status === "soon").map(cityPath));
-    const links = [...navMenus().flatMap((m) => [{ href: m.href }, ...m.groups.flatMap((g) => g.links)]), ...footerColumns().flatMap((c) => c.links)];
+    const links = [...navMenus().flatMap((m) => [{ href: m.href }, ...menuLinks(m)]), ...footerColumns().flatMap((c) => c.links)];
     expect(links.length).toBeGreaterThan(20);
     for (const { href } of links) {
       if (soonPaths.has(href)) continue;

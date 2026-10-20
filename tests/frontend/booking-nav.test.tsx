@@ -5,7 +5,7 @@ import { BookingSection } from "@/components/BookingSection";
 import { NavMenu } from "@/components/NavMenu";
 import { Promises } from "@/components/Promises";
 import { ThankYouMessage } from "@/components/ThankYouMessage";
-import { navMenus } from "@/config/nav";
+import { menuLinks, navMenus } from "@/config/nav";
 import { WorkFlow } from "@/components/WorkFlow";
 import { illustrations } from "@/config/images";
 import { areaSlug, promises, site, workFlow } from "@/config/site";
@@ -80,17 +80,36 @@ describe("NavMenu (header dropdowns)", () => {
     vi.useRealTimers();
   });
 
-  it("lists every Agra locality under Cities, each linking to its entry on the Agra page", async () => {
+  it("Cities cascades: regions, then the cities of the region pointed at, then that city's localities", async () => {
     const user = userEvent.setup();
     const cities = navMenus().find((m) => m.label === "Cities")!;
-    const localities = cities.groups.find((g) => g.heading === "Localities in Agra")!;
-    expect(localities.wide).toBe(true);
-    expect(localities.links.map((l) => l.label)).toEqual([...site.areas]);
-    expect(localities.links.map((l) => l.href)).toEqual(site.areas.map((a) => `/services/house-painting/agra#${areaSlug(a)}`));
-    render(<NavMenu menu={cities} />);
+    const { container } = render(<NavMenu menu={cities} />);
+    // every level's links are in the HTML even while the menu is closed
+    for (const href of ["/services/house-painting/agra", "/services/house-painting/delhi-ncr", "/services/house-painting/bangalore", "/services/house-painting/agra#kamla-nagar"]) {
+      expect(container.querySelector(`a[href="${href}"]`), href).not.toBeNull();
+    }
     await user.click(screen.getByRole("button", { name: "Cities" }));
-    expect(screen.getByRole("link", { name: "Kamla Nagar" })).toHaveAttribute("href", "/services/house-painting/agra#kamla-nagar");
-    expect(screen.getByRole("link", { name: "Fatehabad Road" })).toHaveAttribute("href", "/services/house-painting/agra#fatehabad-road");
+    // first region open: Uttar Pradesh › Agra › its localities
+    expect(screen.getByRole("button", { name: /Uttar Pradesh/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: "Agra" })).toHaveAttribute("href", "/services/house-painting/agra");
+    expect(screen.getByText("Localities in Agra")).toBeVisible();
+    for (const a of site.areas) expect(screen.getByRole("link", { name: a })).toHaveAttribute("href", `/services/house-painting/agra#${areaSlug(a)}`);
+    expect(screen.queryByRole("link", { name: /Bangalore/ })).toBeNull(); // another region's cities stay hidden
+    // pointing at Karnataka shows its cities; Bangalore is not open yet, so its column offers the waitlist
+    await user.hover(screen.getByRole("button", { name: /Karnataka/ }));
+    expect(screen.getByRole("button", { name: /Karnataka/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Uttar Pradesh/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("link", { name: /Bangalore/ })).toHaveTextContent("Coming soon");
+    expect(screen.queryByRole("link", { name: "Kamla Nagar" })).toBeNull();
+    expect(screen.getByText(/not painting in Bangalore yet/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Join the waitlist" })).toHaveAttribute("href", "/services/house-painting/bangalore");
+    // keyboard: focusing a region moves the columns too, and following a link closes the menu
+    act(() => screen.getByRole("button", { name: /Delhi NCR/ }).focus());
+    expect(screen.getByRole("link", { name: /Delhi NCR/ })).toHaveAttribute("href", "/services/house-painting/delhi-ncr");
+    await user.click(screen.getByRole("button", { name: /Uttar Pradesh/ }));
+    await user.hover(screen.getByRole("link", { name: "Agra" }));
+    await user.click(screen.getByRole("link", { name: "Dayalbagh" }));
+    expect(screen.getByRole("button", { name: "Cities" })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("stays open when a click follows the hover that opened it, however the two are timed", async () => {
@@ -113,10 +132,13 @@ describe("NavMenu (header dropdowns)", () => {
     vi.useRealTimers();
   });
 
-  it("groups the cities by region and marks the ones coming soon", () => {
+  it("groups the cities by region, marks the ones coming soon and gives only live cities localities", () => {
     const cities = navMenus().find((m) => m.label === "Cities")!;
-    expect(cities.groups.map((g) => g.heading)).toEqual(["Uttar Pradesh", "Delhi NCR", "Karnataka", "Localities in Agra"]);
-    const links = cities.groups.flatMap((g) => g.links);
+    expect(cities.tree!.map((r) => r.label)).toEqual(["Uttar Pradesh", "Delhi NCR", "Karnataka"]);
+    expect(cities.tree![0].children!.map((c) => c.label)).toEqual(["Agra"]);
+    expect(cities.tree![0].children![0].children!.map((l) => l.label)).toEqual([...site.areas]);
+    expect(cities.tree![2].children![0].children).toEqual([]);
+    const links = menuLinks(cities);
     expect(links.find((l) => l.href === "/services/house-painting/agra")?.note).toBeUndefined();
     expect(links.find((l) => l.href === "/services/house-painting/bangalore")?.note).toBe("Coming soon");
   });
