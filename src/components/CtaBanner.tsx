@@ -9,10 +9,10 @@ export function CtaBanner({ heading }: { heading?: React.ReactNode }) {
     <section id="book" className="container-page reveal mt-24 md:mt-40">
       <div className="rounded-t-[28px] bg-sand px-6 py-[72px] text-center text-ink md:rounded-t-[32px] md:px-14 md:py-32">
         <Image
-          src={illustrations.painter.src}
-          alt={illustrations.painter.alt}
-          width={illustrations.painter.width}
-          height={illustrations.painter.height}
+          src={illustrations.toolbox.src}
+          alt={illustrations.toolbox.alt}
+          width={illustrations.toolbox.width}
+          height={illustrations.toolbox.height}
           sizes="(min-width: 768px) 320px, 220px"
           className="mx-auto mb-8 h-auto w-[220px] md:w-[320px]"
         />

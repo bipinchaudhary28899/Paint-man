@@ -96,9 +96,9 @@ export default function HomePage() {
           </dl>
         </div>
         <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
-          <Tilt max={6} className="relative h-[420px] overflow-hidden rounded-3xl bg-sand md:h-[640px]">
-            {/* The painter cut-out: the yellow wall runs off the right edge, the figure stands on the bottom */}
-            <HeroImage image={illustrations.painter} className="object-cover object-[22%_bottom]" />
+          <Tilt max={6} className="relative aspect-[1160/1024] w-full">
+            {/* The painter cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
+            <HeroImage image={illustrations.painter} className="object-contain object-bottom" />
             {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
             <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
