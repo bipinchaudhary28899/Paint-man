@@ -28,10 +28,16 @@ export type SiteImage = (typeof images)[keyof typeof images];
 
 /**
  * The owner's Paint Saathi illustrations: transparent WebP cut-outs in public/brand/illustrations
- * (the painter and the paint can came with a checkerboard drawn into the picture, which was removed;
+ * (the painting kit, the painter and the paint can came with a checkerboard drawn into the picture, which was removed;
  * the toolbox was already transparent). Our own brand art, so the alt names the brand.
  */
 export const illustrations = {
+  paintingKit: {
+    src: "/brand/illustrations/painting-kit.webp",
+    width: 748,
+    height: 692,
+    alt: "Wooden step ladder with a yellow paint roller, a bucket and a tin of yellow paint and a roller tray on a drop cloth",
+  },
   painter: {
     src: "/brand/illustrations/painter-roller.webp",
     width: 1160,

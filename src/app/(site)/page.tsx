@@ -83,7 +83,7 @@ export default function HomePage() {
             bring genuine branded paint and a supervised crew, and hand back a spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
           </p>
           {/* Stacked (phones, tablets) the buttons follow the intro; side by side (from 1080px, where the
-              columns sit together) they move into the empty space above the painter. One copy is display:none. */}
+              columns sit together) they move into the empty space above the hero image. One copy is display:none. */}
           <HeroActions className="mt-10 flex min-[1080px]:hidden" />
           <dl className="mt-14 flex flex-wrap gap-10 border-t border-line pt-7">
             {[["Payment", "Zero advance"], ["Estimate", "Full, before work starts"], ["Work", "Timed and documented"]].map(([k, v]) => (
@@ -96,16 +96,16 @@ export default function HomePage() {
         </div>
         {/* Side by side this column is as tall as the copy, but never taller than the first screen under
             the header (86px) and the hero's top padding (40px), less a 24px margin: the buttons sit centred
-            in the space above the painter, and the painter's feet are always in view on load. On a
-            shorter screen the painter's box shrinks (by CSS alone, so nothing shifts) and the cut-out
+            in the space above the kit, and the kit's base is always in view on load. On a
+            shorter screen its box shrinks (by CSS alone, so nothing shifts) and the cut-out
             scales down inside it. */}
         <div className="flex min-w-0 flex-[1_1_420px] flex-col [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)]">
           <div className="hidden flex-1 items-center justify-center pb-6 min-[1080px]:flex">
             <HeroActions className="flex justify-center" />
           </div>
-          <Tilt max={6} className="relative aspect-[1160/1024] w-full min-[1080px]:max-h-[calc(100svh-240px)] min-[1080px]:min-h-[300px]">
-            {/* The painter cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
-            <HeroImage image={illustrations.painter} className="object-contain object-bottom" />
+          <Tilt max={6} className="relative aspect-[748/692] w-full min-[1080px]:max-h-[calc(100svh-240px)] min-[1080px]:min-h-[300px]">
+            {/* The painting-kit cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
+            <HeroImage image={illustrations.paintingKit} className="object-contain object-bottom" />
           </Tilt>
         </div>
       </section>
