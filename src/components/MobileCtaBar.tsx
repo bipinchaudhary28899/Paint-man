@@ -21,6 +21,13 @@ export const items: Item[] = [
 ];
 const sectionIds = ["top", "services", "colour", "book"];
 
+const icons: Record<string, React.ReactNode> = {
+  Home: <><path d="M4 11l8-7 8 7" /><path d="M6 10v10h12V10" /></>,
+  Services: <><rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" /></>,
+  Colours: <><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-2 0-3 3 0 4-1 1-2 1-3a9 9 0 0 0-7-9z" /><circle cx="8" cy="10" r="1" /><circle cx="12" cy="7" r="1" /><circle cx="16" cy="10" r="1" /></>,
+  Estimate: <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M8 3v4M16 3v4" /></>,
+};
+
 /** The last section whose top has passed 55% of the viewport. Exported for tests. */
 export function activeSection(tops: (number | null)[], vh: number): number {
   let active = 0;
@@ -71,9 +78,12 @@ export function MobileCtaBar() {
       <span aria-hidden className="bnav-slot">
         {/* The hairline continues around the dip (the lower half of a ring the size of the cut-out) */}
         <span className="bnav-dip" />
-        {/* The dab: a plain disc of the active tab's colour, half above the bar */}
+        {/* The dab: a disc of the active tab's colour, half above the bar, carrying the tab's icon */}
         <span className="bnav-dab" data-tab={active.label}>
           <span key={hops} className={hops ? "bnav-dab-inner bnav-dab-hop" : "bnav-dab-inner"} style={{ background: active.hue, color: active.on }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              {icons[active.label]}
+            </svg>
           </span>
         </span>
       </span>

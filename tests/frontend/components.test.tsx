@@ -87,6 +87,8 @@ describe("Header and Footer", () => {
     expect(slotCentre(2)).toBe("62.5%");
     const dab = container.querySelector(".bnav-dab") as HTMLElement;
     expect(dab).toHaveAttribute("data-tab", "Home");
+    // the dab carries the active tab's icon (decorative: the slot is aria-hidden, the label is text)
+    expect(dab.querySelector("svg path")).not.toBeNull();
     expect(container.querySelector(".bnav-dab-hop")).toBeNull();
     // the dab and the dip ride one hidden, transform-only track (no `left`, so no layout shift)
     const slot = container.querySelector(".bnav-slot") as HTMLElement;
