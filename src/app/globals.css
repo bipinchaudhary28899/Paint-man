@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
-   PaintMan — editorial theme (from the "PaintMan Website" design).
+   Paint Saathi — editorial theme (from the original site design).
    Cream canvas, ink text, terracotta action, golden + sage accents;
    DM Serif Display for headings, Manrope for everything else.
    Raw values live on :root / [data-theme="night"] so utilities theme.

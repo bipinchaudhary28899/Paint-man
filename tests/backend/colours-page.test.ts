@@ -22,7 +22,7 @@ describe("/colours", () => {
 
   it("uses the local finder title and a measured description", () => {
     expect(finderMetadata.title).toBe("Wall Colour Finder & Shade Codes in Agra");
-    expect(`${finderMetadata.title} | Paint Man`.length).toBeLessThanOrEqual(60);
+    expect(`${finderMetadata.title} | Paint Saathi`.length).toBeLessThanOrEqual(60);
     const description = String(finderMetadata.description);
     expect(description).toBe("Search 50,000+ paint shades from Asian Paints, Berger, Nerolac and more by code and see each on a room wall. We bring the shade card to your Agra home.");
     expect(description.length).toBeGreaterThanOrEqual(140);

@@ -10,7 +10,7 @@ import { serviceTypes } from "@/lib/leads/options";
 
 // Integrity of the service and FAQ copy in src/config/site.ts (AGENTS.md rules 1 and 2).
 
-const SUFFIX = " | Paint Man";
+const SUFFIX = " | Paint Saathi";
 const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
 
 /** Every field of copy written for this service alone (FAQs excluded: /faq shows them too). */

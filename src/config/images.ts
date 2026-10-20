@@ -1,7 +1,7 @@
 // Placeholder stock photos from Pexels (https://www.pexels.com/license/, free to use).
 // Swap these for real photos of your own jobs as soon as you have them: genuine
 // before/after shots build more trust and help local SEO.
-// Each alt describes only what the photo shows. These are not Paint Man jobs, so no stock alt
+// Each alt describes only what the photo shows. These are not our jobs, so no stock alt
 // names Agra, a locality or a finished job. Real, consented job photos (not on images.pexels.com)
 // should get a local alt ("Freshly painted teal living room in Dayalbagh, Agra"), as AGENTS.md asks.
 

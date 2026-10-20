@@ -30,7 +30,7 @@ export function retiredShadeApi(code?: string) {
   return apiError(
     410,
     "gone",
-    `Paint Man's own shade codes (PM-xxx) were retired. Search brand paint shades (Asian Paints, Berger, Nerolac and more) at ${shadeApiSuccessors.search}; the brands are listed at ${shadeApiSuccessors.brands}.${replacement ? ` The nearest shade to this one is ${replacement.id}: ${replacement.self}.` : ""}`,
+    `Our former own shade codes (PM-xxx) were retired. Search brand paint shades (Asian Paints, Berger, Nerolac and more) at ${shadeApiSuccessors.search}; the brands are listed at ${shadeApiSuccessors.brands}.${replacement ? ` The nearest shade to this one is ${replacement.id}: ${replacement.self}.` : ""}`,
     replacement ? { ...shadeApiSuccessors, replacement } : shadeApiSuccessors,
     publicCache,
   );

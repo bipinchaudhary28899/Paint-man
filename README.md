@@ -1,4 +1,4 @@
-# Paint Man – lead generation website (v1)
+# Paint Saathi – lead generation website (v1)
 
 A Next.js website for a managed painting service in Agra. It collects inspection bookings and contact messages through a Node API route and saves each lead as a row in a Google Sheet.
 
@@ -145,11 +145,11 @@ browser's memory, so scrolling back or reopening a colour family never repeats a
 catalogue routes send `publicCache`, but `src/proxy.ts` currently sets `Cache-Control: no-store` on
 every `/api` response, so in practice they are not cached at the edge.) The attribution ("Brand shades: PaintDB,
 CC BY 4.0") must stay wherever these shades are shown; hex values approximate each brand's
-published shade, and Paint Man is not affiliated with these brands.
+published shade, and Paint Saathi is not affiliated with these brands.
 
-### No Paint Man shade codes
+### No own shade codes
 
-Paint Man used to publish 167 shades of its own (PM-xxx codes, `/colours/PM-502` pages). They were
+The site (then Paint Man) used to publish 167 shades of its own (PM-xxx codes, `/colours/PM-502` pages). They were
 retired: the brands' shade cards already cover them, and customers ask for shades by the brand's code.
 
 - **Palettes** (`src/config/palettes.ts`) use real Asian Paints shades: each old palette colour became

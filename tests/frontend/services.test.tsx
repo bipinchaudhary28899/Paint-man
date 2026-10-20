@@ -216,3 +216,11 @@ describe("FAQ page", () => {
     }
   });
 });
+
+describe("/services metadata", () => {
+  it("keeps the full title, brand included, within 60 characters", async () => {
+    const { metadata } = await import("@/app/(site)/services/page");
+    const { fullTitle, MAX_TITLE_LENGTH } = await import("@/lib/seo");
+    expect(fullTitle(String(metadata.title)).length).toBeLessThanOrEqual(MAX_TITLE_LENGTH);
+  });
+});

@@ -5,7 +5,7 @@
 //
 // Data: PaintDB (https://paintdb.com), CC BY 4.0. Keep the attribution in the output and on
 // every page that shows these shades. Hex values are PaintDB's approximations of each brand's
-// published colours; Paint Man is not affiliated with any paint brand.
+// published colours; Paint Saathi is not affiliated with any paint brand.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const SOURCE = "https://paintdb.com/data/paintdb-colors.csv";
@@ -98,7 +98,7 @@ const out = {
   license: "CC BY 4.0",
   licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
   attribution: "Shade data: PaintDB (paintdb.com), CC BY 4.0",
-  note: "Hex values approximate each brand's published colours. Paint Man is not affiliated with any paint brand.",
+  note: "Hex values approximate each brand's published colours. Paint Saathi is not affiliated with any paint brand.",
   generatedAt: new Date().toISOString().slice(0, 10),
   fields: ["brand", "code", "name", "hex", "lrv", "family", "undertone", "where (1 interior, 2 exterior)"],
   brands,

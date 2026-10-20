@@ -46,7 +46,7 @@ const serviceImage: Record<string, (typeof images)[keyof typeof images]> = {
 };
 
 // Example finishes (stock photos, see images.ts). No locality or "our job" claims until real,
-// consented photos of Paint Man jobs replace them.
+// consented photos of our own jobs replace them.
 const finishes = [
   { image: images.exteriorBlue, kind: "Exterior · grey-blue" },
   { image: images.livingMoody, kind: "Living room · warm white", raised: true },

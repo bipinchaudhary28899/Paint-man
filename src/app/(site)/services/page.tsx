@@ -7,7 +7,7 @@ import { services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Interior and Exterior Painting Services in ${site.city}`,
+  title: `Interior & Exterior Painting Services in ${site.city}`,
   description: `Interior, exterior and rental property painting in ${site.city}, managed from start to finish. Every job starts with an on-site inspection and itemised quote.`,
   path: "/services",
 });

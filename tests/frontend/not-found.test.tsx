@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
 describe("404 page", () => {
   it("is noindex but followable, with its own title", () => {
     expect(metadata.robots).toEqual({ index: false, follow: true });
-    expect(metadata.title).toEqual({ absolute: "Page not found | Paint Man" });
+    expect(metadata.title).toEqual({ absolute: "Page not found | Paint Saathi" });
     expect(metadata).not.toHaveProperty("alternates");
   });
 

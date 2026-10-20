@@ -291,3 +291,24 @@ describe("ThankYouMessage", () => {
     window.history.replaceState(null, "", "/");
   });
 });
+
+describe("Wordmark (text logo until the Paint Saathi logo files arrive)", () => {
+  it("writes the name as real text with one italic accent word, in ink or reversed", async () => {
+    const { Wordmark } = await import("@/components/Logo");
+    const { container, rerender } = render(<Wordmark />);
+    const mark = container.firstElementChild as HTMLElement;
+    expect(mark).toHaveTextContent("Paint Saathi");
+    expect(mark).toHaveClass("text-ink");
+    expect(mark.querySelector("em")).toHaveTextContent("Saathi");
+    expect(mark.querySelector("em")).toHaveClass("text-terracotta");
+    rerender(<Wordmark variant="reversed" className="text-3xl" />);
+    expect(container.firstElementChild).toHaveClass("text-on-ink", "text-3xl");
+    expect(container.querySelector("em")).toHaveClass("text-golden");
+  });
+
+  it("names the home link in the header", async () => {
+    const { Header } = await import("@/components/Header");
+    render(<Header />);
+    expect(screen.getByRole("link", { name: "Paint Saathi home" })).toHaveTextContent("Paint Saathi");
+  });
+});

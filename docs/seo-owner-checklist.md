@@ -2,19 +2,17 @@
 
 The code side of SEO is done in the repo. These steps need your accounts, your business details or your real work, and they matter more for local ranking than any further code change. Do them roughly in this order.
 
-## 1. Put the site on its own domain (biggest technical step)
+## 1. Own domain (done)
 
 A `*.vercel.app` address can rank, but a real domain earns trust and links, and every canonical URL, the sitemap and the share images are built from it.
 
-1. Buy a domain (for example `paintman.in` or `paintmanagra.in`).
-2. In Vercel: Project **paint-man** → Settings → Domains → add it (use the `www.` version as primary, redirect the bare domain to it). Follow Vercel's DNS instructions at your registrar.
-3. Vercel → Settings → Environment Variables → add `NEXT_PUBLIC_SITE_URL` = `https://www.yourdomain.in` (Production), then redeploy.
+1. Done: **paintsaathi.in** is live (GoDaddy DNS points to Vercel, and `NEXT_PUBLIC_SITE_URL` is set). Keep `www.paintsaathi.in` and the old `paint-man-six.vercel.app` redirecting to it with **308 Permanent**.
 
 ## 2. Google Business Profile (the biggest local ranking factor)
 
 The map results for "painters in Agra" come from Google Business Profile, not from the website.
 
-1. Go to business.google.com and create the profile as **Paint Man**.
+1. Go to business.google.com and create the profile as **Paint Saathi**.
 2. Primary category **Painter**; add **Painting contractor** if offered.
 3. If customers do not visit an office, set it up as a *service-area business*: hide the street address and list the localities you serve (the same ones as on the site).
 4. Hours: Monday to Saturday, 9 am to 7 pm (or your real hours; tell me if they differ).

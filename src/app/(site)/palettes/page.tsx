@@ -144,7 +144,7 @@ export default function PalettesPage() {
         <p className="max-w-3xl text-xs leading-relaxed text-muted">
           Brand shades: <a href={paintdb.source} className="underline" rel="noopener" target="_blank">PaintDB</a>, licensed{" "}
           <a href={paintdb.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>. On-screen colours approximate each
-          brand&apos;s published shade, and the closest Berger and Nerolac shades are screen matches to confirm on the card. Paint Man
+          brand&apos;s published shade, and the closest Berger and Nerolac shades are screen matches to confirm on the card. {site.name}
           isn&apos;t affiliated with these brands.
         </p>
       </div>

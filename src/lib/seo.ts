@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SITE_UPDATED } from "@/config/seo-dates";
 import { services, site, type Service } from "@/config/site";
 
-/** Appended to every page title by the root layout's title template ("{Topic} in Agra | Paint Man"). */
+/** Appended to every page title by the root layout's title template ("{Topic} in Agra | Paint Saathi"). */
 export const TITLE_SUFFIX = ` | ${site.name}`;
 /** Google shows about 60 characters of a title; AGENTS.md caps the full title there. */
 export const MAX_TITLE_LENGTH = 60;
@@ -36,7 +36,7 @@ type PageMeta = {
   description: string;
   path: string;
   noindex?: boolean;
-  /** Skip the " | Paint Man" title suffix (used on the home page, whose title already ends with it). */
+  /** Skip the " | Paint Saathi" title suffix (used on the home page, whose title already ends with it). */
   absoluteTitle?: boolean;
   /** A page-specific share image; a root-relative `url` is made absolute. Defaults to the site card. */
   image?: OgImage;
@@ -68,11 +68,11 @@ export function pageMetadata({ title, description, path, noindex, absoluteTitle,
 export const ICON_SIZES = [192, 512] as const;
 export type IconSize = (typeof ICON_SIZES)[number];
 export const iconPath = (size: IconSize) => `/brand/05-app-icon/app-icon-light-${size}.png`;
-/** The swatch-fan mark on a transparent background: the LocalBusiness logo Google shows. */
+/** The swatch-fan mark (no lettering) on a transparent background: the LocalBusiness logo Google shows. */
 export const LOGO_PATH = "/brand/04-icon/paintman-icon-color-512.png";
 
-/** The brand's written-together wordmark ("PaintMan"), published as an alternate name of the same entity. */
-export const ALTERNATE_NAME = "PaintMan";
+/** The name written together ("PaintSaathi"), published as an alternate name of the same entity. */
+export const ALTERNATE_NAME = "PaintSaathi";
 
 // Optional business details site.ts may gain later (geo pin, an explicit alternate name).
 // Read through optional chaining so nothing is published until real values exist.

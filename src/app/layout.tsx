@@ -4,7 +4,7 @@ import { site } from "@/config/site";
 import { siteVerification, TITLE_SUFFIX } from "@/lib/seo";
 import "./globals.css";
 
-// Editorial pairing from the PaintMan design: DM Serif Display (with its italic) for every
+// Editorial pairing from the site design: DM Serif Display (with its italic) for every
 // heading, Manrope for reading text and UI. Both self-hosted by next/font, so no layout shift.
 // Manrope is one variable file: a single @font-face per subset instead of one per weight.
 // The page uses weights 400–700.
@@ -13,7 +13,7 @@ const display = DM_Serif_Display({ subsets: ["latin"], weight: "400", style: ["n
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  // Pages pass "{Topic} in Agra"; the template adds " | Paint Man" (full title <= 60 chars).
+  // Pages pass "{Topic} in Agra"; the template adds " | Paint Saathi" (full title <= 60 chars).
   title: {
     default: `House Painting Services in ${site.city}${TITLE_SUFFIX}`,
     template: `%s${TITLE_SUFFIX}`,

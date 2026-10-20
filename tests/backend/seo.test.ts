@@ -30,9 +30,9 @@ type Json = Record<string, unknown>;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 describe("titles", () => {
-  it("brands every page title with ' | Paint Man' once", () => {
-    expect(TITLE_SUFFIX).toBe(" | Paint Man");
-    expect(fullTitle("Painting Services in Agra")).toBe("Painting Services in Agra | Paint Man");
+  it("brands every page title with ' | Paint Saathi' once", () => {
+    expect(TITLE_SUFFIX).toBe(" | Paint Saathi");
+    expect(fullTitle("Painting Services in Agra")).toBe("Painting Services in Agra | Paint Saathi");
   });
 
   it("keeps the default home title within the length cap", () => {
@@ -99,7 +99,7 @@ describe("business structured data", () => {
     expect(ld["@id"]).toBe(`${site.url}/#business`);
     expect(ld.name).toBe(site.name);
     expect(ld.alternateName).toBe(ALTERNATE_NAME);
-    expect(ALTERNATE_NAME).toBe("PaintMan");
+    expect(ALTERNATE_NAME).toBe("PaintSaathi");
     expect(ld).not.toHaveProperty("openingHours");
   });
 

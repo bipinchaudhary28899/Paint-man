@@ -4,7 +4,7 @@
 // date, in the same commit as the copy change. ISO dates, YYYY-MM-DD.
 
 /** Last site-wide content change (copy, services, the colour finder and palettes). */
-export const SITE_UPDATED = "2026-10-19";
+export const SITE_UPDATED = "2026-10-20";
 
 /**
  * Sections that change on their own schedule. A key covers that path and everything below it

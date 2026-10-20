@@ -442,7 +442,7 @@ export function ColourFinder({
           <p className="mt-5 text-xs leading-relaxed text-muted">
             Brand shades: <a href={attribution.source} className="underline" rel="noopener" target="_blank">PaintDB</a>, licensed{" "}
             <a href={attribution.licenseUrl} className="underline" rel="noopener license" target="_blank">CC BY 4.0</a>. On-screen colours approximate each brand&apos;s
-            published shade. Paint Man isn&apos;t affiliated with these brands; the inspector brings the real shade card.
+            published shade. Paint Saathi isn&apos;t affiliated with these brands; the inspector brings the real shade card.
           </p>
         )}
       </div>

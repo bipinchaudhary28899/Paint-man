@@ -7,7 +7,7 @@ import { images, type SiteImage } from "./images";
 // Empty values are hidden from the page and left out of structured data.
 
 export const site = {
-  name: "Paint Man",
+  name: "Paint Saathi",
   legalName: "", // TODO: registered business name
   tagline: "Managed home painting in Agra",
   city: "Agra",
@@ -75,7 +75,7 @@ export type Service = {
   accent: string;
   name: string;
   shortName: string;
-  /** Page title and h1, "{Topic} in Agra": the root template adds " | Paint Man". */
+  /** Page title and h1, "{Topic} in Agra": the root template adds " | Paint Saathi". */
   title: string;
   description: string;
   intro: string;
