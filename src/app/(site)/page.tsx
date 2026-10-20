@@ -94,11 +94,12 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        {/* Side by side: the buttons and the brands picture form one group, centred beside the copy and
+        {/* Side by side: the buttons and the brands picture share the column with even space above, between
+            and below them (justify-evenly), beside the copy and
             never taller than the first screen under the header (86px) and the hero's top padding (40px),
             so both are in view on load. The picture's edges fade into the page (a CSS mask), so it sits on
             the canvas without a frame; its box keeps the picture's proportions, so nothing shifts. */}
-        <div className="flex min-w-0 flex-[1_1_420px] flex-col justify-center gap-8 [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)]">
+        <div className="flex min-w-0 flex-[1_1_420px] flex-col justify-center [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)] min-[1080px]:justify-evenly">
           <HeroActions className="hidden justify-center min-[1080px]:flex" />
           <Tilt max={6} className="relative aspect-[1790/968] w-full">
             <HeroImage
