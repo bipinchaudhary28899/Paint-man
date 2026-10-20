@@ -14,9 +14,9 @@ import { generalFaqs, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `House Painting Services in ${site.city} | ${site.name}`,
+  title: `Book House Painters Online in ${site.city} | ${site.name}`,
   absoluteTitle: true,
-  description: `Looking for painters in ${site.city}? ${site.name} manages your house painting end to end, with an on-site inspection, an itemised quote and a supervised crew.`,
+  description: `Book house painters online in ${site.city}. ${site.name} manages your painting end to end: on-site inspection, an itemised quote and a supervised crew.`,
   path: "/",
 });
 
@@ -69,7 +69,7 @@ export default function HomePage() {
               matches the old eyebrow line (24px) and the tagline keeps its 28px gap below it. */}
           <h1 className="text-[clamp(48px,5.8vw,80px)] leading-[1.02] tracking-[-0.02em]">
             <span className="eyebrow flex h-6 items-center pt-[3px] font-sans leading-[1.5]">
-              House painting in {site.city}<span className="sr-only">: </span>
+              Book house painters online in {site.city}<span className="sr-only">: </span>
             </span>
             <span className="mt-7 block">
               Your space, painted beautifully. Managed <em>completely.</em>

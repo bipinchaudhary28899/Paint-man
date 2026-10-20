@@ -204,7 +204,26 @@ export function localBusinessJsonLd() {
       })),
     },
     sameAs: [...site.social],
+    potentialAction: bookingAction(),
   });
+}
+
+/**
+ * "Book painters online": the business's booking page as a schema.org ReserveAction, so search
+ * engines and assistants can see that a site visit is booked online, and where.
+ */
+export function bookingAction() {
+  return {
+    "@type": "ReserveAction",
+    name: `Book painters online in ${site.city}`,
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: abs("/book"),
+      inLanguage: "en-IN",
+      actionPlatform: ["https://schema.org/DesktopWebPlatform", "https://schema.org/MobileWebPlatform"],
+    },
+    result: { "@type": "Reservation", name: "Painting site inspection and itemised estimate" },
+  };
 }
 
 type VerificationEnv = { NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?: string; NEXT_PUBLIC_BING_SITE_VERIFICATION?: string; [key: string]: string | undefined };

@@ -1,15 +1,18 @@
+import Link from "next/link";
 import { BookPrefill } from "@/components/BookPrefill";
 import { Emoji } from "@/components/Emoji";
 import { PhotoCrop } from "@/components/PhotoCrop";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Blob } from "@/components/Decor";
 import { images } from "@/config/images";
-import { services, site } from "@/config/site";
-import { pageMetadata } from "@/lib/seo";
+import { FaqList } from "@/components/FaqList";
+import { JsonLd } from "@/components/JsonLd";
+import { bookingFaqs, bookingSteps, services, site } from "@/config/site";
+import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: `Book a Painting Inspection in ${site.city}`,
-  description: `Book a site inspection for house painting in ${site.city}. Share a few details and our team will call to confirm a visit and prepare your itemised quotation.`,
+  title: `Book Painters Online in ${site.city}: Free Estimate`,
+  description: `Book house painters online in ${site.city} in about a minute. We call back to fix a site visit, measure your walls and send an itemised quote before any work.`,
   path: "/book",
 });
 
@@ -29,13 +32,16 @@ export default function BookPage() {
     <div className="relative overflow-hidden">
       <Blob className="absolute -left-40 top-20 h-[28rem] w-[28rem] opacity-50" color="var(--pm-sand)" />
       <div className="container-page relative py-10 md:py-14">
-        <Breadcrumbs items={[{ name: "Book an inspection", path: "/book" }]} />
+        <JsonLd data={faqJsonLd(bookingFaqs)} />
+        <Breadcrumbs items={[{ name: "Book painters online", path: "/book" }]} />
         <div className="mt-6 grid gap-12 lg:grid-cols-[1.4fr_1fr]">
           <div>
             <h1 className="text-4xl font-normal leading-[1.05] md:text-6xl">
-              Book a painting inspection in <span className="text-gradient">{site.city}</span>
+              Book painters online in <span className="text-gradient">{site.city}</span>
             </h1>
-            <p className="mt-4 text-lg text-muted">Share a few details. We&apos;ll call you to confirm a convenient time for the site visit.</p>
+            <p className="mt-4 text-lg text-muted">
+              Share a few details and book a free site inspection. We&apos;ll call you back to confirm a convenient time for the visit.
+            </p>
             <div className="card mt-10 p-6 md:p-8">
               <BookPrefill serviceBySlug={serviceBySlug} />
             </div>
@@ -69,6 +75,35 @@ export default function BookPage() {
             </div>
           </aside>
         </div>
+
+        <section className="mt-20 md:mt-24" aria-labelledby="how-booking-works">
+          <h2 id="how-booking-works" className="text-3xl font-normal md:text-5xl">
+            How booking painters online <em>works</em>
+          </h2>
+          <ol className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {bookingSteps.map((s, i) => (
+              <li key={s.title} className="card p-6">
+                <span className="font-display text-sm text-terracotta">0{i + 1}</span>
+                <h3 className="mt-2 text-xl font-normal">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="mt-20 grid gap-10 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="booking-faq">
+          <div>
+            <p className="eyebrow">Before you book</p>
+            <h2 id="booking-faq" className="mt-3 text-3xl font-normal md:text-5xl">
+              Booking <em>questions</em>
+            </h2>
+            <p className="mt-4 text-muted">
+              More answers on the <Link href="/faq" className="font-bold text-ink underline">painting FAQ</Link>, or see the{" "}
+              <Link href="/areas" className="font-bold text-ink underline">areas we serve in {site.city}</Link>.
+            </p>
+          </div>
+          <FaqList faqs={bookingFaqs} />
+        </section>
       </div>
     </div>
   );

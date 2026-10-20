@@ -473,14 +473,44 @@ export function getService(slug: string): Service | undefined {
   return services.find((s) => s.slug === slug);
 }
 
+/**
+ * How booking painters online works, shown (and marked up as FAQPage) on /book only. Facts only:
+ * the form's fields, the call-back hours, the free estimate and approval before any work.
+ */
+export const bookingSteps: { title: string; text: string }[] = [
+  { title: "Fill in the form", text: "Your name, mobile number, locality, the kind of property and the work you need. It takes about a minute." },
+  { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
+  { title: "Inspection and itemised quote", text: "Our inspector measures the walls, checks for damp and cracks, and you get a line-by-line quotation." },
+  { title: "Approve, then we paint", text: "Nothing is scheduled until you approve the quote. A supervised crew then paints and hands over room by room." },
+];
+
+export const bookingFaqs: FaqItem[] = [
+  {
+    q: `Can I book painters online in ${site.city}?`,
+    a: `Yes. Fill in the booking form on this page with your name, mobile number, locality and the work you need. It takes about a minute, and we call you back during working hours (${site.hoursDisplay}) to fix a time for the site inspection.`,
+  },
+  {
+    q: "Is the estimate free?",
+    a: "Yes. The inspector measures your walls and checks their condition, and you get an itemised quotation at no charge. Nothing is booked until you approve the quote.",
+  },
+  {
+    q: "What details do I need to book painters online?",
+    a: "Your name, a 10-digit mobile number, your locality, the type of property (flat, house, shop or office), the service, and the size of the job: number of floors and home size. Carpet area and a preferred date are optional.",
+  },
+  {
+    q: "Can I choose the inspection date?",
+    a: "Yes. Pick a preferred date in the form, any day from today up to a year ahead, and we confirm the exact time when we call.",
+  },
+];
+
 export const generalFaqs: FaqItem[] = [
   {
     q: "How does booking work?",
-    a: "Book an inspection online or by phone. We visit your property, measure the walls and note their condition, then send an itemised quotation. Work is scheduled only after you approve the quote.",
+    a: "Book painters online with the booking form, or by phone. We visit your property, measure the walls and note their condition, then send an itemised quotation. Work is scheduled only after you approve the quote.",
     link: { href: "/book", label: "Book an inspection" },
   },
   {
-    q: "Which areas of Agra do you serve?",
+    q: `Do you have painters near me in ${site.city}?`,
     a: `We currently serve ${site.areas.join(", ")}. If your area is not listed, book anyway and we will confirm whether we can serve you.`,
     link: { href: "/areas", label: `See the areas we serve in ${site.city}` },
   },

@@ -244,8 +244,17 @@ describe("FAQs", () => {
   });
 
   it("the areas answer lists every served locality", () => {
-    const areas = generalFaqs.find((f) => f.q.startsWith("Which areas"))!;
+    const areas = generalFaqs.find((f) => f.q === `Do you have painters near me in ${site.city}?`)!;
     for (const a of site.areas) expect(areas.a).toContain(a);
     expect(new Set(site.areas).size).toBe(site.areas.length);
+  });
+});
+
+describe("booking FAQs (/book)", () => {
+  it("never repeat a general or service question, so each Q&A is marked up once site-wide", async () => {
+    const { bookingFaqs } = await import("@/config/site");
+    const others = new Set([...generalFaqs, ...services.flatMap((s) => s.faqs)].map((f) => f.q));
+    for (const f of bookingFaqs) expect(others.has(f.q), f.q).toBe(false);
+    expect(bookingFaqs.length).toBeGreaterThanOrEqual(3);
   });
 });

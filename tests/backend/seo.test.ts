@@ -377,3 +377,15 @@ describe("siteVerification", () => {
     vi.unstubAllEnvs();
   });
 });
+
+describe("booking action (book painters online)", () => {
+  it("points the business at its online booking page as a ReserveAction", async () => {
+    const { bookingAction } = await import("@/lib/seo");
+    const action = bookingAction();
+    expect(action["@type"]).toBe("ReserveAction");
+    expect(action.name).toBe(`Book painters online in ${site.city}`);
+    expect(action.target.urlTemplate).toBe(`${site.url}/book`);
+    expect(action.target.actionPlatform).toContain("https://schema.org/MobileWebPlatform");
+    expect((localBusinessJsonLd() as Json).potentialAction).toEqual(action);
+  });
+});

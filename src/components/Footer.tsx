@@ -11,7 +11,7 @@ const explore = [
   { href: "/about", label: "About us" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
-  { href: "/book", label: "Get a free estimate" },
+  { href: "/book", label: "Book painters online" },
 ];
 
 export function Footer() {

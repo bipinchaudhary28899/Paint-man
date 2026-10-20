@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
 const pages: { path: string; Page: () => React.ReactNode; metadata: Metadata; h1: RegExp }[] = [
   { path: "/about", Page: AboutPage, metadata: aboutMeta, h1: new RegExp(`house painting in ${site.city}`, "i") },
   { path: "/areas", Page: AreasPage, metadata: areasMeta, h1: new RegExp(`^areas we serve in ${site.city}`, "i") },
-  { path: "/book", Page: BookPage, metadata: bookMeta, h1: new RegExp(`painting inspection in ${site.city}`, "i") },
+  { path: "/book", Page: BookPage, metadata: bookMeta, h1: new RegExp(`book painters online in ${site.city}`, "i") },
   { path: "/colours", Page: ColoursPage, metadata: coloursMeta, h1: new RegExp(`find a wall colour in ${site.city}`, "i") },
   { path: "/contact", Page: ContactPage, metadata: contactMeta, h1: new RegExp(`house painters in ${site.city}`, "i") },
   { path: "/palettes", Page: PalettesPage, metadata: palettesMeta, h1: /wall colour combinations/i },
@@ -205,4 +205,17 @@ describe("static /book", () => {
     expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
   });
 
+});
+
+describe("/book targets people booking painters online", () => {
+  it("explains the four booking steps and answers booking questions, marked up once as FAQPage", async () => {
+    const { bookingFaqs, bookingSteps } = await import("@/config/site");
+    const { container } = render(<BookPage />);
+    expect(screen.getByRole("heading", { level: 2, name: /How booking painters online works/ })).toBeInTheDocument();
+    for (const s of bookingSteps) expect(screen.getByRole("heading", { level: 3, name: s.title })).toBeInTheDocument();
+    for (const f of bookingFaqs) expect(screen.getByText(f.q)).toBeInTheDocument();
+    const faq = [...container.querySelectorAll('script[type="application/ld+json"]')].map((s) => JSON.parse(s.textContent!)).find((d) => d["@type"] === "FAQPage");
+    expect(faq.mainEntity.map((q: { name: string }) => q.name)).toEqual(bookingFaqs.map((f) => f.q));
+    expect(String(bookMeta.title)).toMatch(/^Book Painters Online in /);
+  });
 });
