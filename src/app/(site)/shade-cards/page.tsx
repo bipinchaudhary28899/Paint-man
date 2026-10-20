@@ -72,7 +72,7 @@ export default function ShadeCardsPage() {
       <BookingSection
         className="container-page mt-24"
         heading={<>Shortlisted a few codes? <em>Book the visit</em></>}
-        text={<p>Note the codes in the form. The inspector brings the brand&apos;s shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
+        text={<p>Add the codes you like under “Add more details”. The inspector brings the brand&apos;s shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
       />
 
       <CtaBanner heading={<>Shortlisted a few codes? <em>Book the visit.</em></>} />

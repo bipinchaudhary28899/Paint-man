@@ -12,34 +12,76 @@ function mockFetch(status: number, body: unknown) {
   return vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(body), { status }));
 }
 
+/** The required part: name, mobile and the full address. */
 async function fillBooking() {
   const user = userEvent.setup();
   await user.type(screen.getByLabelText("Your name"), "Asha Verma");
   await user.type(screen.getByLabelText("Mobile number"), "9876543210");
+  await user.type(screen.getByLabelText(/House \/ flat no/), "12, Rose Villa, Nehru Road");
   await user.type(screen.getByLabelText(/Locality in/), "Kamla Nagar");
-  await user.selectOptions(screen.getByLabelText("Property type"), "Apartment / Flat");
-  await user.selectOptions(screen.getByLabelText("Service needed"), "Interior Painting");
-  await user.selectOptions(screen.getByLabelText("Floors to paint"), "2");
-  await user.selectOptions(screen.getByLabelText("Home size"), "3 BHK");
+  await user.type(screen.getByLabelText("PIN code"), "282005");
   return user;
 }
+
+/** Opens "Add more details" and fills the job. */
+async function fillDetails(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText("Add more details"));
+  await user.selectOptions(screen.getByLabelText("What needs painting?"), "Interior Painting");
+  await user.selectOptions(screen.getByLabelText("Property type"), "Apartment / Flat");
+  await user.selectOptions(screen.getByLabelText("Floors to paint"), "2");
+  await user.selectOptions(screen.getByLabelText("Home size"), "3 BHK");
+}
+
+const details = (container: HTMLElement) => container.querySelector("details")!;
 
 beforeEach(() => {
   router.push.mockReset();
 });
 
 describe("LeadForm (booking)", () => {
-  it("renders every booking field with a label", () => {
-    render(<LeadForm type="booking" />);
-    for (const label of ["Your name", "Mobile number", /Locality in/, "Property type", "Service needed", /Preferred inspection date/, /Anything we should know/]) {
-      expect(screen.getByLabelText(label)).toBeInTheDocument();
+  it("asks only for name, mobile and the full address; the job details are optional, behind Add more details", () => {
+    const { container } = render(<LeadForm type="booking" />);
+    for (const label of ["Your name", "Mobile number", /House \/ flat no/, "Locality in Agra", "PIN code"]) expect(screen.getByLabelText(label)).toBeRequired();
+    // one live city, so no city choice
+    expect(screen.queryByLabelText("City")).toBeNull();
+    expect(details(container)).not.toHaveAttribute("open");
+    for (const label of ["What needs painting?", "Property type", "Floors to paint", "Home size", /Carpet area per floor/, /Preferred inspection date/, /Anything we should know/]) {
+      const field = screen.getByLabelText(label);
+      expect(details(container)).toContainElement(field);
+      expect(field).not.toBeRequired();
     }
+    expect(screen.getByLabelText("PIN code")).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText("PIN code")).toHaveAttribute("autocomplete", "postal-code");
     expect(screen.getByRole("button", { name: "Book my inspection" })).toBeEnabled();
   });
 
-  it("pre-selects the service passed in", () => {
+  it("offers every kind of job, doors, windows and single walls included, and pre-selects the service passed in", () => {
     render(<LeadForm type="booking" defaultService="Exterior Painting" />);
-    expect(screen.getByLabelText("Service needed")).toHaveValue("Exterior Painting");
+    const service = screen.getByLabelText("What needs painting?");
+    expect(service).toHaveValue("Exterior Painting");
+    expect([...(service as HTMLSelectElement).options].map((o) => o.text)).toContain("Doors, Windows & Small Jobs");
+  });
+
+  it("opens Add more details when the page prefilled the note, and when a detail comes back with an error", async () => {
+    const { container, unmount } = render(<LeadForm type="booking" defaultMessage="Please bring the Berger card." />);
+    expect(details(container)).toHaveAttribute("open");
+    expect(screen.getByLabelText(/Anything we should know/)).toHaveValue("Please bring the Berger card.");
+    unmount();
+    mockFetch(422, { ok: false, error: "Please check the highlighted fields.", fieldErrors: { carpetArea: "Enter a whole number of sq ft" } });
+    const view = render(<LeadForm type="booking" />);
+    const user = await fillBooking();
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+    expect(await screen.findByText("Enter a whole number of sq ft")).toBeInTheDocument();
+    expect(details(view.container)).toHaveAttribute("open");
+  });
+
+  it("books with only the required part filled in", async () => {
+    const fetchSpy = mockFetch(200, { ok: true });
+    render(<LeadForm type="booking" />);
+    const user = await fillBooking();
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/thank-you?type=booking"));
+    expect(JSON.parse(String(fetchSpy.mock.calls[0][1]?.body))).toMatchObject({ address: "12, Rose Villa, Nehru Road", locality: "Kamla Nagar", pincode: "282005", service: "", floors: "" });
   });
 
   it("offers dates from today in India to a year ahead, worked out in the visitor's browser", () => {
@@ -68,6 +110,7 @@ describe("LeadForm (booking)", () => {
     const fetchSpy = mockFetch(200, { ok: true });
     render(<LeadForm type="booking" />);
     const user = await fillBooking();
+    await fillDetails(user);
     await user.click(screen.getByRole("button", { name: "Book my inspection" }));
 
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/thank-you?type=booking"));
@@ -79,7 +122,9 @@ describe("LeadForm (booking)", () => {
       type: "booking",
       name: "Asha Verma",
       phone: "9876543210",
+      address: "12, Rose Villa, Nehru Road",
       locality: "Kamla Nagar",
+      pincode: "282005",
       propertyType: "Apartment / Flat",
       service: "Interior Painting",
       website: "",
@@ -155,18 +200,21 @@ describe("job size fields", () => {
   it("asks for floors and home size, and shows a live paint-area estimate from the carpet area", async () => {
     render(<LeadForm type="booking" />);
     const user = await fillBooking();
-    expect(screen.getByRole("group", { name: "Size of the job" })).toBeInTheDocument();
+    await fillDetails(user);
     expect(screen.getByText(/sale deed or society papers/)).toBeInTheDocument();
     await user.type(screen.getByLabelText(/Carpet area per floor/), "1,200");
     expect(screen.getByText(/of walls and ceilings to paint/)).toHaveTextContent("About 8,400 sq ft");
-    await user.selectOptions(screen.getByLabelText("Service needed"), "Exterior Painting");
-    expect(screen.getByText("Exterior walls are measured on site.")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("What needs painting?"), "Exterior Painting");
+    expect(screen.getByText("Measured on site for this job.")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("What needs painting?"), "Doors, Windows & Small Jobs");
+    expect(screen.getByText("Measured on site for this job.")).toBeInTheDocument();
   });
 
   it("sends the job size with the booking", async () => {
     const fetchSpy = mockFetch(200, { ok: true });
     render(<LeadForm type="booking" />);
     const user = await fillBooking();
+    await fillDetails(user);
     await user.type(screen.getByLabelText(/Carpet area per floor/), "950");
     await user.click(screen.getByRole("button", { name: "Book my inspection" }));
     await waitFor(() => expect(fetchSpy).toHaveBeenCalled());

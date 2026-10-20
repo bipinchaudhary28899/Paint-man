@@ -27,7 +27,7 @@ function api(items: BrandShadeSummary[]) {
 const open = (url: string) => window.history.replaceState(null, "", url);
 
 const message = () => screen.getByLabelText(/Anything we should know/) as HTMLTextAreaElement;
-const service = () => screen.getByLabelText("Service needed") as HTMLSelectElement;
+const service = () => screen.getByLabelText("What needs painting?") as HTMLSelectElement;
 
 /**
  * Renders `ui` to HTML as the static prerender does, then hydrates that HTML in the browser.

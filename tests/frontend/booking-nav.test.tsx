@@ -6,7 +6,8 @@ import { NavMenu } from "@/components/NavMenu";
 import { Promises } from "@/components/Promises";
 import { ThankYouMessage } from "@/components/ThankYouMessage";
 import { navMenus } from "@/config/nav";
-import { promises } from "@/config/site";
+import { WorkFlow } from "@/components/WorkFlow";
+import { promises, workFlow } from "@/config/site";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() }));
 const pathname = vi.hoisted(() => ({ value: "/" }));
@@ -27,7 +28,7 @@ describe("BookingSection (our booking form with its heading)", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Book a site visit online" })).toBeInTheDocument();
     expect(screen.getByText("We call you back.")).toBeInTheDocument();
     // LeadForm's booking fields, not a short call-back form
-    for (const label of ["Your name", "Mobile number", "Property type", "Service needed", "Floors to paint", "Home size"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
+    for (const label of ["Your name", "Mobile number", "PIN code", "Property type", "What needs painting?", "Floors to paint", "Home size"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
   });
 
@@ -90,13 +91,13 @@ describe("NavMenu (header dropdowns)", () => {
 describe("Promises", () => {
   it("lists every promise, with or without the section heading", () => {
     const { unmount } = render(<Promises />);
-    expect(screen.getByRole("heading", { level: 2, name: "Our promises" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "What you can count on" })).toBeInTheDocument();
     for (const p of promises) expect(screen.getByRole("heading", { level: 3, name: p.title })).toBeInTheDocument();
     expect(promises.map((p) => p.title)).toEqual(expect.arrayContaining(["Zero advance payment", "Full estimate before work starts", "Timed work", "Fully documented", "Zero compromise on quality", "What's best for you, not for us"]));
     unmount();
     render(<Promises heading={false} />);
     expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
-    expect(screen.getByRole("region", { name: "Our promises" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "What you can count on" })).toBeInTheDocument();
   });
 });
 
@@ -106,5 +107,25 @@ describe("ThankYouMessage for the waitlist", () => {
     render(<ThankYouMessage />);
     expect(screen.getByRole("heading", { name: "You're on the waitlist" })).toBeInTheDocument();
     window.history.replaceState(null, "", "/");
+  });
+});
+
+describe("WorkFlow (how the work gets done)", () => {
+  it("lists the steps in order from booking to handover, with a button to the form", () => {
+    render(<WorkFlow cta={{ href: "#book-visit", label: "Book a site visit" }} />);
+    expect(screen.getByRole("heading", { level: 2, name: "How the work gets done" })).toBeInTheDocument();
+    const steps = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    expect(steps).toEqual(workFlow.map((s) => s.title));
+    expect(steps[0]).toBe("Book online");
+    expect(steps.at(-1)).toBe("Walkthrough and handover");
+    expect(screen.getByRole("link", { name: "Book a site visit" })).toHaveAttribute("href", "#book-visit");
+    // no illustrations until the owner's PNGs arrive
+    expect(screen.queryByRole("img")).toBeNull();
+  });
+
+  it("shows a step's illustration with its alt text, and no button without a cta", () => {
+    render(<WorkFlow steps={[{ title: "Preparation", text: "Cracks filled.", image: { src: "/flow/prep.png", alt: "Painter filling a crack in a wall in Agra" } }]} />);
+    expect(screen.getByRole("img", { name: "Painter filling a crack in a wall in Agra" })).toBeInTheDocument();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 });

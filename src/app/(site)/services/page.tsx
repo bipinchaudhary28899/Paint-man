@@ -7,8 +7,8 @@ import { cities, cityPath, homeCity, serviceCityTitle, servicePath, services, se
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Interior & Exterior Painting Services",
-  description: "Interior, exterior and rental property painting, managed from start to finish. Every job starts with an on-site inspection and a full itemised quote.",
+  title: "Wall, Door & Window Painting Services",
+  description: "Walls, doors, windows, grills or the whole house: interior, exterior, small jobs and rentals, each with an on-site inspection and an itemised quote.",
   path: "/services",
 });
 
@@ -20,7 +20,7 @@ export default function ServicesPage() {
       <PageHero
         crumbs={[{ name: "Services", path: "/services" }]}
         title={<>Painting <em>services</em></>}
-        intro="Every job follows the same process: site inspection, itemised quote, supervised painting and a final walkthrough with you."
+        intro="From a single wall or a door to the whole house, every job follows the same process: site inspection, itemised quote, supervised painting and a final walkthrough with you."
         image={images.muralBuckets}
         shape="blob"
         backdrop="#ff6538"

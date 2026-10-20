@@ -14,7 +14,7 @@ export function Footer() {
         <div>
           <p><StackedLogo /></p>
           <p className="mt-3 max-w-[320px] text-[15px] leading-relaxed">
-            Managed house painting: inspected, quoted line by line and supervised. {promises[0].title}, a full estimate before work
+            Walls, doors, windows and grills, one wall or the whole house: inspected, quoted line by line and supervised. {promises[0].title}, a full estimate before work
             starts.
           </p>
           <address className="mt-6 text-[15px] not-italic leading-[1.9]">

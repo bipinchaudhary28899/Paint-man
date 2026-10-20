@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { site } from "@/config/site";
+import { liveCities } from "@/config/site";
 import { bookingDateRange } from "@/lib/leads/dates";
 import { estimatePaintArea, formatSqft } from "@/lib/leads/estimate";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
@@ -14,19 +14,17 @@ function Field({
   id,
   label,
   error,
-  optional,
   children,
 }: {
   id: string;
   label: string;
   error?: string;
-  optional?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div>
       <label htmlFor={id} className="mb-1.5 block text-sm font-semibold">
-        {label} {optional && <span className="font-normal text-muted">(optional)</span>}
+        {label}
       </label>
       {children}
       {error && (
@@ -38,6 +36,9 @@ function Field({
   );
 }
 
+/** Fields under "Add more details": an error in one of them opens the section. */
+const DETAIL_FIELDS = ["service", "propertyType", "floors", "homeSize", "carpetArea", "preferredDate", "message"];
+
 export function LeadForm({ type, defaultService, defaultMessage }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,7 +49,10 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
   const [dateRange, setDateRange] = useState<{ min: string; max: string }>();
   useEffect(() => setDateRange(bookingDateRange()), []);
   // live rough size of the job, recomputed as floors, service or carpet area change
-  const [job, setJob] = useState<{ area: number | null; exterior: boolean; hasCarpet: boolean }>({ area: null, exterior: false, hasCarpet: false });
+  const [job, setJob] = useState<{ area: number | null; measuredOnSite: boolean; hasCarpet: boolean }>({ area: null, measuredOnSite: false, hasCarpet: false });
+  // "Add more details" starts open only when the page prefilled the note, so the visitor sees it
+  const [moreOpen, setMoreOpen] = useState(Boolean(defaultMessage));
+  const live = liveCities();
   function onJobChange(e: React.FormEvent<HTMLFormElement>) {
     if (type !== "booking") return;
     const f = e.currentTarget;
@@ -56,7 +60,8 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
     const carpet = Number(get("carpetArea").replace(/[,\s]/g, ""));
     const service = get("service");
     const ok = Number.isInteger(carpet) && carpet >= CARPET_AREA_MIN && carpet <= CARPET_AREA_MAX;
-    setJob({ area: ok ? estimatePaintArea(carpet, get("floors") || "1", service) : null, exterior: service === "Exterior Painting", hasCarpet: ok });
+    const area = ok ? estimatePaintArea(carpet, get("floors") || "1", service) : null;
+    setJob({ area, measuredOnSite: ok && area === null, hasCarpet: ok });
   }
   // The thank-you page is static: load it while the visitor fills the form, so it appears
   // the instant the lead is saved.
@@ -83,7 +88,9 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
         router.push(`/thank-you?type=${type}`);
         return;
       }
-      setErrors(json.fieldErrors ?? {});
+      const fieldErrors: Record<string, string> = json.fieldErrors ?? {};
+      setErrors(fieldErrors);
+      if (Object.keys(fieldErrors).some((k) => DETAIL_FIELDS.includes(k))) setMoreOpen(true);
       setFormError(json.error ?? "Something went wrong. Please try again.");
       requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
     } catch {
@@ -119,12 +126,25 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
 
       {type === "booking" && (
         <>
+          <Field id="address" label="House / flat no., building and street" error={errors.address}>
+            <input
+              id="address"
+              name="address"
+              autoComplete="street-address"
+              required
+              maxLength={200}
+              placeholder="e.g. 12, Rose Villa, Nehru Road"
+              className="field"
+              {...aria("address")}
+            />
+          </Field>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field id="locality" label={`Locality in ${site.city}`} error={errors.locality}>
+            <Field id="locality" label={live.length > 1 ? "Locality" : `Locality in ${live[0].name}`} error={errors.locality}>
               <input
                 id="locality"
                 name="locality"
                 list="locality-options"
+                autoComplete="address-level3"
                 required
                 maxLength={80}
                 placeholder="e.g. Kamla Nagar"
@@ -132,100 +152,145 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
                 {...aria("locality")}
               />
               <datalist id="locality-options">
-                {site.areas.map((a) => (
+                {live.flatMap((c) => c.areas).map((a) => (
                   <option key={a} value={a} />
                 ))}
               </datalist>
             </Field>
-            <Field id="propertyType" label="Property type" error={errors.propertyType}>
-              <select id="propertyType" name="propertyType" required defaultValue="" className="field" {...aria("propertyType")}>
+            <Field id="pincode" label="PIN code" error={errors.pincode}>
+              <input
+                id="pincode"
+                name="pincode"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                required
+                maxLength={7}
+                placeholder="6 digits"
+                className="field"
+                {...aria("pincode")}
+              />
+            </Field>
+          </div>
+          {live.length > 1 && (
+            <Field id="city" label="City" error={errors.city}>
+              <select id="city" name="city" required defaultValue="" className="field" {...aria("city")}>
                 <option value="" disabled>Select</option>
-                {propertyTypes.map((p) => (
-                  <option key={p}>{p}</option>
+                {live.map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.name}</option>
                 ))}
               </select>
             </Field>
-          </div>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field id="service" label="Service needed" error={errors.service}>
-              <select id="service" name="service" required defaultValue={defaultService ?? ""} className="field" {...aria("service")}>
-                <option value="" disabled>Select</option>
-                {serviceTypes.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </Field>
-            <Field id="preferredDate" label="Preferred inspection date" optional error={errors.preferredDate}>
-              <input id="preferredDate" name="preferredDate" type="date" min={dateRange?.min} max={dateRange?.max} className="field" {...aria("preferredDate")} />
-            </Field>
-          </div>
+          )}
 
-          {/* Size of the job: lets the team plan a crew before the visit */}
-          <fieldset className="rounded-2xl border border-line bg-cream-wash/60 p-4 sm:p-5">
-            <legend className="px-1 text-sm font-bold">Size of the job</legend>
-            <p className="-mt-1 mb-4 text-xs text-muted">Helps us plan the right crew. The inspector measures exactly on site.</p>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field id="floors" label="Floors to paint" error={errors.floors}>
-                <select id="floors" name="floors" required defaultValue="" className="field" {...aria("floors")}>
-                  <option value="" disabled>Select</option>
-                  {floorOptions.map((f) => (
-                    <option key={f} value={f}>{f === "1" ? "1 floor" : `${f} floors`}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field id="homeSize" label="Home size" error={errors.homeSize}>
-                <select id="homeSize" name="homeSize" required defaultValue="" className="field" {...aria("homeSize")}>
-                  <option value="" disabled>Select</option>
-                  {homeSizes.map((h) => (
-                    <option key={h}>{h}</option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-            <div className="mt-5">
-              <Field id="carpetArea" label="Carpet area per floor (sq ft)" optional error={errors.carpetArea}>
-                <input
-                  id="carpetArea"
-                  name="carpetArea"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9, ]*"
-                  maxLength={7}
-                  placeholder="e.g. 1200"
+          {/* Everything about the job is optional: a single wall or a door books as fast as a house.
+              A closed <details> still submits its fields, and it works without JavaScript. */}
+          <details
+            open={moreOpen}
+            onToggle={(e) => setMoreOpen(e.currentTarget.open)}
+            className="group rounded-2xl border border-line bg-cream-wash/60"
+          >
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 sm:px-5">
+              <span>
+                <span className="font-bold">Add more details</span> <span className="text-sm text-muted">(optional)</span>
+                <span className="block text-xs text-muted">What needs painting, the property and its size, a date, a note</span>
+              </span>
+              <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-lg transition group-open:rotate-45">+</span>
+            </summary>
+            <div className="space-y-5 border-t border-line px-4 pb-5 pt-4 sm:px-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="service" label="What needs painting?" error={errors.service}>
+                  <select id="service" name="service" defaultValue={defaultService ?? ""} className="field" {...aria("service")}>
+                    <option value="">Select</option>
+                    {serviceTypes.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field id="propertyType" label="Property type" error={errors.propertyType}>
+                  <select id="propertyType" name="propertyType" defaultValue="" className="field" {...aria("propertyType")}>
+                    <option value="">Select</option>
+                    {propertyTypes.map((p) => (
+                      <option key={p}>{p}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="floors" label="Floors to paint" error={errors.floors}>
+                  <select id="floors" name="floors" defaultValue="" className="field" {...aria("floors")}>
+                    <option value="">Select</option>
+                    {floorOptions.map((f) => (
+                      <option key={f} value={f}>{f === "1" ? "1 floor" : `${f} floors`}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field id="homeSize" label="Home size" error={errors.homeSize}>
+                  <select id="homeSize" name="homeSize" defaultValue="" className="field" {...aria("homeSize")}>
+                    <option value="">Select</option>
+                    {homeSizes.map((h) => (
+                      <option key={h}>{h}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <Field id="carpetArea" label="Carpet area per floor (sq ft)" error={errors.carpetArea}>
+                    <input
+                      id="carpetArea"
+                      name="carpetArea"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9, ]*"
+                      maxLength={7}
+                      placeholder="e.g. 1200"
+                      className="field"
+                      {...aria("carpetArea")}
+                    />
+                  </Field>
+                  <p className="mt-1.5 text-xs text-muted" aria-live="polite">
+                    {job.area !== null
+                      ? <>About <strong className="text-ink">{formatSqft(job.area)}</strong> of walls and ceilings to paint, all floors together.</>
+                      : job.hasCarpet && job.measuredOnSite
+                        ? "Measured on site for this job."
+                        : "It's on your sale deed or society papers. Not sure? Leave it blank."}
+                  </p>
+                </div>
+                <Field id="preferredDate" label="Preferred inspection date" error={errors.preferredDate}>
+                  <input id="preferredDate" name="preferredDate" type="date" min={dateRange?.min} max={dateRange?.max} className="field" {...aria("preferredDate")} />
+                </Field>
+              </div>
+              <Field id="message" label="Anything we should know?" error={errors.message}>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={3}
+                  maxLength={1000}
+                  defaultValue={defaultMessage}
+                  placeholder="A single wall, two doors, the balcony grills, a full flat… and any damp or cracks"
                   className="field"
-                  {...aria("carpetArea")}
+                  {...aria("message")}
                 />
               </Field>
-              <p className="mt-1.5 text-xs text-muted" aria-live="polite">
-                {job.area !== null
-                  ? <>About <strong className="text-ink">{formatSqft(job.area)}</strong> of walls and ceilings to paint, all floors together.</>
-                  : job.hasCarpet && job.exterior
-                    ? "Exterior walls are measured on site."
-                    : "It's on your sale deed or society papers. Not sure? Leave it blank."}
-              </p>
             </div>
-          </fieldset>
+          </details>
         </>
       )}
 
-      <Field
-        id="message"
-        label={type === "booking" ? "Anything we should know?" : "How can we help?"}
-        optional={type === "booking"}
-        error={errors.message}
-      >
-        <textarea
-          id="message"
-          name="message"
-          rows={4}
-          maxLength={1000}
-          defaultValue={defaultMessage}
-          required={type === "contact"}
-          placeholder={type === "booking" ? "Rooms to paint, wall problems like dampness or cracks…" : ""}
-          className="field"
-          {...aria("message")}
-        />
-      </Field>
+      {type === "contact" && (
+        <Field id="message" label="How can we help?" error={errors.message}>
+          <textarea
+            id="message"
+            name="message"
+            rows={4}
+            maxLength={1000}
+            defaultValue={defaultMessage}
+            required
+            className="field"
+            {...aria("message")}
+          />
+        </Field>
+      )}
 
       {/* Honeypot for bots */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">

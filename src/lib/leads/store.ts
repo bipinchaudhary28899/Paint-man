@@ -30,6 +30,10 @@ export const LEAD_COLUMNS = [
   "Home Size",
   "Carpet Area per Floor (sq ft)",
   "Est. Paint Area (sq ft)",
+  // full address (added later, kept at the end for the same reason)
+  "Address",
+  "PIN Code",
+  "City",
 ] as const;
 
 /** Sheet column letter for a 1-based index (1 → A, 27 → AA). */
@@ -63,8 +67,8 @@ export function toRow(lead: LeadInput, id: string, submittedAt: Date): string[] 
     lead.name,
     lead.phone,
     isBooking ? lead.locality : (visit?.locality ?? ""),
-    isBooking ? lead.propertyType : "",
-    isBooking ? lead.service : "",
+    isBooking ? (lead.propertyType ?? "") : "",
+    isBooking ? (lead.service ?? "") : "",
     isBooking ? (lead.preferredDate ?? "") : "",
     lead.type === "visit" ? visit!.note : (lead.message ?? ""),
     lead.page ?? "",
@@ -74,10 +78,13 @@ export function toRow(lead: LeadInput, id: string, submittedAt: Date): string[] 
     t.landingPage ?? "",
     t.referrer ?? "",
     "New",
-    isBooking ? lead.floors : "",
-    isBooking ? lead.homeSize : "",
+    isBooking ? (lead.floors ?? "") : "",
+    isBooking ? (lead.homeSize ?? "") : "",
     isBooking && lead.carpetArea ? String(lead.carpetArea) : "",
-    isBooking ? String(estimatePaintArea(lead.carpetArea, lead.floors, lead.service) ?? "") : "",
+    isBooking ? String(estimatePaintArea(lead.carpetArea, lead.floors ?? "1", lead.service ?? "") ?? "") : "",
+    isBooking ? lead.address : "",
+    isBooking ? lead.pincode : "",
+    isBooking ? (getCity(lead.city)?.name ?? lead.city) : "",
   ];
 }
 

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { crew, filterLeads, jobSize, LeadsTable } from "@/components/admin/LeadsTable";
+import { address, crew, filterLeads, jobSize, LeadsTable } from "@/components/admin/LeadsTable";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { LEAD_COLUMNS, type LeadRecord } from "@/lib/leads/store";
@@ -139,6 +139,13 @@ describe("LeadsTable", () => {
     expect(container.querySelector("script")).toBeNull();
     expect(container.querySelector("img")).toBeNull();
     expect(screen.getByText("<script>alert(1)</script>")).toBeInTheDocument();
+  });
+
+  it("shows the full address for new bookings and the locality alone for older ones, and searches it", () => {
+    const full = lead({ Name: "Neha", Type: "booking", Address: "12, Rose Villa, Nehru Road", Locality: "Kamla Nagar", City: "Agra", "PIN Code": "282005" });
+    expect(address(full)).toBe("12, Rose Villa, Nehru Road, Kamla Nagar, Agra 282005");
+    expect(address(lead({ Locality: "Sikandra" }))).toBe("Sikandra");
+    expect(filterLeads([full, ...leads], "282005", "all").map((l) => l.Name)).toEqual(["Neha"]);
   });
 
   it("filterLeads matches across name, phone, locality, service and message", () => {

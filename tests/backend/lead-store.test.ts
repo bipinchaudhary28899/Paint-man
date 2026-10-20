@@ -8,7 +8,10 @@ const booking: LeadInput = {
   type: "booking",
   name: "Asha",
   phone: "9876543210",
+  address: "12, Rose Villa, Nehru Road",
   locality: "Dayalbagh",
+  pincode: "282005",
+  city: "agra",
   propertyType: "Independent House",
   service: "Exterior Painting",
   preferredDate: "2026-11-02",
@@ -32,7 +35,9 @@ describe("toRow", () => {
     ]);
     expect(row.slice(10, 17)).toEqual(["/book", "google", "cpc", "diwali", "/", "https://google.com", "New"]);
     // job size; exterior-only, so no paint-area estimate
-    expect(row.slice(17)).toEqual(["2", "3 BHK", "1200", ""]);
+    expect(row.slice(17, 21)).toEqual(["2", "3 BHK", "1200", ""]);
+    // the full address, in the columns added after the job size
+    expect(row.slice(21)).toEqual(["12, Rose Villa, Nehru Road", "282005", "Agra"]);
   });
 
   it("formats the timestamp in Indian time", async () => {
@@ -157,15 +162,24 @@ describe("job size columns", () => {
     const { toRow, LEAD_COLUMNS, columnLetter } = await import("@/lib/leads/store");
     const interior = toRow({ ...booking, service: "Interior Painting" }, "L2", new Date());
     const at = (c: string) => interior[LEAD_COLUMNS.indexOf(c as (typeof LEAD_COLUMNS)[number])];
-    expect(LEAD_COLUMNS.slice(-4)).toEqual(["Floors", "Home Size", "Carpet Area per Floor (sq ft)", "Est. Paint Area (sq ft)"]);
+    expect(LEAD_COLUMNS.slice(17, 21)).toEqual(["Floors", "Home Size", "Carpet Area per Floor (sq ft)", "Est. Paint Area (sq ft)"]);
+    expect(LEAD_COLUMNS.slice(21)).toEqual(["Address", "PIN Code", "City"]);
     expect(LEAD_COLUMNS.indexOf("Status")).toBe(16); // existing columns keep their places
     expect(at("Floors")).toBe("2");
     expect(at("Home Size")).toBe("3 BHK");
     expect(at("Carpet Area per Floor (sq ft)")).toBe("1200");
     expect(at("Est. Paint Area (sq ft)")).toBe("8400"); // 1200 × 2 floors × 3.5
     // exterior-only: measured on site; messages: no job size at all
-    expect(toRow(booking, "L3", new Date())[LEAD_COLUMNS.length - 1]).toBe("");
-    expect(toRow(contact, "L4", new Date()).slice(-4)).toEqual(["", "", "", ""]);
+    expect(toRow(booking, "L3", new Date())[LEAD_COLUMNS.indexOf("Est. Paint Area (sq ft)")]).toBe("");
+    expect(toRow(contact, "L4", new Date()).slice(-7)).toEqual(["", "", "", "", "", "", ""]);
+    // a small job (one wall, a door) is measured on site; with no floors given, one floor is assumed
+    const { floors: _f, ...noFloors } = { ...booking, service: "Interior Painting" as const };
+    expect(toRow(noFloors, "L5", new Date())[LEAD_COLUMNS.indexOf("Est. Paint Area (sq ft)")]).toBe("4200");
+    expect(toRow({ ...booking, service: "Doors, Windows & Small Jobs" }, "L6", new Date())[LEAD_COLUMNS.indexOf("Est. Paint Area (sq ft)")]).toBe("");
+    // a booking with no job details leaves those columns blank
+    const { propertyType: _p, service: _s, homeSize: _h, ...bare } = noFloors;
+    const row = toRow(bare, "L7", new Date());
+    expect([row[6], row[7], row[17], row[18]]).toEqual(["", "", "", ""]);
     expect([columnLetter(1), columnLetter(21), columnLetter(26), columnLetter(27)]).toEqual(["A", "U", "Z", "AA"]);
   });
 });
@@ -272,9 +286,9 @@ describe("Google Sheets storage", () => {
     await ensureSheetHeader();
     await ensureSheetHeader(); // second call: nothing to do
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(String(fetchSpy.mock.calls[0][0])).toContain("/values/Leads!A1:U1");
+    expect(String(fetchSpy.mock.calls[0][0])).toContain("/values/Leads!A1:X1");
     const [url, init] = fetchSpy.mock.calls[1];
-    expect(String(url)).toContain("/values/Leads!A1:U1?valueInputOption=RAW");
+    expect(String(url)).toContain("/values/Leads!A1:X1?valueInputOption=RAW");
     expect(JSON.parse(String(init?.body)).values).toEqual([[...LEAD_COLUMNS]]);
   });
 

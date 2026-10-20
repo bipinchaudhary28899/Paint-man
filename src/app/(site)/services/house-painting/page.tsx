@@ -2,8 +2,9 @@ import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { Promises } from "@/components/Promises";
+import { WorkFlow } from "@/components/WorkFlow";
 import { BookingSection } from "@/components/BookingSection";
-import { bookingSteps, cities, cityPath, liveCities, servicePath, services, site } from "@/config/site";
+import { cities, cityPath, liveCities, servicePath, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 // The national house-painting hub (/services/house-painting): what the service is anywhere, every
@@ -28,8 +29,9 @@ export default function HousePaintingHubPage() {
               House painting services, <em>managed</em>
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-[1.65] text-muted">
-              {site.name} paints homes, rented flats and small shops without you managing painters: an on-site inspection, a
-              line-by-line quotation, branded paint and a supervised crew until the final walkthrough. We paint in{" "}
+              {site.name} paints homes, rented flats and small shops, from a single wall, a door or the window grills to the whole
+              house, without you managing painters: an on-site inspection, a line-by-line quotation, branded paint and a supervised
+              crew until the final walkthrough. We paint in{" "}
               {live.map((c, i) => (
                 <span key={c.slug}>
                   {i > 0 && ", "}
@@ -75,29 +77,7 @@ export default function HousePaintingHubPage() {
         <Promises />
       </div>
 
-      <section className="container-page mt-24 grid gap-12 lg:grid-cols-[1fr_1.4fr]" aria-labelledby="hub-booking">
-        <div>
-          <p className="eyebrow">Book online</p>
-          <h2 id="hub-booking" className="mt-3 text-3xl md:text-5xl">
-            How booking <em>works</em>
-          </h2>
-          <p className="mt-4 max-w-md leading-[1.65] text-muted">
-            The same four steps in every city. <Link href="/book" className="font-bold text-ink underline">Book painters online</Link> or
-            use the form above.
-          </p>
-        </div>
-        <ol className="rule-list flex flex-col">
-          {bookingSteps.map((s, i) => (
-            <li key={s.title} className="flex gap-5 py-6">
-              <span className="font-display text-3xl text-terracotta" aria-hidden>{i + 1}</span>
-              <div>
-                <h3 className="text-xl">{s.title}</h3>
-                <p className="mt-1 leading-[1.65] text-muted">{s.text}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <WorkFlow className="container-page mt-24" cta={{ href: "#book-visit", label: "Book a site visit" }} />
 
       <section className="container-page mt-24" aria-labelledby="hub-cities">
         <p className="eyebrow">Cities</p>

@@ -13,7 +13,7 @@ import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: `Book Painters Online in ${site.city}: Free Estimate`,
-  description: `Book house painters online in ${site.city} in about a minute. We call back to fix a site visit, measure your walls and send an itemised quote before any work.`,
+  description: `Book painters online in ${site.city} for one wall, a door or the whole house. We call back to fix a site visit and send an itemised quote before any work.`,
   path: "/book",
 });
 

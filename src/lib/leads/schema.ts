@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { bookingDateRange, isCalendarDate } from "./dates";
-import { cities } from "@/config/site";
+import { cities, homeCity, liveCities } from "@/config/site";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "./options";
 
 export { floorOptions, homeSizes, propertyTypes, serviceTypes };
@@ -55,17 +55,37 @@ const common = {
   tracking,
 };
 
+/** A select left on "Select" sends "": the same as not answering. */
+const blankToUndefined = (v: unknown) => (typeof v === "string" && v.trim() === "" ? undefined : v);
+const optionalChoice = <T extends readonly [string, ...string[]]>(values: T, message: string) =>
+  z.preprocess(blankToUndefined, z.enum(values, { message }).optional());
+
+/** Cities a booking can be for: the live ones. */
+export const liveCitySlugs = liveCities().map((c) => c.slug) as [string, ...string[]];
+
+/**
+ * The booking form: name, mobile and the full address are required; everything about the job
+ * (what to paint, the property, its size, a date, a note) sits under "Add more details" and is
+ * optional, so a single wall or a door is as quick to book as a whole house.
+ */
 export const bookingSchema = z.object({
   type: z.literal("booking"),
   ...common,
+  address: trimmed(200).min(5, "Enter your house or flat number and street"),
   locality: trimmed(80).min(2, "Enter your locality"),
-  propertyType: z.enum(propertyTypes, { message: "Choose a property type" }),
-  service: z.enum(serviceTypes, { message: "Choose a service" }),
+  pincode: z.preprocess(
+    (v) => (typeof v === "string" ? v.replace(/\s/g, "") : v),
+    z.string({ message: "Enter your 6-digit PIN code" }).regex(/^[1-9]\d{5}$/, "Enter your 6-digit PIN code"),
+  ),
+  // one live city today, so the form sends none and the booking is for that city
+  city: z.preprocess((v) => blankToUndefined(v) ?? homeCity.slug, z.enum(liveCitySlugs, { message: "Choose your city" })),
+  propertyType: optionalChoice(propertyTypes, "Choose a property type"),
+  service: optionalChoice(serviceTypes, "Choose what needs painting"),
   preferredDate,
   message: trimmed(1000).optional(),
   // job size, so a crew can be planned before the visit
-  floors: z.enum(floorOptions, { message: "Choose how many floors" }),
-  homeSize: z.enum(homeSizes, { message: "Choose the size of the home" }),
+  floors: optionalChoice(floorOptions, "Choose how many floors"),
+  homeSize: optionalChoice(homeSizes, "Choose the size of the home"),
   carpetArea: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : typeof v === "string" ? Number(v.replace(/[,\s]/g, "")) : v),
     z

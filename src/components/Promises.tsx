@@ -6,10 +6,10 @@ const icons: EmojiName[] = ["hundred-points", "receipt", "alarm-clock", "camera-
 /** The service promises (zero advance payment, full estimate first, timed work, documented, quality, advice in your interest) as cards. */
 export function Promises({ heading = true, className = "" }: { heading?: boolean; className?: string }) {
   return (
-    <section aria-labelledby={heading ? "promises-heading" : undefined} aria-label={heading ? undefined : "Our promises"} className={className}>
+    <section aria-labelledby={heading ? "promises-heading" : undefined} aria-label={heading ? undefined : "What you can count on"} className={className}>
       {heading && (
         <h2 id="promises-heading" className="text-3xl font-normal md:text-5xl">
-          Our <em>promises</em>
+          What you can <em>count on</em>
         </h2>
       )}
       <ul className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${heading ? "mt-8" : ""}`}>

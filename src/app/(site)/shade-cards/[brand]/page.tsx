@@ -122,8 +122,7 @@ export default async function ShadeCardPage({ params }: Params) {
       <BookingSection
         className="container-page mt-24"
         heading={<>See the real {card.shortName} card <em>at home</em></>}
-        text={<p>Note the codes you like in the form. The inspector brings the {card.name} shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
-        defaultMessage={`Please bring the ${card.name} shade card. Codes I like: `}
+        text={<p>Add the codes you like under “Add more details”. The inspector brings the {card.name} shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
       />
 
       <CtaBanner heading={<>Picked a few {card.shortName} codes? <em>Book the visit.</em></>} />

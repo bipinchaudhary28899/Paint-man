@@ -10,7 +10,7 @@ import { images, type SiteImage } from "./images";
 export const site = {
   name: "Paint Saathi",
   legalName: "", // TODO: registered business name
-  tagline: "Managed home painting in Agra",
+  tagline: "Managed painting for walls, doors, windows and grills",
   city: "Agra",
   region: "Uttar Pradesh",
   regionCode: "IN-UP",
@@ -428,6 +428,131 @@ export const services: Service[] = [
     },
   },
   {
+    slug: "door-window-painting",
+    image: images.painterWindow,
+    accent: "bg-sage-deep text-on-ink",
+    name: "Doors, Windows & Small Jobs",
+    shortName: "Doors & windows",
+    title: "Door, Window & Small Paint Jobs",
+    description:
+      "Paint a single wall, a door, windows or iron grills without hiring a crew for the whole house: an on-site look, an itemised quote and a supervised finish.",
+    intro:
+      "Not every job is a whole house. We paint a single feature wall, a front door, wooden windows, iron grills and gates, or touch up one damaged room, with the same inspection, itemised quote and supervision as a full repaint.",
+    leadService: "Doors, Windows & Small Jobs",
+    includes: [
+      "A single wall, one room or a ceiling",
+      "Wooden doors, frames and windows",
+      "Iron grills, gates and railings",
+      "Rust and old flaking paint removed before painting",
+      "Primer and finish coats with the paint you approve",
+      "Floor, glass and fitting protection, and cleanup",
+    ],
+    suitableFor: ["A feature wall in one room", "A worn front door or main gate", "Rusty window grills and railings", "Touch-ups before a function or a sale"],
+    process: [
+      {
+        step: "Tell us the job, however small",
+        detail: "Book online and note what needs painting in the form: one wall, two doors, the grills on the balcony. Photos on the call help us bring the right materials.",
+      },
+      {
+        step: "Inspection",
+        detail: "The inspector checks the surface: wood for cracks, old paint and moisture; metal for rust and flaking; walls for damp and loose putty. They also bring shade cards for the colour.",
+      },
+      {
+        step: "Itemised quotation",
+        detail: "Each item is listed on its own line (the wall, each door, the grill area) with the preparation, primer and paint for it, so you can add or drop items before you approve.",
+      },
+      {
+        step: "Preparation",
+        detail: "Old loose paint is scraped and sanded, rust is wire-brushed, gaps and dents in wood are filled, and glass, hinges, handles and the floor are masked.",
+      },
+      {
+        step: "Primer and finish coats",
+        detail: "Wood and metal get the primer that suits them, then enamel or the finish on the quote. Walls get the same system as a full repaint, only smaller.",
+      },
+      {
+        step: "Cleanup and walkthrough",
+        detail: "Masking comes off, splashes are cleaned from glass and floors, and you check every item against the quotation before the job is closed.",
+      },
+    ],
+    paintSystem: [
+      {
+        title: "Wooden doors and windows",
+        body: "Old flaking paint is scraped and sanded, cracks and dents are filled with wood filler, and a wood primer goes on bare spots before the enamel or the finish you choose.",
+      },
+      {
+        title: "Iron grills, gates and railings",
+        body: "Rust is removed with a wire brush and sandpaper, a rust-inhibiting metal primer seals the bare metal, and enamel finish coats follow. Painting over rust without this lets it bubble through within months.",
+      },
+      {
+        title: "A single wall",
+        body: "The wall gets the same layers as a full repaint: repairs, putty where needed, primer and two finish coats, cut in cleanly at the ceiling and the corners so the edges stay sharp.",
+      },
+      {
+        title: "Touch-ups",
+        body: "Patches are matched to the existing shade from its code where you have it. An exact match on old, faded paint is not always possible, so the inspector tells you when painting the whole wall will look better.",
+      },
+    ],
+    costFactors: [
+      { title: "Number of items", body: "Each wall, door, window and grill is listed on its own line, so the quotation grows only with what you add." },
+      { title: "Surface condition", body: "Heavy rust, many layers of old paint or damaged wood take more preparation than a sound surface." },
+      { title: "Finish", body: "Enamel, a wood finish or a premium wall range each cost differently; the quotation names the product for each item." },
+      { title: "Access", body: "Ground-floor doors are quicker than grills on upper floors, which may need ladders or scaffolding." },
+    ],
+    timeline: [
+      "A single wall or a door is usually a short job, but each coat needs its drying time before the next, and enamel dries slower than wall paint. Your quotation states how long the work will take.",
+      "Small jobs can often be fitted in alongside other bookings, so tell us when you need it done when you book.",
+    ],
+    aftercare: [
+      "Keep freshly enamelled doors and windows slightly open and untouched while the paint dries, so they do not stick to the frame.",
+      "Avoid hanging things on a freshly painted grill or gate until the enamel has hardened.",
+      "Clean painted wood and metal with a soft damp cloth, not abrasive cleaners.",
+      "Keep the quotation: the shade codes and products on it make a later touch-up a quick match.",
+    ],
+    shades: {
+      intro:
+        "A front door or a feature wall is where a strong colour works best: a deep blue door or one bold wall, with the rest kept calm.",
+      palettes: ["blue-door-exterior", "dramatic-feature-wall"],
+    },
+    faqs: [
+      {
+        q: "Will you take a job as small as one wall or one door?",
+        a: "Yes. A single wall, one door, a few windows or a grill is a job we take. It gets the same inspection, itemised quote and supervision as a full house.",
+      },
+      {
+        q: "Can you paint rusty grills and gates?",
+        a: "Yes. Rust is brushed off and the bare metal is primed with a rust-inhibiting primer before the enamel coats, so the rust does not come back through the paint quickly.",
+      },
+      {
+        q: "Can you match my existing wall colour for a touch-up?",
+        a: "If you have the shade code we use it. Old paint fades, so a patch may still show; the inspector tells you when painting the whole wall will look better.",
+      },
+    ],
+    local: {
+      agra: {
+        description:
+          "Doors, windows, grills or a single wall painted in Agra: no job too small. On-site inspection, an itemised quote, rust and wood prep, supervised finish.",
+        intro:
+          "Paint a single wall, a front door, wooden windows or iron grills and gates anywhere in Agra, without booking a crew for the whole house. The same inspection, itemised quote and supervision as a full repaint.",
+        notes: [
+          {
+            title: "Dust and sun on doors and grills",
+            body: "Agra's dust settles on wet enamel, so outdoor doors, gates and grills are painted on calm days and protected while they dry. Strong summer sun fades and chalks dark enamel on gates faster, which the inspector weighs when you choose a colour.",
+          },
+          {
+            title: "Monsoon rust",
+            body: "Damp monsoon months bring rust out on grills and railings. Painting them in the dry months, after the rust is removed and the metal is primed, gives the coats the best start.",
+          },
+        ],
+        faqs: [
+          {
+            q: "Do you paint just the main gate or the balcony grills in Agra?",
+            a: "Yes. Gates, grills and railings are a job on their own: rust is removed, the metal is primed, and enamel finish coats follow, in the dry months where possible.",
+          },
+        ],
+      },
+    },
+  },
+  {
     slug: "rental-property-painting",
     image: images.livingWhite,
     accent: "bg-golden text-ink",
@@ -675,11 +800,25 @@ export const promises: { title: string; text: string }[] = [
 ];
 
 /**
+ * How the work is done, from booking to handover: the flow on the home page and the house-painting
+ * hub. Each step can take an illustration (`image`, a PNG of people painting) when the owner sends one.
+ */
+export const workFlow: { title: string; text: string; image?: { src: string; alt: string } }[] = [
+  { title: "Book online", text: "Name, mobile number and address. Add what needs painting if you like: one wall, a door, the window grills or the whole house." },
+  { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
+  { title: "Site inspection", text: "The inspector measures, checks walls for damp and cracks, wood for rot and metal for rust, and brings shade cards so you choose colours in your own light." },
+  { title: "Full estimate, in writing", text: "An itemised quote: each wall, door or grill, the preparation, the paint and its coats, and how long it takes. Nothing starts until you approve it, and there is no advance payment." },
+  { title: "Preparation", text: "Floors, furniture and fittings are covered. Cracks are filled, old loose paint scraped, rust brushed off, then putty and primer as the quote lists." },
+  { title: "Painting, supervised", text: "The crew applies the coats on the quote to the stated timeline, a supervisor checks each stage, and you get photo updates every day." },
+  { title: "Walkthrough and handover", text: "You check every item against the quotation, touch-ups are done, the site is cleaned, and you get the invoice." },
+];
+
+/**
  * How booking painters online works, shown (and marked up as FAQPage) on /book only. Facts only:
  * the form's fields, the call-back hours, the free estimate and approval before any work.
  */
 export const bookingSteps: { title: string; text: string }[] = [
-  { title: "Fill in the form", text: "Your name, mobile number, locality, the kind of property and the work you need. It takes about a minute." },
+  { title: "Fill in the form", text: "Your name, mobile number and address. Add what needs painting if you like, from one wall or a door to the whole house. It takes about a minute." },
   { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
   { title: "Inspection and itemised quote", text: "Our inspector measures the walls, checks for damp and cracks, and you get a line-by-line quotation." },
   { title: "Approve, then we paint", text: "Nothing is scheduled until you approve the quote, and there is no advance payment. A supervised crew then paints to the stated timeline." },
@@ -688,7 +827,7 @@ export const bookingSteps: { title: string; text: string }[] = [
 export const bookingFaqs: FaqItem[] = [
   {
     q: `Can I book painters online in ${site.city}?`,
-    a: `Yes. Fill in the booking form on this page with your name, mobile number, locality and the work you need. It takes about a minute, and we call you back during working hours (${site.hoursDisplay}) to fix a time for the site inspection.`,
+    a: `Yes. Fill in the booking form on this page with your name, mobile number and address, and add what needs painting if you like. It takes about a minute, and we call you back during working hours (${site.hoursDisplay}) to fix a time for the site inspection.`,
   },
   {
     q: "Is the estimate free?",
@@ -700,11 +839,11 @@ export const bookingFaqs: FaqItem[] = [
   },
   {
     q: "What details do I need to book painters online?",
-    a: "Your name, a 10-digit mobile number, your locality, the type of property (flat, house, shop or office), the service, and the size of the job: number of floors and home size. Carpet area and a preferred date are optional.",
+    a: "Your name, a 10-digit mobile number and your address: house or flat number and street, locality and PIN code. Everything else is optional, under Add more details: what needs painting, the property type, floors, home size, carpet area, a preferred date and a note.",
   },
   {
     q: "Can I choose the inspection date?",
-    a: "Yes. Pick a preferred date in the form, any day from today up to a year ahead, and we confirm the exact time when we call.",
+    a: "Yes. Open Add more details in the form and pick a preferred date, any day from today up to a year ahead, and we confirm the exact time when we call.",
   },
 ];
 

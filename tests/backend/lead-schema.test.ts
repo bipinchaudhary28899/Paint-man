@@ -5,7 +5,9 @@ const booking = {
   type: "booking",
   name: "Asha Verma",
   phone: "9876543210",
+  address: "12, Rose Villa, Nehru Road",
   locality: "Kamla Nagar",
+  pincode: "282005",
   propertyType: "Apartment / Flat",
   service: "Interior Painting",
   floors: "1",
@@ -18,9 +20,10 @@ const errorFields = (input: unknown) => {
 };
 
 describe("lead schema: job size", () => {
-  it("requires floors and home size on a booking", () => {
+  it("takes floors and home size as optional details, but only from the lists", () => {
     const { floors: _f, homeSize: _h, ...rest } = booking;
-    expect(errorFields(rest)).toEqual(expect.arrayContaining(["floors", "homeSize"]));
+    expect(errorFields(rest)).toEqual([]);
+    expect(errorFields({ ...booking, floors: "", homeSize: "" })).toEqual([]);
     expect(errorFields({ ...booking, floors: "9" })).toEqual(["floors"]);
   });
 
@@ -63,9 +66,31 @@ describe("lead schema: bookings", () => {
     expect(r.type === "booking" && r.locality).toBe("Sikandra");
   });
 
-  it("requires name, locality, property type and service", () => {
-    const fields = errorFields({ type: "booking", phone: "9876543210" });
-    expect(fields).toEqual(expect.arrayContaining(["name", "locality", "propertyType", "service"]));
+  it("requires name, mobile and the full address, and nothing about the job", () => {
+    const fields = errorFields({ type: "booking" });
+    expect(fields.sort()).toEqual(["address", "locality", "name", "phone", "pincode"]);
+    // a single wall or a door books with just the contact details and the address
+    const minimal = { type: "booking", name: "Asha", phone: "9876543210", address: "12 Nehru Road", locality: "Kamla Nagar", pincode: "282005" };
+    const r = leadSchema.parse(minimal) as Record<string, unknown>;
+    expect(r.city).toBe("agra");
+    for (const k of ["service", "propertyType", "floors", "homeSize"]) expect(r[k], k).toBeUndefined();
+    const blanks = leadSchema.parse({ ...minimal, service: "", propertyType: "" }) as Record<string, unknown>;
+    expect([blanks.service, blanks.propertyType]).toEqual([undefined, undefined]);
+  });
+
+  it("checks the PIN code (six digits, spaces allowed) and the city", () => {
+    expect(leadSchema.parse({ ...booking, pincode: " 282 005 " })).toMatchObject({ pincode: "282005" });
+    for (const pincode of ["28200", "2820055", "082005", "28200a", ""]) expect(errorFields({ ...booking, pincode }), pincode).toEqual(["pincode"]);
+    expect(errorFields({ ...booking, pincode: 282005 })).toEqual(["pincode"]);
+    expect(errorFields({ ...booking, address: "12" })).toEqual(["address"]);
+    expect(leadSchema.parse({ ...booking, city: "agra" })).toMatchObject({ city: "agra" });
+    expect(leadSchema.parse({ ...booking, city: "" })).toMatchObject({ city: "agra" });
+    // only cities we paint in today
+    expect(errorFields({ ...booking, city: "bangalore" })).toEqual(["city"]);
+  });
+
+  it("takes the new small-jobs service", () => {
+    expect(leadSchema.parse({ ...booking, service: "Doors, Windows & Small Jobs" })).toMatchObject({ service: "Doors, Windows & Small Jobs" });
   });
 
   it("rejects values outside the allowed lists", () => {

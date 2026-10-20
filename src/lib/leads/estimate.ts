@@ -11,13 +11,16 @@ const CREW_MIN = 2, CREW_MAX = 8, TARGET_DAYS = 7;
 /** "4+" counts as 4. */
 export const floorCount = (floors: string) => Math.max(1, Number.parseInt(floors, 10) || 1);
 
+/** Jobs the carpet-area rule says nothing about: exterior walls, and doors, windows or a single wall. */
+const OUTSIDE_THE_RULE = ["Exterior Painting", "Doors, Windows & Small Jobs"];
+
 /**
  * Interior paint area (walls + ceilings, sq ft) for a carpet area per floor, or null when it
- * can't be estimated: no carpet area, or an exterior-only job (measured on site).
+ * can't be estimated: no carpet area, an exterior-only job or a small job (measured on site).
  */
 export function estimatePaintArea(carpetAreaPerFloor: number | undefined, floors: string, service: string): number | null {
   if (!carpetAreaPerFloor || carpetAreaPerFloor <= 0) return null;
-  if (service === "Exterior Painting") return null;
+  if (OUTSIDE_THE_RULE.includes(service)) return null;
   return Math.round((carpetAreaPerFloor * floorCount(floors) * PAINT_AREA_PER_CARPET_SQFT) / 10) * 10;
 }
 

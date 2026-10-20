@@ -11,6 +11,7 @@ import { PinnedReveal } from "@/components/home/PinnedReveal";
 import { Promises } from "@/components/Promises";
 import { BookingSection } from "@/components/BookingSection";
 import { Tilt } from "@/components/Tilt";
+import { WorkFlow } from "@/components/WorkFlow";
 import { images } from "@/config/images";
 import { cityPath, generalFaqs, homeCity, promises, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
@@ -18,7 +19,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: `Book House Painters Online in India | ${site.name}`,
   absoluteTitle: true,
-  description: `Book house painters online with ${site.name}: zero advance payment, a full estimate before work starts and a supervised crew. Now painting in ${homeCity.name}.`,
+  description: `Book painters online for one wall, a door, windows or the whole house: zero advance payment and a full estimate before work starts. Now painting in ${homeCity.name}.`,
   path: "/",
 });
 
@@ -78,8 +79,8 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mt-7 max-w-[500px] text-lg leading-[1.65] text-muted">
-            Tell us what you need. We inspect, quote line by line, bring genuine branded paint and a supervised crew, and hand back a
-            spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
+            A single wall, a door, windows and grills, or the whole house: tell us what needs paint. We inspect, quote line by line,
+            bring genuine branded paint and a supervised crew, and hand back a spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a href="#book-visit" className="btn-primary btn-lg">Book a site visit</a>
@@ -135,6 +136,9 @@ export default function HomePage() {
       <div className="container-page relative z-[1] mt-16 md:mt-[120px]">
         <Promises />
       </div>
+
+      {/* ---------- How the work gets done ---------- */}
+      <WorkFlow className="container-page relative z-[1] mt-16 md:mt-[120px]" cta={{ href: "#book-visit", label: "Book a site visit" }} />
 
       {/* ---------- We diagnose first ---------- */}
       <section aria-label="We diagnose first" className="relative z-[1] mt-16 px-5 md:mt-[120px] md:px-8">

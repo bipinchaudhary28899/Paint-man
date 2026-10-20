@@ -21,12 +21,18 @@ export function crew(l: LeadRecord): string {
   return `≈ ${formatSqft(area)} · ${c.painterDays} painter-days (${c.painters} × ${c.days} days)`;
 }
 
+/** "12 Rose Villa, Kamla Nagar, Agra 282005": the address columns, for bookings made after they were added. */
+export function address(l: LeadRecord): string {
+  const place = [l.Address, l.Locality, l.City].filter(Boolean).join(", ");
+  return l["PIN Code"] ? `${place} ${l["PIN Code"]}` : place;
+}
+
 export function filterLeads(leads: LeadRecord[], query: string, type: Filter): LeadRecord[] {
   const q = query.trim().toLowerCase();
   return leads.filter((l) => {
     if (type !== "all" && l.Type !== type) return false;
     if (!q) return true;
-    return [l.Name, l.Phone, l.Locality, l.Service, l.Message, l["Lead ID"]].some((v) => v.toLowerCase().includes(q));
+    return [l.Name, l.Phone, address(l), l.Service, l.Message, l["Lead ID"]].some((v) => v.toLowerCase().includes(q));
   });
 }
 
@@ -58,7 +64,7 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
         <input
           id="lead-search"
           type="search"
-          placeholder="Search name, phone, locality…"
+          placeholder="Search name, phone, address…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="field max-w-sm"
@@ -83,7 +89,7 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="bg-ink text-on-ink">
               <tr>
-                {["Received", "Name", "Phone", "Type", "Locality", "Property", "Service", "Job size", "Est. area & crew", "Preferred date", "Message", "Source", "Status"].map((h) => (
+                {["Received", "Name", "Phone", "Type", "Address", "Property", "Service", "Job size", "Est. area & crew", "Preferred date", "Message", "Source", "Status"].map((h) => (
                   <th key={h} scope="col" className="px-4 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
@@ -97,7 +103,7 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
                     <a href={`tel:+91${l.Phone.replace(/\D/g, "").slice(-10)}`} className="text-tangerine-text underline">{l.Phone}</a>
                   </td>
                   <td className="px-4 py-3 capitalize">{l.Type}</td>
-                  <td className="px-4 py-3">{l.Locality}</td>
+                  <td className="px-4 py-3">{address(l)}</td>
                   <td className="px-4 py-3">{l["Property Type"]}</td>
                   <td className="px-4 py-3">{l.Service}</td>
                   <td className="whitespace-nowrap px-4 py-3">{jobSize(l)}</td>
