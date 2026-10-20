@@ -94,18 +94,17 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        {/* Side by side this column is as tall as the copy, but never taller than the first screen under
-            the header (86px) and the hero's top padding (40px), less a 24px margin: the buttons sit centred
-            in the space above the kit, and the kit's base is always in view on load. On a
-            shorter screen its box shrinks (by CSS alone, so nothing shifts) and the cut-out
-            scales down inside it. */}
-        <div className="flex min-w-0 flex-[1_1_420px] flex-col [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)]">
-          <div className="hidden flex-1 items-center justify-center pb-6 min-[1080px]:flex">
-            <HeroActions className="flex justify-center" />
-          </div>
-          <Tilt max={6} className="relative aspect-[748/692] w-full min-[1080px]:max-h-[calc(100svh-240px)] min-[1080px]:min-h-[300px]">
-            {/* The painting-kit cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
-            <HeroImage image={illustrations.paintingKit} className="object-contain object-bottom" />
+        {/* Side by side: the buttons and the brands picture form one group, centred beside the copy and
+            never taller than the first screen under the header (86px) and the hero's top padding (40px),
+            so both are in view on load. The picture's edges fade into the page (a CSS mask), so it sits on
+            the canvas without a frame; its box keeps the picture's proportions, so nothing shifts. */}
+        <div className="flex min-w-0 flex-[1_1_420px] flex-col justify-center gap-8 [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)]">
+          <HeroActions className="hidden justify-center min-[1080px]:flex" />
+          <Tilt max={6} className="relative aspect-[1790/968] w-full">
+            <HeroImage
+              image={illustrations.paintBrands}
+              className="object-contain [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent),linear-gradient(to_bottom,transparent,#000_8%,#000_90%,transparent)]"
+            />
           </Tilt>
         </div>
       </section>

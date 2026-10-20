@@ -32,6 +32,12 @@ export type SiteImage = (typeof images)[keyof typeof images];
  * the toolbox was already transparent). Our own brand art, so the alt names the brand.
  */
 export const illustrations = {
+  paintBrands: {
+    src: "/brand/illustrations/paint-brands.webp",
+    width: 1790,
+    height: 968,
+    alt: "Paint tins from brands sold in India on display stands: Jotun, Berger, Indigo, Kansai Nerolac, Asian Paints, Dulux, Shalimar, British Paints and Snowcem",
+  },
   paintingKit: {
     src: "/brand/illustrations/painting-kit.webp",
     width: 748,
