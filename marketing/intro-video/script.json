@@ -2,18 +2,18 @@
  {
   "id": "intro",
   "eyebrow": "House painting in Agra",
-  "title": "Paint Man",
-  "accent": "",
-  "body": "Your space, painted beautifully. Managed completely.",
-  "say": "This is Paint Man: a managed house painting service in Agra. Your space, painted beautifully. Managed completely."
+  "title": "Your space, painted",
+  "accent": "beautifully.",
+  "body": "Managed completely: inspection, itemised quote and a supervised crew.",
+  "say": "This is Paint Saathi: a managed house painting service in Agra. Your space, painted beautifully. Managed completely."
  },
  {
   "id": "problem",
-  "eyebrow": "Why Paint Man",
+  "eyebrow": "Why Paint Saathi",
   "title": "One team.",
   "accent": "One quote.",
   "body": "No finding painters, buying paint or checking the work yourself.",
-  "say": "Getting a home painted usually means finding painters, buying paint, and checking every wall yourself. With Paint Man, one team handles all of it."
+  "say": "Getting a home painted usually means finding painters, buying paint, and checking every wall yourself. With Paint Saathi, one team handles all of it."
  },
  {
   "id": "inspection",
@@ -68,7 +68,7 @@
   "eyebrow": "Now booking in Agra",
   "title": "Book your",
   "accent": "inspection",
-  "body": "Get a free estimate at paint-man-six.vercel.app",
-  "say": "Book your inspection online, and get a free estimate. Paint Man. Now booking in Agra."
+  "body": "Get a free estimate at paintsaathi.in",
+  "say": "Book your inspection online, and get a free estimate. Paint Saathi. Now booking in Agra."
  }
 ]
