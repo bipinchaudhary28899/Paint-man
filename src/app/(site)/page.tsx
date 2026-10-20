@@ -83,7 +83,7 @@ export default function HomePage() {
             bring genuine branded paint and a supervised crew, and hand back a spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
           </p>
           {/* Stacked (phones, tablets) the buttons follow the intro; side by side (from 1080px, where the
-              columns sit together) they move into the empty space above the hero image. One copy is display:none. */}
+              columns sit together) they move under the hero picture. One copy is display:none. */}
           <HeroActions className="mt-10 flex min-[1080px]:hidden" />
           <dl className="mt-14 flex flex-wrap gap-10 border-t border-line pt-7">
             {[["Payment", "Zero advance"], ["Estimate", "Full, before work starts"], ["Work", "Timed and documented"]].map(([k, v]) => (
@@ -94,19 +94,20 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        {/* Side by side: the buttons and the brands picture share the column with even space above, between
-            and below them (justify-evenly), beside the copy and
+        {/* Side by side: the brands picture, then the buttons (level with the end of the intro, where a
+            reader is ready to act), share the column with even space above, between and below them
+            (justify-evenly), beside the copy and
             never taller than the first screen under the header (86px) and the hero's top padding (40px),
             so both are in view on load. The picture's edges fade into the page (a CSS mask), so it sits on
             the canvas without a frame; its box keeps the picture's proportions, so nothing shifts. */}
         <div className="flex min-w-0 flex-[1_1_420px] flex-col justify-center [perspective:1600px] min-[1080px]:max-h-[calc(100svh-150px)] min-[1080px]:justify-evenly">
-          <HeroActions className="hidden justify-center min-[1080px]:flex" />
           <Tilt max={6} className="relative aspect-[1790/968] w-full">
             <HeroImage
               image={illustrations.paintBrands}
               className="object-contain [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,#000_8%,#000_92%,transparent),linear-gradient(to_bottom,transparent,#000_8%,#000_90%,transparent)]"
             />
           </Tilt>
+          <HeroActions className="hidden justify-center min-[1080px]:flex" />
         </div>
       </section>
 
