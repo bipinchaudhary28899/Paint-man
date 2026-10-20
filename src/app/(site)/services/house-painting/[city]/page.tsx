@@ -4,13 +4,13 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { Emoji } from "@/components/Emoji";
 import { Promises } from "@/components/Promises";
-import { QuickVisitForm } from "@/components/QuickVisitForm";
+import { BookingSection } from "@/components/BookingSection";
 import { areaSlug, cities, cityPath, getCity, homeCity, serviceCityTitle, servicePath, services, servicesIn, site, type City } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 // A city's main painting page (/services/house-painting/agra): every service in the city, the
 // localities we cover (each with an anchor the home page and service pages link to), how the
-// visit works and what the local weather means for walls, with the quick site-visit form beside
+// visit works and what the local weather means for walls, with our booking form (BookingSection) after
 // the heading. A city that is not live yet gets a waitlist page instead, kept out of search.
 
 type Params = { params: Promise<{ city: string }> };
@@ -60,8 +60,8 @@ export default async function CityPage({ params }: Params) {
   return (
     <>
       <section className="relative overflow-hidden border-b border-line bg-cream-wash">
-        <div className="container-page relative grid gap-10 py-12 md:py-16 lg:grid-cols-[1.3fr_1fr] lg:items-start">
-          <div>
+        <div className="container-page relative py-12 md:py-16">
+          <div className="max-w-3xl">
             <Breadcrumbs
               items={[
                 { name: "Services", path: "/services" },
@@ -80,12 +80,20 @@ export default async function CityPage({ params }: Params) {
                 </a>
               ))}
             </nav>
-          </div>
-          <div className="card p-6 md:p-7">
-            <QuickVisitForm defaultCity={city.slug} lockCity heading={`Book a site visit in ${city.name}`} />
+            <a href="#book-visit" className="btn-primary btn-lg mt-8">Book a site visit</a>
           </div>
         </div>
       </section>
+
+      <BookingSection
+        heading={<>Book a site visit in <em>{city.name}</em></>}
+        text={
+          <p>
+            Share a few details and we call you back during working hours ({site.hoursDisplay}) to fix the visit. The inspector
+            measures your walls, brings shade cards and sends an itemised quotation. Nothing is booked until you approve it.
+          </p>
+        }
+      />
 
       <section className="container-page mt-16 md:mt-24" aria-labelledby="city-services">
         <p className="eyebrow">Services</p>
@@ -213,9 +221,10 @@ export default async function CityPage({ params }: Params) {
 /** A city we are preparing to open: what is coming, the waitlist form and where we paint today. Not indexed. */
 function ComingSoon({ city }: { city: City }) {
   return (
+    <>
     <section className="relative overflow-hidden bg-cream-wash">
-      <div className="container-page relative grid gap-10 py-12 md:py-20 lg:grid-cols-[1.3fr_1fr] lg:items-start">
-        <div>
+      <div className="container-page relative py-12 md:py-20">
+        <div className="max-w-3xl">
           <Breadcrumbs
             items={[
               { name: "Services", path: "/services" },
@@ -240,10 +249,19 @@ function ComingSoon({ city }: { city: City }) {
             .
           </p>
         </div>
-        <div className="card p-6 md:p-7">
-          <QuickVisitForm defaultCity={city.slug} lockCity />
-        </div>
       </div>
     </section>
+    <BookingSection
+      id="waitlist"
+      type="contact"
+      defaultMessage={`Please call me when you start painting in ${city.name}.`}
+      heading={<>Join the <em>{city.name}</em> waitlist</>}
+      text={
+        <p>
+          We&apos;re not painting in {city.name} yet. Leave your number and we&apos;ll call you when bookings open there.
+        </p>
+      }
+    />
+    </>
   );
 }

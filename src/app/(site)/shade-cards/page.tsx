@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
-import { QuickVisitForm } from "@/components/QuickVisitForm";
+import { BookingSection } from "@/components/BookingSection";
 import { PaintDbCredit } from "@/components/colours/ShadeSwatches";
 import { paintdb, shadeCount } from "@/lib/colours/brands";
 import { indexMeta, shadeCardPath, shadeCards } from "@/lib/colours/shade-cards";
@@ -17,8 +17,8 @@ export default function ShadeCardsPage() {
   return (
     <>
       <section className="border-b border-line bg-cream-wash">
-        <div className="container-page grid gap-10 py-12 md:py-16 lg:grid-cols-[1.3fr_1fr] lg:items-start">
-          <div>
+        <div className="container-page py-12 md:py-16">
+          <div className="max-w-4xl">
             <Breadcrumbs items={[{ name: "Colours", path: "/colours" }, { name: "Shade cards", path: "/shade-cards" }]} />
             <h1 className="mt-5 text-[clamp(40px,5vw,68px)] leading-[1.04] tracking-[-0.02em]">
               Paint shade cards from India&apos;s <em>major brands</em>
@@ -28,9 +28,6 @@ export default function ShadeCardsPage() {
               brands we supply and apply. Each card lists every shade with the code printed on the paper card, grouped by colour family
               and ordered light to dark, so you can shortlist before the site visit and quote exact codes.
             </p>
-          </div>
-          <div className="card p-6 md:p-7">
-            <QuickVisitForm intro="Shortlist codes here; the inspector brings the brand's shade card to your site visit. Zero advance payment." />
           </div>
         </div>
       </section>
@@ -71,6 +68,12 @@ export default function ShadeCardsPage() {
           <PaintDbCredit source={paintdb.source} licenseUrl={paintdb.licenseUrl} note={paintdb.note} />
         </div>
       </section>
+
+      <BookingSection
+        className="container-page mt-24"
+        heading={<>Shortlisted a few codes? <em>Book the visit</em></>}
+        text={<p>Note the codes in the form. The inspector brings the brand&apos;s shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
+      />
 
       <CtaBanner heading={<>Shortlisted a few codes? <em>Book the visit.</em></>} />
     </>

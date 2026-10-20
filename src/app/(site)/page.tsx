@@ -9,10 +9,10 @@ import { HeroImage } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal } from "@/components/home/PinnedReveal";
 import { Promises } from "@/components/Promises";
-import { QuickVisitForm } from "@/components/QuickVisitForm";
+import { BookingSection } from "@/components/BookingSection";
 import { Tilt } from "@/components/Tilt";
 import { images } from "@/config/images";
-import { cityPath, generalFaqs, homeCity, services, site } from "@/config/site";
+import { cityPath, generalFaqs, homeCity, promises, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -81,12 +81,11 @@ export default function HomePage() {
             Tell us what you need. We inspect, quote line by line, bring genuine branded paint and a supervised crew, and hand back a
             spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
           </p>
-          {/* The quick site-visit form is the first thing a visitor can do: here on phones and tablets,
-              floated over the hero photo on wide screens (one of the two is display:none). */}
-          <div className="card mt-8 max-w-[520px] p-5 md:p-6 lg:hidden">
-            <QuickVisitForm intro="Zero advance payment and a full estimate before any work starts. Leave your number and we call you back." />
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <a href="#book-visit" className="btn-primary btn-lg">Book a site visit</a>
+            <Link href="/colours" className="btn-secondary btn-lg">Explore colours</Link>
           </div>
-          <dl className="mt-10 flex flex-wrap gap-10 border-t border-line pt-7">
+          <dl className="mt-14 flex flex-wrap gap-10 border-t border-line pt-7">
             {[["Payment", "Zero advance"], ["Estimate", "Full, before work starts"], ["Work", "Timed and documented"]].map(([k, v]) => (
               <div key={k}>
                 <dt className="text-xs uppercase tracking-[0.12em] text-muted">{k}</dt>
@@ -95,21 +94,33 @@ export default function HomePage() {
             ))}
           </dl>
         </div>
-        <div className="relative min-w-0 flex-[1_1_420px] [perspective:1600px]">
-          <Tilt max={6} className="frame-shadow relative h-[420px] overflow-hidden rounded-3xl md:h-[640px] lg:h-[700px]">
+        <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
+          <Tilt max={6} className="frame-shadow relative h-[420px] overflow-hidden rounded-3xl md:h-[640px]">
             <HeroImage image={images.livingMoody} />
             {/* Local signal as real text; it sits inside the fixed-height frame, so it moves nothing */}
             <span className="sticker absolute left-5 top-5">Now booking in {site.city}</span>
           </Tilt>
-          <div className="card absolute inset-x-6 bottom-14 z-10 hidden bg-paper/95 p-6 backdrop-blur-md lg:block">
-            <QuickVisitForm intro="Zero advance payment and a full estimate before any work starts. Leave your number and we call you back." />
-          </div>
           <p className="mx-1 mt-4 flex justify-between text-[13px] text-muted">
             <span>Example finish</span>
             <span>Warm white walls</span>
           </p>
         </div>
       </section>
+
+      {/* ---------- Book a site visit: our booking form, first thing after the hero ---------- */}
+      <BookingSection
+        className="container-page relative z-[1] mt-0 mb-16 md:mb-24"
+        heading={<>Book a site visit <em>online</em></>}
+        text={
+          <>
+            <p>
+              Share a few details and we call you back during working hours ({site.hoursDisplay}) to fix the visit. The inspector
+              measures your walls, brings shade cards and sends an itemised quotation.
+            </p>
+            <p className="mt-4">{promises[0].title}, and nothing is booked until you approve the estimate.</p>
+          </>
+        }
+      />
 
       {/* ---------- Word strip ---------- */}
       <div className="relative z-[1] border-y border-line-soft">

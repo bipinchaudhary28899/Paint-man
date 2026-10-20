@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { Promises } from "@/components/Promises";
-import { QuickVisitForm } from "@/components/QuickVisitForm";
+import { BookingSection } from "@/components/BookingSection";
 import { bookingSteps, cities, cityPath, liveCities, servicePath, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -21,8 +21,8 @@ export default function HousePaintingHubPage() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-line bg-cream-wash">
-        <div className="container-page relative grid gap-10 py-12 md:py-16 lg:grid-cols-[1.3fr_1fr] lg:items-start">
-          <div>
+        <div className="container-page relative py-12 md:py-16">
+          <div className="max-w-3xl">
             <Breadcrumbs items={[{ name: "Services", path: "/services" }, { name: "House painting", path: "/services/house-painting" }]} />
             <h1 className="mt-5 text-[clamp(40px,5vw,68px)] leading-[1.04] tracking-[-0.02em]">
               House painting services, <em>managed</em>
@@ -38,12 +38,20 @@ export default function HousePaintingHubPage() {
               ))}{" "}
               today, with {cities.filter((c) => c.status === "soon").map((c) => c.name).join(" and ")} next.
             </p>
-          </div>
-          <div className="card p-6 md:p-7">
-            <QuickVisitForm />
+            <a href="#book-visit" className="btn-primary btn-lg mt-8">Book a site visit</a>
           </div>
         </div>
       </section>
+
+      <BookingSection
+        heading={<>Book a site visit <em>online</em></>}
+        text={
+          <p>
+            Share a few details and we call you back to fix the visit. The inspector measures your walls, brings shade cards and sends
+            an itemised quotation. Nothing is booked until you approve it.
+          </p>
+        }
+      />
 
       <section className="container-page mt-16 md:mt-24" aria-labelledby="hub-services">
         <p className="eyebrow">Services</p>

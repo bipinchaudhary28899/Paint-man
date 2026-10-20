@@ -124,14 +124,14 @@ export function LeadForm({ type, defaultService, defaultMessage }: Props) {
               <input
                 id="locality"
                 name="locality"
-                list="localities"
+                list="locality-options"
                 required
                 maxLength={80}
                 placeholder="e.g. Kamla Nagar"
                 className="field"
                 {...aria("locality")}
               />
-              <datalist id="localities">
+              <datalist id="locality-options">
                 {site.areas.map((a) => (
                   <option key={a} value={a} />
                 ))}

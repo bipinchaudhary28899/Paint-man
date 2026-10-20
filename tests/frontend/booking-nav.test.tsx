@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { QuickVisitForm } from "@/components/QuickVisitForm";
+import { BookingSection } from "@/components/BookingSection";
 import { NavMenu } from "@/components/NavMenu";
 import { Promises } from "@/components/Promises";
 import { ThankYouMessage } from "@/components/ThankYouMessage";
@@ -19,63 +19,24 @@ beforeEach(() => {
   router.prefetch.mockReset();
 });
 
-describe("QuickVisitForm (Book site visit)", () => {
-  it("books a site visit in a live city with name, mobile, city and an optional locality", async () => {
-    const fetchSpy = mockFetch(200, { ok: true });
-    const user = userEvent.setup();
-    render(<QuickVisitForm />);
-    expect(screen.getByRole("heading", { name: "Book a free site visit" })).toBeInTheDocument();
-    expect(screen.getByText(/Zero advance payment/)).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Your name"), "Asha");
-    await user.type(screen.getByLabelText("Mobile number"), "9876543210");
-    await user.type(screen.getByLabelText("Locality (optional)"), "Kamla Nagar");
-    await user.click(screen.getByRole("button", { name: "Book site visit" }));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/thank-you?type=visit"));
-    const body = JSON.parse(String(fetchSpy.mock.calls[0][1]!.body));
-    expect(body).toMatchObject({ type: "visit", city: "agra", name: "Asha", phone: "9876543210", locality: "Kamla Nagar" });
-    expect(router.prefetch).toHaveBeenCalledWith("/thank-you?type=visit");
+describe("BookingSection (our booking form with its heading)", () => {
+  it("shows the heading and note beside the full booking form", () => {
+    render(<BookingSection heading={<>Book a site visit <em>online</em></>} text={<p>We call you back.</p>} />);
+    const section = screen.getByRole("region", { name: "Book a site visit online" });
+    expect(section).toHaveAttribute("id", "book-visit");
+    expect(screen.getByRole("heading", { level: 2, name: "Book a site visit online" })).toBeInTheDocument();
+    expect(screen.getByText("We call you back.")).toBeInTheDocument();
+    // LeadForm's booking fields, not a short call-back form
+    for (const label of ["Your name", "Mobile number", "Property type", "Service needed", "Floors to paint", "Home size"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
   });
 
-  it("turns into a waitlist form for a city that is not live yet", async () => {
-    const fetchSpy = mockFetch(200, { ok: true });
-    const user = userEvent.setup();
-    render(<QuickVisitForm />);
-    await user.selectOptions(screen.getByLabelText("City"), "bangalore");
-    expect(screen.getByRole("heading", { name: "Join the Bangalore waitlist" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Delhi NCR (coming soon)" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Locality (optional)")).toBeNull();
-    await user.type(screen.getByLabelText("Your name"), "Ravi");
-    await user.type(screen.getByLabelText("Mobile number"), "9123456789");
-    await user.click(screen.getByRole("button", { name: "Join the waitlist" }));
-    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/thank-you?type=waitlist"));
-    expect(JSON.parse(String(fetchSpy.mock.calls[0][1]!.body))).toMatchObject({ type: "visit", city: "bangalore" });
-  });
-
-  it("on a city page the city is fixed, and field errors are shown and focused", async () => {
-    mockFetch(400, { ok: false, error: "Please fix the highlighted fields.", fieldErrors: { phone: "Enter a valid 10-digit mobile number" } });
-    const user = userEvent.setup();
-    render(<QuickVisitForm defaultCity="agra" lockCity heading="Book a site visit in Agra" />);
-    expect(screen.queryByLabelText("City")).toBeNull();
-    await user.type(screen.getByLabelText("Your name"), "Asha");
-    await user.type(screen.getByLabelText("Mobile number"), "123");
-    await user.click(screen.getByRole("button", { name: "Book site visit" }));
-    expect(await screen.findByText("Enter a valid 10-digit mobile number")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Please fix the highlighted fields.");
-    expect(screen.getByLabelText("Mobile number")).toHaveAttribute("aria-invalid", "true");
-    expect(router.push).not.toHaveBeenCalled();
-  });
-
-  it("says so when the network fails, or the server gives no message", async () => {
-    const user = userEvent.setup();
-    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("offline"));
-    render(<QuickVisitForm />);
-    await user.type(screen.getByLabelText("Your name"), "Asha");
-    await user.type(screen.getByLabelText("Mobile number"), "9876543210");
-    await user.click(screen.getByRole("button", { name: "Book site visit" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/Network error/);
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("not json", { status: 500 }));
-    await user.click(screen.getByRole("button", { name: "Book site visit" }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Something went wrong. Please try again."));
+  it("can hold the contact form with a prefilled message, under its own id", () => {
+    render(<BookingSection id="waitlist" type="contact" defaultMessage="Please call me when you start in Bangalore." heading="Join the waitlist" text="Not yet." />);
+    expect(screen.getByRole("region", { name: "Join the waitlist" })).toHaveAttribute("id", "waitlist");
+    expect(screen.getByLabelText(/How can we help/)).toHaveValue("Please call me when you start in Bangalore.");
+    expect(screen.queryByLabelText("Property type")).toBeNull();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeInTheDocument();
   });
 });
 

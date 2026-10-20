@@ -133,7 +133,10 @@ describe("city page metadata and coming-soon cities", () => {
   it("a coming city shows the waitlist form and points to where we paint today", async () => {
     const { container } = render(await CityPage({ params: Promise.resolve({ city: "delhi-ncr" }) }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("House painting in Delhi NCR is coming soon");
-    expect(screen.getByRole("button", { name: "Join the waitlist" })).toBeInTheDocument();
+    // our contact form, prefilled as a waitlist request for this city
+    expect(screen.getByRole("heading", { level: 2, name: "Join the Delhi NCR waitlist" })).toBeInTheDocument();
+    expect(screen.getByLabelText(/How can we help/)).toHaveValue("Please call me when you start painting in Delhi NCR.");
+    expect(screen.getByRole("button", { name: "Send message" })).toBeInTheDocument();
     expect(container.querySelector('a[href="/services/house-painting/agra"]')).not.toBeNull();
   });
 

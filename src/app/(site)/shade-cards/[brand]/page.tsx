@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
-import { QuickVisitForm } from "@/components/QuickVisitForm";
+import { BookingSection } from "@/components/BookingSection";
 import { PaintDbCredit, ShadeSwatches } from "@/components/colours/ShadeSwatches";
 import { paintdb } from "@/lib/colours/brands";
 import { cardMeta, shadeCard, shadeCardPath, shadeCards, toSwatch } from "@/lib/colours/shade-cards";
@@ -34,8 +34,8 @@ export default async function ShadeCardPage({ params }: Params) {
   return (
     <>
       <section className="relative overflow-hidden border-b border-line bg-cream-wash">
-        <div className="container-page relative grid gap-10 py-12 md:py-16 lg:grid-cols-[1.3fr_1fr] lg:items-start">
-          <div>
+        <div className="container-page relative py-12 md:py-16">
+          <div className="max-w-4xl">
             <Breadcrumbs
               items={[
                 { name: "Colours", path: "/colours" },
@@ -63,12 +63,6 @@ export default async function ShadeCardPage({ params }: Params) {
                 </a>
               ))}
             </nav>
-          </div>
-          <div className="card p-6 md:p-7">
-            <QuickVisitForm
-              heading={`See the real ${card.shortName} card at home`}
-              intro={`Shortlist codes here; the inspector brings the ${card.shortName} shade card to your site visit. Zero advance payment.`}
-            />
           </div>
         </div>
       </section>
@@ -124,6 +118,13 @@ export default async function ShadeCardPage({ params }: Params) {
           </div>
         </div>
       </section>
+
+      <BookingSection
+        className="container-page mt-24"
+        heading={<>See the real {card.shortName} card <em>at home</em></>}
+        text={<p>Note the codes you like in the form. The inspector brings the {card.name} shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
+        defaultMessage={`Please bring the ${card.name} shade card. Codes I like: `}
+      />
 
       <CtaBanner heading={<>Picked a few {card.shortName} codes? <em>Book the visit.</em></>} />
     </>

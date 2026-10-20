@@ -663,7 +663,7 @@ export const serviceCityTitle = (service: Service, city: City) => `${service.tit
 
 /**
  * The service promises (owner-stated policy), shown on the home page, the booking page, city pages
- * and next to the quick site-visit form. Each one matches what the rest of the copy commits to.
+ * and beside the booking form. Each one matches what the rest of the copy commits to.
  */
 export const promises: { title: string; text: string }[] = [
   { title: "Zero advance payment", text: "You pay nothing up front. No payment is due before the work starts." },

@@ -264,7 +264,7 @@ describe("service in a city (/services/<service>/agra)", () => {
 });
 
 describe("national house-painting hub (/services/house-painting)", () => {
-  it("links every service hub and every city, with the quick form and promises", async () => {
+  it("links every service hub and every city, with our booking form and promises", async () => {
     const { default: Page, metadata } = await import("@/app/(site)/services/house-painting/page");
     expect(String(metadata.title)).toBe("House Painting Services in India");
     const { container } = render(<Page />);
@@ -273,7 +273,8 @@ describe("national house-painting hub (/services/house-painting)", () => {
     const links = hrefs(container);
     for (const s of services) expect(links).toContain(`/services/${s.slug}`);
     for (const c of ["agra", "delhi-ncr", "bangalore"]) expect(links).toContain(`/services/house-painting/${c}`);
-    expect(screen.getByRole("button", { name: "Book site visit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Book a site visit" })).toHaveAttribute("href", "#book-visit");
     expect(screen.getByRole("heading", { name: "Zero advance payment" })).toBeInTheDocument();
   });
 });
