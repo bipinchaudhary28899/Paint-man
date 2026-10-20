@@ -82,10 +82,9 @@ export default function HomePage() {
             A single wall, a door, windows and grills, or the whole house: tell us what needs paint. We inspect, quote line by line,
             bring genuine branded paint and a supervised crew, and hand back a spotless home. Now painting in <Link href={cityPath(homeCity)} className="font-semibold text-ink underline">{homeCity.name}</Link>.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-4">
-            <a href="#book-visit" className="btn-primary btn-lg">Book a site visit</a>
-            <Link href="/colours" className="btn-secondary btn-lg">Explore colours</Link>
-          </div>
+          {/* Stacked (phones, tablets) the buttons follow the intro; side by side (from 1080px, where the
+              columns sit together) they move into the empty space above the painter. One copy is display:none. */}
+          <HeroActions className="mt-10 flex min-[1080px]:hidden" />
           <dl className="mt-14 flex flex-wrap gap-10 border-t border-line pt-7">
             {[["Payment", "Zero advance"], ["Estimate", "Full, before work starts"], ["Work", "Timed and documented"]].map(([k, v]) => (
               <div key={k}>
@@ -96,6 +95,7 @@ export default function HomePage() {
           </dl>
         </div>
         <div className="min-w-0 flex-[1_1_420px] [perspective:1600px]">
+          <HeroActions className="mb-6 hidden min-[1080px]:flex" />
           <Tilt max={6} className="relative aspect-[1160/1024] w-full">
             {/* The painter cut-out straight on the page, no frame; the box keeps its proportions, so it reserves its space */}
             <HeroImage image={illustrations.painter} className="object-contain object-bottom" />
@@ -313,6 +313,15 @@ export default function HomePage() {
       <div className="relative z-[1]">
         <CtaBanner />
       </div>
+    </div>
+  );
+}
+
+function HeroActions({ className }: { className: string }) {
+  return (
+    <div className={`flex-wrap items-center gap-4 ${className}`}>
+      <a href="#book-visit" className="btn-primary btn-lg">Book a site visit</a>
+      <Link href="/colours" className="btn-secondary btn-lg">Explore colours</Link>
     </div>
   );
 }
