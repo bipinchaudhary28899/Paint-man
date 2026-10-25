@@ -9,7 +9,7 @@ import { images, type SiteImage } from "./images";
 export const site = {
   name: "Paint Saathi",
   legalName: "", // TODO: registered business name
-  tagline: "Managed painting for walls, doors, windows and grills",
+  tagline: "Har Ghar ka Paint Saathi",
   city: "Agra",
   region: "Uttar Pradesh",
   regionCode: "IN-UP",

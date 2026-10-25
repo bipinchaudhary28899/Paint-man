@@ -18,6 +18,7 @@ export function Footer() {
       <div className="container-page grid gap-6 pt-10 tab:grid-cols-[260px_minmax(0,1fr)] tab:gap-10 tab:pt-14 tab:pb-10 desk:grid-cols-[1.2fr_2.8fr] desk:gap-12 desk:pt-[72px] desk:pb-14">
         <div>
           <p><StackedLogo className="h-16 w-auto tab:h-20 desk:h-24" /></p>
+          <p className="mt-2 font-display text-lg italic leading-snug text-golden desk:text-xl">{site.tagline}</p>
           <p className="mt-3.5 text-sm leading-[1.6] desk:mt-3 desk:max-w-[320px] desk:text-[15px] desk:leading-relaxed">
             Walls, doors, windows and grills, one wall or the whole house: inspected, quoted line by line and supervised. {promises[0].title}, a full estimate before work
             starts.

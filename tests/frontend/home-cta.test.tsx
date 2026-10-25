@@ -74,6 +74,12 @@ describe("footer link groups: tap rows on phones, open columns from tablet up", 
     expect(container.querySelectorAll("h1, h2, h3")).toHaveLength(0);
   });
 
+  it("shows the tagline under the logo", () => {
+    render(<Footer />);
+    expect(screen.getByText(site.tagline)).toBeInTheDocument();
+    expect(site.tagline).toBe("Har Ghar ka Paint Saathi");
+  });
+
   it("the rows are open without JS (or matchMedia), so tablets and desktops in any browser show every link", () => {
     vi.stubGlobal("matchMedia", undefined);
     render(<Footer />);
