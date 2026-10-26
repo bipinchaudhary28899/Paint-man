@@ -573,6 +573,17 @@ h1 em, h2 em, h3 em, .accent {
 .field:hover { border-color: var(--color-ink); }
 .field:focus { border-color: var(--color-ink); }
 .field[aria-invalid="true"] { border-color: var(--color-danger); }
+/* Selects drop the native look (its own text inset and an arrow against the border), so the value lines
+   up with the inputs' text; the chevron is two hairline gradients in the ink colour, inset from the edge. */
+select.field {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 42%, var(--color-ink) 42%, var(--color-ink) 58%, transparent 58%),
+    linear-gradient(-45deg, transparent 42%, var(--color-ink) 42%, var(--color-ink) 58%, transparent 58%);
+  background-size: 7px 7px;
+  background-position: right calc(1rem + 7px) center, right 1rem center;
+  background-repeat: no-repeat;
+}
 
 /* Cards: white, hairline, soft radius. No hard shadows in this theme. */
 .card {
@@ -625,3 +636,9 @@ details[open] .plus { transform: rotate(45deg); }
 /* swipeable chip rows on phones: no visible scrollbar */
 .chip-row { scrollbar-width: none; }
 .chip-row::-webkit-scrollbar { display: none; }
+
+/* Room for the select chevron. In the utilities layer so a field's own px-* utility (LeadForm's
+   phone and tablet padding) cannot cover the chevron; select.field outranks a single-class utility. */
+@layer utilities {
+  select.field { padding-inline-end: calc(2rem + 14px); }
+}
