@@ -9,7 +9,9 @@ const isPreview = Boolean(process.env.VERCEL_ENV) && process.env.VERCEL_ENV !== 
 // every page to render dynamically, which is slower and worse for SEO).
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  // Vercel Web Analytics loads /_vercel/insights/script.js from this origin in production; in dev it
+  // loads a debug script (it logs, sends nothing) from va.vercel-scripts.com.
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval' https://va.vercel-scripts.com" : ""}`,
   "worker-src 'self'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://images.pexels.com",

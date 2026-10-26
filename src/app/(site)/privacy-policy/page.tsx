@@ -20,6 +20,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Details you submit in our forms: name, mobile number, locality, property type, service needed, preferred date and your message.</li>
           <li>Basic technical information such as the page you came from and campaign tags in the link you used.</li>
+          <li>Anonymous visit statistics (pages viewed, the referring site, country and device type) through Vercel Web Analytics, from our hosting provider. It uses no cookies and does not identify you.</li>
         </ul>
         <h2>How we use it</h2>
         <p>We use your information to contact you about your request, schedule inspections, prepare quotations and deliver the service you ask for. We do not sell your personal information.</p>
