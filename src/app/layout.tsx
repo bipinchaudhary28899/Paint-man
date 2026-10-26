@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { DM_Serif_Display, Manrope } from "next/font/google";
 import { site } from "@/config/site";
 import { siteVerification, TITLE_SUFFIX } from "@/lib/seo";
@@ -63,6 +64,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         {children}
+        {/* Vercel Web Analytics: cookie-free page views, from the same-origin /_vercel/insights script. */}
+        <Analytics />
       </body>
     </html>
   );
