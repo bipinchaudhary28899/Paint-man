@@ -11,7 +11,7 @@ const steps = [
 ];
 
 const photos = [
-  { image: images.livingWarm, pos: "object-[center_60%]", caption: "Har coat, quote ke hisaab se: the finish you approved" },
+  { image: images.uniformCeiling, pos: "object-[center_45%]", caption: "Har coat, quote ke hisaab se: the finish you approved" },
   { image: images.coupleHome, pos: "", caption: "Apni roshni mein rang chuniye: shade cards come to your home" },
 ];
 

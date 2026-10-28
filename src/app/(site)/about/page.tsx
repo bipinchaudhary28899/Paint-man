@@ -43,7 +43,7 @@ export default function AboutPage() {
           </p>
         </div>
         <div className="relative aspect-[4/3]">
-          <PhotoCrop image={images.livingRoom} shape="blob2" backdrop="#ffd84d" sizes="(min-width: 1024px) 50vw, 100vw" className="absolute inset-0" />
+          <PhotoCrop image={images.workersTeam} shape="blob2" backdrop="#ffd84d" sizes="(min-width: 1024px) 50vw, 100vw" className="absolute inset-0" />
         </div>
       </section>
 

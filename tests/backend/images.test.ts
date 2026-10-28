@@ -49,6 +49,15 @@ describe("images config", () => {
     }
   });
 
+  it("photos edited to show the uniform name it, but never a place or a finished job", () => {
+    const edited = all.filter(([, i]) => i.src.startsWith("/photos/painter-uniform-"));
+    expect(edited.length).toBeGreaterThan(0);
+    for (const [key, img] of edited) {
+      expect(img.alt, key).toContain(`${site.name} uniform`);
+      expect(stockAltProblems(img.alt).filter((p) => p !== "names the brand"), key).toEqual([]);
+    }
+  });
+
   it("tells stock from job photos by host, so a real job photo may carry a local alt", () => {
     const job = { src: "/photos/dayalbagh-living-room.jpg", alt: `Freshly painted teal living room in Dayalbagh, ${site.city}` };
     expect(isStock(job)).toBe(false);

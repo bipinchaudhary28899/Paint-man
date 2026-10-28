@@ -91,8 +91,8 @@ describe("PaintSaathiWay", () => {
 
   it("sizes the photo for each design: full width on phones, the 290px portrait on tablets, 560px on desktop", () => {
     render(<PaintSaathiWay />);
-    const img = screen.getByAltText(images.familyHome.alt);
-    expect(img).toHaveAttribute("src", images.familyHome.src);
+    const img = screen.getByAltText(images.uniformSkimming.alt);
+    expect(img).toHaveAttribute("src", images.uniformSkimming.src);
     expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 560px, (min-width: 721px) 290px, 100vw");
     // below the fold: next/image's default lazy loading stays (no eager or high-priority hints)
     expect(img).not.toHaveAttribute("loading", "eager");
