@@ -15,7 +15,7 @@ describe("Finishes (home)", () => {
     const heading = screen.getByRole("heading", { level: 2, name: "The finish we work to." });
     expect(heading.querySelectorAll("em")).toHaveLength(1);
     expect(screen.getByText(new RegExp(`Photos of our own ${site.city} jobs`))).toBeInTheDocument();
-    for (const caption of ["Exterior · grey-blue", "Living room · warm white", "Shade selection", "Open plan · teal accent"]) {
+    for (const caption of ["Exterior · white, blue trim", "Living room · warm white", "Bedroom · warm ochre", "Living room · wood accent"]) {
       expect(screen.getByText(caption).tagName).toBe("FIGCAPTION");
     }
   });
@@ -26,7 +26,7 @@ describe("Finishes (home)", () => {
     expect(region).toHaveAttribute("tabindex", "0");
     expect(region).toHaveClass("swipe");
     const photos = within(region).getAllByRole("img");
-    expect(photos.map((p) => p.getAttribute("alt"))).toEqual([images.exteriorBlue.alt, images.livingMoody.alt, images.swatchSheet.alt, images.livingTeal.alt]);
+    expect(photos.map((p) => p.getAttribute("alt"))).toEqual([images.houseExterior.alt, images.livingMoody.alt, images.bedroom.alt, images.livingRoom.alt]);
     expect(within(region).getAllByRole("figure")).toHaveLength(4);
   });
 });

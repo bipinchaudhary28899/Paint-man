@@ -31,7 +31,7 @@ export default function NotFound() {
             Page not <em>found.</em>
           </h1>
           <p className="mt-5 text-lg leading-[1.65] text-muted">
-            The page you&apos;re looking for doesn&apos;t exist or has moved. These pages are a good place to pick up again.
+            Arre, yeh page nahi mila. The page you&apos;re looking for doesn&apos;t exist or has moved. These pages are a good place to pick up again.
           </p>
           <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-1 text-[15px] font-medium">
             {links.map((l) => (

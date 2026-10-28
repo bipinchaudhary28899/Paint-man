@@ -13,7 +13,7 @@ export function AreasSection() {
             Painting homes across {site.city}
           </h2>
           <p className="mt-3 leading-[1.6] text-muted max-tab:mt-2.5 max-tab:text-[14px] max-tab:leading-[1.55] tab:max-desk:max-w-[480px] tab:max-desk:text-[15px] desk:max-w-[360px]">
-            Need painters in {site.city} outside these localities? Ask. We&apos;ll tell you honestly if we can supervise your job.
+            Mohalla list mein nahi hai? If you need painters in {site.city} outside these localities, ask. We&apos;ll tell you honestly if we can supervise your job.
           </p>
           {/* Phones drop the repeated "Painters in" from each chip and show it once here; the links
               still carry it for screen readers, so this label is hidden from them. */}

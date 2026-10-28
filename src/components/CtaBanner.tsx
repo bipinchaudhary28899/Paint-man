@@ -23,7 +23,7 @@ export function CtaBanner({ heading }: { heading?: React.ReactNode }) {
             )}
           </h2>
           <p className="mt-3.5 max-w-[500px] text-[15px] leading-[1.6] text-ink-soft tab:mt-5 tab:text-base tab:leading-[1.65] desk:mt-6 desk:text-[17px]">
-            We&apos;ll inspect, advise on colours and send an itemised quote for your home in {site.city}. You decide from there.
+            Chaliye, shuru karte hain. We&apos;ll inspect, advise on colours and send an itemised quote for your home in {site.city}. You decide from there.
           </p>
           <div className="mt-6 flex flex-col gap-2.5 tab:mt-8 tab:flex-row tab:flex-wrap tab:gap-3 desk:mt-11 desk:gap-4">
             <Link href="/book" className="btn-primary btn-lg max-tab:min-h-[54px] max-tab:w-full tab:max-desk:px-[30px]">Get a free estimate</Link>

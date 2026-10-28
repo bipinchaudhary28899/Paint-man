@@ -88,15 +88,15 @@ describe("PageHero", () => {
   });
 
   it("renders the framed photo when an image is given", () => {
-    render(<PageHero title="Services" crumbs={crumbs} image={images.trays} shape="blob" />);
-    expect(screen.getByAltText(images.trays.alt)).toBeInTheDocument();
+    render(<PageHero title="Services" crumbs={crumbs} image={images.heritageHouse} shape="blob" />);
+    expect(screen.getByAltText(images.heritageHouse.alt)).toBeInTheDocument();
   });
 });
 
 describe("PhotoCrop shapes", () => {
   const shapes: CropShape[] = ["arch", "circle", "pill", "squircle", "slant", "ticket", "blob", "blob2", "splat", "scallop"];
   it.each(shapes)("renders the %s crop", (shape) => {
-    const { container } = render(<PhotoCrop image={images.trays} shape={shape} sizes="100px" backdrop="#fff" rotate={3} />);
+    const { container } = render(<PhotoCrop image={images.heritageHouse} shape={shape} sizes="100px" backdrop="#fff" rotate={3} />);
     const root = container.firstElementChild as HTMLElement;
     expect(root.style.transform).toBe("rotate(3deg)");
     const frame = root.querySelector(".group\\/crop") as HTMLElement;

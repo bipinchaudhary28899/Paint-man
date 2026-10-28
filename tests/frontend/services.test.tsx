@@ -171,10 +171,10 @@ describe("FaqList links", () => {
 
 describe("PageHero image", () => {
   it("loads the hero photo eagerly at high fetch priority", () => {
-    render(<PageHero title="Services" crumbs={[{ name: "Services", path: "/services" }]} image={images.livingTeal} />);
-    const img = screen.getByAltText(images.livingTeal.alt);
+    render(<PageHero title="Services" crumbs={[{ name: "Services", path: "/services" }]} image={images.livingRoom} />);
+    const img = screen.getByAltText(images.livingRoom.alt);
     expect(img).toHaveAttribute("fetchpriority", "high");
-    const props = imageProps.mock.calls.map(([p]) => p).find((p) => p.alt === images.livingTeal.alt);
+    const props = imageProps.mock.calls.map(([p]) => p).find((p) => p.alt === images.livingRoom.alt);
     // preloaded (Next 16's replacement for `priority`) or explicitly eager: never lazy
     expect(props.preload === true || props.loading === "eager").toBe(true);
     expect(props.loading).not.toBe("lazy");

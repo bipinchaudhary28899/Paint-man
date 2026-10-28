@@ -8,20 +8,19 @@
 const pexels = (id: string) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg`;
 
 export const images = {
-  heroPainter: { src: pexels("7218579"), alt: "Painter rolling white paint onto an interior wall edged with blue masking tape" },
-  rollerCloseup: { src: pexels("5583126"), alt: "Close-up of a paint roller applying a smooth beige coat on a wall" },
-  swatchFan: { src: pexels("6474454"), alt: "Hands holding a fan of paint colour swatches against a wall" },
-  swatchSheet: { src: pexels("6583367"), alt: "Hand leafing through a fan deck of neutral paint shade cards" },
-  rainbow: { src: pexels("8559022"), alt: "Fan of vividly coloured paper sheets in rainbow order" },
-  trays: { src: pexels("26736629"), alt: "Paint trays and a brush pot on floor paper in front of a wall painted pale blue and sage green" },
-  muralBuckets: { src: pexels("26632166"), alt: "Paint buckets on floor paper beside a large, colourful painted mural wall" },
-  painterWindow: { src: pexels("5768187"), alt: "Painter preparing a window sill for painting in a room with pale grey walls" },
-  livingTeal: { src: pexels("7587828"), alt: "Open-plan living room with teal sofas, white walls and exposed brick" },
+  familyHome: { src: pexels("9345669"), alt: "Family in traditional clothes relaxing on a sofa beneath a bright patterned wall hanging" },
+  weatheredWall: { src: pexels("37124570"), alt: "Weathered yellow wall with flaking plaster and exposed brick around an iron window grill" },
+  windowGrill: { src: pexels("37192157"), alt: "Ornate black iron window grill set in a textured sky-blue wall" },
+  homeEntrance: { src: pexels("9209430"), alt: "Green double doors with carved screen panels opening onto a mint-green modern kitchen" },
+  heritageHouse: { src: pexels("39555167"), alt: "Ochre house with a tiled roof, potted palms and a green gate along a quiet street" },
+  livingWarm: { src: pexels("34946066"), alt: "Living room with an orange brick accent wall, wooden sofas and warm ceiling lights" },
+  livingRoom: { src: pexels("33452539"), alt: "Living room with warm grey walls, a wooden slat panel, a wall clock and a beige sofa" },
   livingMoody: { src: pexels("30386991"), alt: "Living room with warm white walls, a navy sofa and open shelving" },
-  livingWhite: { src: pexels("29012619"), alt: "Airy white living room with floor-to-ceiling sheer curtains and white sofas" },
-  apartment: { src: pexels("6588580"), alt: "Modern hallway with pale grey walls, flush doors and a wooden slat partition" },
-  exteriorBlue: { src: pexels("20296321"), alt: "Two-storey house with a pale blue-grey exterior behind a trimmed hedge" },
-  exteriorTerracotta: { src: pexels("8336130"), alt: "Large house with a warm terracotta-coloured exterior and a round corner turret" },
+  bedroom: { src: pexels("31925629"), alt: "Bedroom with warm ochre walls, brown bedding and a window with a coloured glass border" },
+  rentalFlat: { src: pexels("36195703"), alt: "Bright bedroom with plain walls, a wooden wardrobe and a large window" },
+  coupleHome: { src: pexels("4307699"), alt: "Smiling couple relaxing together in a bedroom with deep green walls" },
+  houseFront: { src: pexels("15574469"), alt: "House entrance with a yellow and orange front, marigold beds and a paved path" },
+  houseExterior: { src: pexels("14354538"), alt: "White house with a red tiled roof, blue trim and a round window above the door" },
 } as const;
 
 export type SiteImage = (typeof images)[keyof typeof images];

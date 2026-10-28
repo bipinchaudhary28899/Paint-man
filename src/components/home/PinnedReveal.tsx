@@ -97,7 +97,7 @@ export function PinnedReveal() {
                 Watch the colour <em>go on.</em>
               </h2>
               <p className="hidden leading-[1.65] text-muted tab:mt-4 tab:block tab:text-[16px] desk:mt-5 desk:max-w-[400px] desk:text-[17px]">
-                Keep scrolling. The room is finished; only the walls are waiting. Every stage is on your quotation before a brush
+                Scroll karte rahiye. The room is finished; only the walls are waiting. Every stage is on your quotation before a brush
                 touches them.
               </p>
             </div>

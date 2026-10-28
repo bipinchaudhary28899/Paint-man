@@ -11,9 +11,9 @@ const serviceLook: Record<string, { label: string; chip: string; pos?: string }>
   "rental-property-painting": { label: "Complete home", chip: "bg-golden text-ink" },
 };
 const serviceImage: Record<string, (typeof images)[keyof typeof images]> = {
-  "interior-painting": images.livingTeal,
-  "exterior-painting": images.exteriorTerracotta,
-  "rental-property-painting": images.livingWhite,
+  "interior-painting": images.livingRoom,
+  "exterior-painting": images.houseFront,
+  "rental-property-painting": images.rentalFlat,
 };
 
 /**
@@ -39,7 +39,7 @@ export function ServicesSection() {
           Every wall in the house.
         </h2>
         <p className="mt-3 max-w-[460px] text-[15px] leading-[1.6] text-muted tab:mt-3.5 tab:text-[16px] tab:leading-[1.65] desk:mt-5 desk:text-[17px]">
-          House painting inside and out, and quick repaints of rental homes, each starting with an on-site inspection and an
+          Andar ho ya bahar: house painting inside and out, and quick repaints of rental homes, each starting with an on-site inspection and an
           itemised quote.
         </p>
       </div>

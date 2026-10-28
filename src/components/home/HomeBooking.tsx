@@ -10,7 +10,7 @@ export function HomeBooking() {
       heading={<>Book a site visit <em>online</em></>}
       text={
         <p>
-          Share a few details and we call you back during working hours ({site.hoursDisplay}) to fix the visit. The inspector
+          Bas kuch details bhejiye: we call you back during working hours ({site.hoursDisplay}) to fix the visit. The inspector
           measures your walls, brings shade cards and sends an itemised quotation.
         </p>
       }

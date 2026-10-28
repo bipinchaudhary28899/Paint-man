@@ -142,7 +142,7 @@ const rule = `one painter covers about ${SQFT_PER_PAINTER_DAY} sq ft a day throu
 export const services: Service[] = [
   {
     slug: "interior-painting",
-    image: images.livingTeal,
+    image: images.livingRoom,
     accent: "bg-terracotta text-on-ink",
     name: "Interior Painting",
     shortName: "Interior",
@@ -292,7 +292,7 @@ export const services: Service[] = [
   },
   {
     slug: "exterior-painting",
-    image: images.exteriorTerracotta,
+    image: images.houseFront,
     accent: "bg-sage-deep text-on-ink",
     name: "Exterior Painting",
     shortName: "Exterior",
@@ -428,7 +428,7 @@ export const services: Service[] = [
   },
   {
     slug: "door-window-painting",
-    image: images.painterWindow,
+    image: images.windowGrill,
     accent: "bg-sage-deep text-on-ink",
     name: "Doors, Windows & Small Jobs",
     shortName: "Doors & windows",
@@ -553,7 +553,7 @@ export const services: Service[] = [
   },
   {
     slug: "rental-property-painting",
-    image: images.livingWhite,
+    image: images.rentalFlat,
     accent: "bg-golden text-ink",
     name: "Rental Property Painting",
     shortName: "Rental",

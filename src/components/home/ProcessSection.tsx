@@ -11,8 +11,8 @@ const steps = [
 ];
 
 const photos = [
-  { image: images.trays, pos: "object-[center_40%]", caption: "On site: the brand and finish you approved" },
-  { image: images.swatchFan, pos: "", caption: "Shade cards brought to your home at the inspection" },
+  { image: images.livingWarm, pos: "object-[center_60%]", caption: "Har coat, quote ke hisaab se: the finish you approved" },
+  { image: images.coupleHome, pos: "", caption: "Apni roshni mein rang chuniye: shade cards come to your home" },
 ];
 
 /**
@@ -32,7 +32,7 @@ export function ProcessSection() {
             From enquiry to fresh walls in <em className="!text-golden">five steps.</em>
           </h2>
           <p className="mt-3 text-[15px] leading-[1.6] text-on-sage tab:mt-4 tab:max-w-[420px] tab:text-[16px] tab:leading-[1.65] desk:mt-0 desk:max-w-[340px]">
-            One team, one quotation and one point of contact, from the first call to the final walkthrough.
+            Ek team, ek quotation, ek hi contact: from the first call to the final walkthrough.
           </p>
         </div>
         <ServicesSwipeRow

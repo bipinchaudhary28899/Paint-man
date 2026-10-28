@@ -69,7 +69,7 @@ export function ColourExplorer() {
             Find a shade that feels like <em>you.</em>
           </h2>
           <p className="mt-3 text-[15px] leading-[1.6] text-muted tab:mt-4 tab:text-[16px] tab:leading-[1.65] desk:mt-5 desk:max-w-[440px] desk:text-[17px]">
-            Pick a shade to see it up close. Our inspector brings the real cards to your home and helps you choose finishes that suit
+            Apna rang chuniye: pick a shade to see it up close. Our inspector brings the real cards to your home and helps you choose finishes that suit
             your light, furniture and budget.
           </p>
 

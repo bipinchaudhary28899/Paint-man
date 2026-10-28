@@ -21,7 +21,7 @@ export default function ServicesPage() {
         crumbs={[{ name: "Services", path: "/services" }]}
         title={<>Painting <em>services</em></>}
         intro="From a single wall or a door to the whole house, every job follows the same process: site inspection, itemised quote, supervised painting and a final walkthrough with you."
-        image={images.muralBuckets}
+        image={images.heritageHouse}
         shape="blob"
         backdrop="#ff6538"
         tint="bg-cream-wash"

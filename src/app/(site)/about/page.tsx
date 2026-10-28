@@ -26,7 +26,7 @@ export default function AboutPage() {
         crumbs={[{ name: "About", path: "/about" }]}
         title={<>Managed house painting in {site.city}, made <span className="text-gradient">stress-free</span></>}
         intro={`Getting a home painted in ${site.city} usually means finding a painter, negotiating a rate, buying paint yourself and checking the work every day. ${site.name} takes all of that off your hands.`}
-        image={images.painterWindow}
+        image={images.homeEntrance}
         shape="scallop"
         backdrop="#244fe5"
         tint="bg-sky-wash"
@@ -43,7 +43,7 @@ export default function AboutPage() {
           </p>
         </div>
         <div className="relative aspect-[4/3]">
-          <PhotoCrop image={images.livingTeal} shape="blob2" backdrop="#ffd84d" sizes="(min-width: 1024px) 50vw, 100vw" className="absolute inset-0" />
+          <PhotoCrop image={images.livingRoom} shape="blob2" backdrop="#ffd84d" sizes="(min-width: 1024px) 50vw, 100vw" className="absolute inset-0" />
         </div>
       </section>
 

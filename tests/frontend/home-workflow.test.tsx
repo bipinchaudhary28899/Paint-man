@@ -24,7 +24,7 @@ describe("WorkFlow responsive markup", () => {
     });
     // the booking tile shares the grid on tablets but is not a step
     expect(within(lists[0]).queryByRole("link")).toBeNull();
-    expect(within(lists[0]).queryByText("Ready when you are.")).toBeNull();
+    expect(within(lists[0]).queryByText("Aap ready, hum ready.")).toBeNull();
   });
 
   it("has one heading with one italic accent, and the toolbox illustration beside it", () => {
@@ -53,7 +53,7 @@ describe("WorkFlow responsive markup", () => {
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute("href", "#book-visit");
     const tile = links[0].parentElement!;
-    expect(within(tile).getByText("Ready when you are.")).toBeInTheDocument();
+    expect(within(tile).getByText("Aap ready, hum ready.")).toBeInTheDocument();
     // the tile follows the list, so reading order is: steps, then the call to action
     const list = screen.getByRole("list");
     expect(list.compareDocumentPosition(tile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -62,7 +62,7 @@ describe("WorkFlow responsive markup", () => {
   it("drops the button and the tile when no cta is given", () => {
     render(<WorkFlow />);
     expect(screen.queryByRole("link")).toBeNull();
-    expect(screen.queryByText("Ready when you are.")).toBeNull();
+    expect(screen.queryByText("Aap ready, hum ready.")).toBeNull();
     expect(screen.getAllByRole("listitem")).toHaveLength(workFlow.length);
   });
 

@@ -121,8 +121,8 @@ describe("Process on the home page (phone swipe row, tablet table, desktop colum
     render(<ProcessSection />);
     const figures = screen.getAllByRole("figure");
     expect(figures).toHaveLength(2);
-    expect(figures[0]).toHaveTextContent("On site: the brand and finish you approved");
-    expect(figures[1]).toHaveTextContent("Shade cards brought to your home at the inspection");
+    expect(figures[0]).toHaveTextContent("Har coat, quote ke hisaab se: the finish you approved");
+    expect(figures[1]).toHaveTextContent("Apni roshni mein rang chuniye: shade cards come to your home");
     for (const img of screen.getAllByRole("img")) expect(img.getAttribute("alt")).toBeTruthy();
   });
 });

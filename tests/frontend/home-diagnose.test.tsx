@@ -27,7 +27,7 @@ describe("Diagnose", () => {
     expect(headings).toHaveLength(1);
     expect(headings[0]).toHaveProperty("tagName", "H2");
     expect(headings[0]).toHaveTextContent("We diagnose first.");
-    expect(section).toHaveTextContent("We don't just paint.");
+    expect(section).toHaveTextContent("Hum sirf paint nahi karte.");
     expect(section).toHaveTextContent(/separate lines, so you pay for repairs you can see/);
   });
 
@@ -38,8 +38,8 @@ describe("Diagnose", () => {
 
   it("shows the photo with its descriptive alt and keeps the wash out of the accessibility tree", () => {
     const { container } = render(<Diagnose />);
-    const img = screen.getByAltText(images.painterWindow.alt);
-    expect(img).toHaveAttribute("src", images.painterWindow.src);
+    const img = screen.getByAltText(images.weatheredWall.alt);
+    expect(img).toHaveAttribute("src", images.weatheredWall.src);
     expect(img).toHaveAttribute("sizes", "(min-width: 1264px) 1200px, 100vw");
     // the wash over the photo is decoration only
     expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0);
@@ -91,8 +91,8 @@ describe("PaintSaathiWay", () => {
 
   it("sizes the photo for each design: full width on phones, the 290px portrait on tablets, 560px on desktop", () => {
     render(<PaintSaathiWay />);
-    const img = screen.getByAltText("Painter rolling a fresh coat onto a taped wall");
-    expect(img).toHaveAttribute("src", images.heroPainter.src);
+    const img = screen.getByAltText(images.familyHome.alt);
+    expect(img).toHaveAttribute("src", images.familyHome.src);
     expect(img).toHaveAttribute("sizes", "(min-width: 1080px) 560px, (min-width: 721px) 290px, 100vw");
     // below the fold: next/image's default lazy loading stays (no eager or high-priority hints)
     expect(img).not.toHaveAttribute("loading", "eager");

@@ -23,6 +23,7 @@ export function ThankYouMessage() {
         {booking ? "Your inspection request is in" : "Thanks for your message"}
       </h1>
       <p className="mt-4 text-lg text-muted">
+        Shukriya!{" "}
         {booking
           ? "Our team will call you shortly to confirm a time for the site visit."
           : "We'll get back to you as soon as possible."}{" "}

@@ -6,10 +6,10 @@ import { site } from "@/config/site";
 // consented photos of our own jobs replace them.
 // `bento` places each photo in the tablet layout: one tall frame, two small ones and one wide one.
 const finishes = [
-  { image: images.exteriorBlue, kind: "Exterior · grey-blue", bento: "tab:max-desk:col-start-2 tab:max-desk:row-start-1", sizes: "33vw" },
+  { image: images.houseExterior, kind: "Exterior · white, blue trim", bento: "tab:max-desk:col-start-2 tab:max-desk:row-start-1", sizes: "33vw" },
   { image: images.livingMoody, kind: "Living room · warm white", raised: true, bento: "tab:max-desk:col-start-1 tab:max-desk:row-span-2 tab:max-desk:row-start-1", sizes: "33vw" },
-  { image: images.swatchSheet, kind: "Shade selection", bento: "tab:max-desk:col-start-3 tab:max-desk:row-start-1", sizes: "33vw" },
-  { image: images.livingTeal, kind: "Open plan · teal accent", raised: true, bento: "tab:max-desk:col-span-2 tab:max-desk:col-start-2 tab:max-desk:row-start-2", sizes: "66vw" },
+  { image: images.bedroom, kind: "Bedroom · warm ochre", bento: "tab:max-desk:col-start-3 tab:max-desk:row-start-1", sizes: "33vw" },
+  { image: images.livingRoom, kind: "Living room · wood accent", raised: true, bento: "tab:max-desk:col-span-2 tab:max-desk:col-start-2 tab:max-desk:row-start-2", sizes: "66vw" },
 ];
 
 // "The finish we work to": four example finishes. Phones swipe through portrait frames, tablets get a

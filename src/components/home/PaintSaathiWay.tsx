@@ -8,7 +8,8 @@ const promise = [
   { title: "Your home, protected", text: "Furniture moved and covered, floors sheeted, every room cleaned before we leave." },
 ];
 
-// "The Paint Saathi way": painting without the project management, three commitments beside a photo.
+// "The Paint Saathi way": painting without the project management, three commitments beside a photo
+// of a family at home (the point: they relax while we manage).
 // Phones: a wide photo banner, then the copy and the list. Tablets: a narrow portrait beside the list.
 // Desktop: a large photo beside the copy.
 export function PaintSaathiWay() {
@@ -16,8 +17,8 @@ export function PaintSaathiWay() {
     <section className="container-page relative z-[1] py-14 tab:grid tab:grid-cols-[290px_minmax(0,1fr)] tab:items-stretch tab:gap-9 tab:py-[88px] desk:flex desk:flex-wrap desk:items-center desk:gap-[72px] desk:py-[140px]">
       <div className="frame-shadow relative h-[220px] min-w-0 overflow-hidden rounded-[22px] tab:h-auto tab:min-h-[560px] tab:rounded-3xl desk:h-[680px] desk:min-h-0 desk:flex-[1_1_380px]">
         <Image
-          src={images.heroPainter.src}
-          alt="Painter rolling a fresh coat onto a taped wall"
+          src={images.familyHome.src}
+          alt={images.familyHome.alt}
           fill
           sizes="(min-width: 1080px) 560px, (min-width: 721px) 290px, 100vw"
           className="object-cover object-[center_30%] tab:object-center"
@@ -30,7 +31,7 @@ export function PaintSaathiWay() {
             Painting, <em>without</em> the project management.
           </h2>
           <p className="mt-3 text-[15px] leading-[1.6] text-muted tab:mt-4 tab:text-[16px] tab:leading-[1.65] desk:mt-5 desk:max-w-[420px] desk:text-[17px]">
-            You deal with us, not with painters, paint shops and suppliers separately. We choose the crew and the materials from our
+            Sab kuch ek hi jagah se. You deal with us, not with painters, paint shops and suppliers separately. We choose the crew and the materials from our
             network and own the result from the first visit to the final walkthrough.
           </p>
         </div>

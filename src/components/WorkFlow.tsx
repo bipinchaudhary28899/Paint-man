@@ -9,7 +9,7 @@ import { workFlow } from "@/config/site";
 // - phone (under 721px): a vertical timeline, numbered dots joined by a hairline, the toolbox small
 //   beside the heading and a full-width button under the list;
 // - tablet (721px to 1079px): compact step tickets two across; with a `cta`, the slot after the last
-//   step is a sand "Ready when you are." tile holding the button. The list is a subgrid of the wrapper
+//   step is a sand "Aap ready, hum ready." tile holding the button. The list is a subgrid of the wrapper
 //   so the tile shares its rows without joining the list;
 // - desktop (1080px up): four columns of steps and the button under them.
 // A step with an `image` (the owner's PNGs of people painting) shows it above its text, in a box
@@ -74,7 +74,7 @@ export function WorkFlow({ steps = workFlow, cta, className = "" }: { steps?: St
               tileInLastRow ? "tab:max-desk:col-start-2 tab:max-desk:row-start-(--flow-rows)" : "tab:max-desk:col-span-full"
             }`}
           >
-            <p className="hidden font-display text-[22px]/[1.2] tab:max-desk:block">Ready when you are.</p>
+            <p className="hidden font-display text-[22px]/[1.2] tab:max-desk:block">Aap ready, hum ready.</p>
             <Link
               href={cta.href}
               className="btn-primary btn-lg max-tab:flex max-tab:w-full max-tab:min-h-[54px] tab:max-desk:min-h-[50px] tab:max-desk:px-6 tab:max-desk:text-[15px] desk:mt-10"

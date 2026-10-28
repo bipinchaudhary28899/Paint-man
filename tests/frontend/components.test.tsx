@@ -230,12 +230,12 @@ describe("JsonLd and Breadcrumbs", () => {
 
 describe("visual components", () => {
   it("PhotoCrop keeps descriptive alt text for SEO and accessibility", () => {
-    render(<PhotoCrop image={images.heroPainter} shape="blob" sizes="100px" backdrop="#000" />);
-    expect(screen.getByRole("img")).toHaveAttribute("alt", images.heroPainter.alt);
+    render(<PhotoCrop image={images.familyHome} shape="blob" sizes="100px" backdrop="#000" />);
+    expect(screen.getByRole("img")).toHaveAttribute("alt", images.familyHome.alt);
   });
 
   it("PhotoCrop respects absolute positioning classes", () => {
-    const { container } = render(<PhotoCrop image={images.heroPainter} shape="arch" sizes="100px" className="absolute top-0" />);
+    const { container } = render(<PhotoCrop image={images.familyHome} shape="arch" sizes="100px" className="absolute top-0" />);
     expect(container.firstElementChild!.className).not.toMatch(/\brelative\b/);
   });
 });

@@ -12,7 +12,7 @@ export function FaqSection() {
           Good <em>questions.</em>
         </h2>
         <p className="mt-4 max-w-[320px] leading-[1.6] text-muted max-tab:mt-2 max-tab:text-[14px] max-tab:leading-[1.55] tab:max-desk:mt-0 tab:max-desk:max-w-[300px] tab:max-desk:text-[15px]">
-          Anything else? Our inspector answers it on the site visit.
+          Aur koi sawaal? Our inspector answers it on the site visit.
         </p>
       </div>
       <div className="mt-4 tab:mt-6 desk:mt-0 desk:flex-[2_1_560px]">
