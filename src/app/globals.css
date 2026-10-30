@@ -181,6 +181,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* A jump to any #anchor (or a focused field) stops below the sticky header (72px on phones, 86px
+   wider) instead of under it. In the base layer, so an element's own scroll-mt-* still wins. */
+@layer base {
+  [id] { scroll-margin-top: 6rem; }
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
@@ -470,26 +476,42 @@ h1 em, h2 em, h3 em, .accent {
   background: var(--color-terracotta);
   color: var(--color-on-ink);
 }
-.btn-primary:hover {
-  background: var(--color-terracotta-hover);
-  transform: translateY(-1px);
-}
 .btn-secondary {
   color: var(--color-ink);
   font-weight: 500;
   border: 1px solid rgba(36, 37, 34, 0.25);
   background: transparent;
 }
-.btn-secondary:hover {
-  background: rgba(36, 37, 34, 0.06);
-}
 .btn-dark {
   background: var(--color-ink);
   color: var(--color-on-ink);
 }
-.btn-dark:hover {
-  background: var(--color-ink-soft);
-  transform: translateY(-1px);
+/* Hover only where there is a pointer that hovers: on a phone a tapped button would otherwise keep
+   its hover look after the tap. */
+@media (hover: hover) {
+  .btn-primary:hover { background: var(--color-terracotta-hover); transform: translateY(-1px); }
+  .btn-secondary:hover { background: rgba(36, 37, 34, 0.06); }
+  .btn-dark:hover { background: var(--color-ink-soft); transform: translateY(-1px); }
+}
+/* Pressed: the button sinks a touch, so a tap feels answered before the page responds. */
+.btn-primary:active,
+.btn-secondary:active,
+.btn-dark:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+.btn-primary:active { background: var(--color-terracotta-hover); }
+.btn-secondary:active { background: rgba(36, 37, 34, 0.1); }
+/* Busy or unavailable: dimmed, not clickable-looking, no movement. */
+:is(.btn-primary, .btn-secondary, .btn-dark):is(:disabled, [aria-disabled="true"]) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-dark { transform: none !important; }
 }
 .btn-lg { min-height: 3.625rem; padding: 0 2rem; font-size: 1rem; }
 
@@ -592,7 +614,21 @@ select.field {
   background: var(--color-paper);
   transition: transform 350ms ease;
 }
-.card-hover:hover { transform: translateY(-4px); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .card-hover:hover { transform: translateY(-4px); }
+}
+
+/* Header dropdown: drops in and fades up when it opens (it is display:none while hidden, so
+   @starting-style gives it a first frame to come from). Not under reduced motion. */
+.nav-panel {
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+@starting-style {
+  .nav-panel { opacity: 0; transform: translateY(-6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel { transition: none; }
+}
 
 /* Hairline-divided list used for steps and FAQs */
 /* A horizontal swipe row (phones): scrolls inside itself, snaps to each card, no scrollbar. The page

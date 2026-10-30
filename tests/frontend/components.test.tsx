@@ -35,6 +35,25 @@ describe("Header and Footer", () => {
     expect(screen.getByRole("link", { name: "Book site visit" })).toHaveAttribute("href", "/book");
   });
 
+  it("header marks the section the visitor is in, and only that one", () => {
+    const marked = () => [...screen.getByRole("navigation", { name: "Main" }).querySelectorAll("[aria-current]")].map((el) => el.textContent?.trim());
+    for (const [path, section] of [["/services/house-painting/agra", "Cities"], ["/shade-cards/berger", "Colours"], ["/services", "Services"]] as const) {
+      vi.mocked(usePathnameMock).mockReturnValue(path);
+      const { unmount } = render(<Header />);
+      expect(marked(), path).toEqual([section]);
+      expect(screen.getByRole("button", { name: section })).toHaveAttribute("aria-current", "true");
+      unmount();
+    }
+    vi.mocked(usePathnameMock).mockReturnValue("/faq");
+    const { unmount } = render(<Header />);
+    expect(screen.getByRole("link", { name: "FAQ" })).toHaveAttribute("aria-current", "page");
+    unmount();
+    vi.mocked(usePathnameMock).mockReturnValue("/about");
+    render(<Header />);
+    expect(marked()).toEqual([]);
+    vi.mocked(usePathnameMock).mockReturnValue("/services");
+  });
+
   it("header shows the phone number once site.ts has one", async () => {
     expect(Boolean(render(<Header />).container.querySelector('a[href^="tel:"]'))).toBe(Boolean(site.phone));
     const FilledHeader = await withFilledSite(fakeContact, async () => (await import("@/components/Header")).Header);
@@ -282,6 +301,20 @@ describe("ThankYouMessage", () => {
     expect(screen.getByRole("heading", { name: "Thanks for your message" })).toBeInTheDocument();
     window.history.replaceState(null, "", "/");
   });
+
+  it("after a booking, lists what happens next (the booking steps after the form); a message gets none", async () => {
+    const { ThankYouMessage } = await import("@/components/ThankYouMessage");
+    const { bookingSteps } = await import("@/config/site");
+    window.history.replaceState(null, "", "/thank-you?type=booking");
+    const { unmount } = render(<ThankYouMessage />);
+    const next = screen.getByRole("region", { name: /What happens next/ });
+    expect(within(next).getAllByRole("listitem").map((li) => li.querySelector("span.block")?.textContent)).toEqual(bookingSteps.slice(1).map((s) => s.title));
+    unmount();
+    window.history.replaceState(null, "", "/thank-you?type=contact");
+    render(<ThankYouMessage />);
+    expect(screen.queryByRole("region", { name: /What happens next/ })).toBeNull();
+    window.history.replaceState(null, "", "/");
+  });
 });
 
 describe("Paint Saathi logos (one lock-up per screen size)", () => {
@@ -334,3 +367,18 @@ describe("Paint Saathi logos (one lock-up per screen size)", () => {
   });
 });
 
+
+describe("ErrorNotice (a page that broke)", () => {
+  it("apologises in one heading, retries on request and offers home and booking, with no error details", async () => {
+    const { ErrorNotice } = await import("@/components/ErrorNotice");
+    const retry = vi.fn();
+    const user = userEvent.setup();
+    render(<ErrorNotice retry={retry} />);
+    expect(screen.getAllByRole("heading")).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Something went wrong.");
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "Go to the home page" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Book a site visit" })).toHaveAttribute("href", "/book");
+  });
+});

@@ -226,3 +226,61 @@ describe("job size fields", () => {
     expect(screen.queryByLabelText("Floors to paint")).toBeNull();
   });
 });
+
+describe("checks in the browser before anything is sent", () => {
+  it("submitting with the required part empty shows every problem at once, focuses the first and sends nothing", async () => {
+    const fetchSpy = mockFetch(200, { ok: true });
+    render(<LeadForm type="booking" />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+
+    for (const message of ["Enter your name", "Enter a valid 10-digit mobile number", "Enter your house or flat number and street", "Enter your locality", "Enter your 6-digit PIN code"]) {
+      expect(screen.getByText(message)).toBeInTheDocument();
+    }
+    expect(screen.getByRole("alert")).toHaveTextContent("Please check the highlighted fields.");
+    await waitFor(() => expect(screen.getByLabelText("Your name")).toHaveFocus());
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("checks a field when the visitor leaves it, not while it is still empty", async () => {
+    render(<LeadForm type="booking" />);
+    const user = userEvent.setup();
+    await user.click(screen.getByLabelText("PIN code"));
+    await user.tab();
+    expect(screen.queryByText("Enter your 6-digit PIN code")).toBeNull();
+
+    await user.type(screen.getByLabelText("PIN code"), "2820");
+    await user.tab();
+    expect(screen.getByText("Enter your 6-digit PIN code")).toBeInTheDocument();
+    expect(screen.getByLabelText("PIN code")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("clears a field's error, and the summary with the last one, as soon as the value is fixed", async () => {
+    render(<LeadForm type="contact" />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Your name"), "Ravi");
+    await user.type(screen.getByLabelText(/How can we help/), "Need a quote for two rooms");
+    await user.click(screen.getByRole("button", { name: "Send message" }));
+    expect(screen.getByText("Enter a valid 10-digit mobile number")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Mobile number"), "9123456789");
+    expect(screen.queryByText("Enter a valid 10-digit mobile number")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("shows +91 inside the mobile field and asks the browser for the national number", () => {
+    render(<LeadForm type="booking" />);
+    const phone = screen.getByLabelText("Mobile number");
+    expect(phone.parentElement).toHaveTextContent("+91");
+    expect(phone).toHaveAttribute("autocomplete", "tel-national");
+  });
+
+  it("marks the form busy and shows a spinner beside Sending…", async () => {
+    vi.spyOn(globalThis, "fetch").mockReturnValue(new Promise(() => {}));
+    const { container } = render(<LeadForm type="booking" />);
+    const user = await fillBooking();
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+    expect(container.querySelector("form")).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("button", { name: "Sending…" }).querySelector(".animate-spin")).not.toBeNull();
+  });
+});

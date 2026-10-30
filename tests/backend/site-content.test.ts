@@ -342,3 +342,19 @@ describe("header menus and footer link hub (src/config/nav.ts)", () => {
     for (const b of shadeCardBrands) expect(isBrand(b.slug), b.slug).toBe(true);
   });
 });
+
+describe("header section for each page", () => {
+  it("marks the section a page belongs to, and none for pages outside the menus", async () => {
+    const { headerSection } = await import("@/config/nav");
+    expect(headerSection("/services")).toBe("Services");
+    expect(headerSection("/services/house-painting")).toBe("Services");
+    expect(headerSection("/services/interior-painting")).toBe("Services");
+    expect(headerSection("/services/house-painting/agra")).toBe("Cities");
+    expect(headerSection("/services/interior-painting/agra/")).toBe("Cities");
+    expect(headerSection("/colours")).toBe("Colours");
+    expect(headerSection("/shade-cards/berger/blues")).toBe("Colours");
+    expect(headerSection("/palettes")).toBe("Colours");
+    expect(headerSection("/faq")).toBe("FAQ");
+    for (const p of ["/", "/about", "/book", "/contact", "/servicesx", "/colourful"]) expect(headerSection(p), p).toBeUndefined();
+  });
+});

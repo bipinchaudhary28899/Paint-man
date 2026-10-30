@@ -2,7 +2,7 @@ import Link from "next/link";
 import { navMenus } from "@/config/nav";
 import { site } from "@/config/site";
 import { Wordmark } from "./Logo";
-import { NavMenu } from "./NavMenu";
+import { HeaderLink, NavMenu } from "./NavMenu";
 
 export function Header() {
   return (
@@ -16,7 +16,7 @@ export function Header() {
           {navMenus().map((m) => (
             <NavMenu key={m.label} menu={m} />
           ))}
-          <Link href="/faq" className="inline-flex min-h-11 items-center text-ink transition hover:text-terracotta">FAQ</Link>
+          <HeaderLink href="/faq" label="FAQ" />
         </nav>
         <div className="hidden items-center gap-4 min-[721px]:flex md:gap-6">
           {site.phone && (

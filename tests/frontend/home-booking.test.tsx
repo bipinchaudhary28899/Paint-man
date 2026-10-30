@@ -84,7 +84,8 @@ describe("LeadForm layout per screen", () => {
 
   it("keeps locality and PIN in one row, and name and mobile as a pair", () => {
     render(<LeadForm type="booking" />);
-    const row = (label: string) => screen.getByLabelText(label).parentElement!.parentElement!;
+    // the grid row a field sits in (the mobile field has a +91 wrapper inside its cell)
+    const row = (label: string) => screen.getByLabelText(label).closest(".grid")!;
     expect(row("Locality in Agra")).toBe(row("PIN code"));
     expect(row("Your name")).toBe(row("Mobile number"));
     expect(row("Your name")).not.toBe(row("Locality in Agra"));

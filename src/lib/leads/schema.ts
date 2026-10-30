@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { bookingDateRange, isCalendarDate } from "./dates";
+import { FIELD_MESSAGES, MOBILE_PATTERN, normalizeMobile, PINCODE_PATTERN } from "./field-checks";
 import { cities, homeCity, liveCities } from "@/config/site";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "./options";
 
@@ -8,9 +9,8 @@ export { floorOptions, homeSizes, propertyTypes, serviceTypes };
 
 const indianMobile = z
   .string()
-  .trim()
-  .transform((v) => v.replace(/[\s-]/g, "").replace(/^(\+91|91|0)(?=\d{10}$)/, ""))
-  .refine((v) => /^[6-9]\d{9}$/.test(v), "Enter a valid 10-digit mobile number");
+  .transform(normalizeMobile)
+  .refine((v) => MOBILE_PATTERN.test(v), FIELD_MESSAGES.phone);
 
 const trimmed = (max: number) => z.string().trim().max(max);
 
@@ -48,7 +48,7 @@ const tracking = z
 
 // `website` is a honeypot: real users never see or fill it.
 const common = {
-  name: trimmed(80).min(2, "Enter your name"),
+  name: trimmed(80).min(2, FIELD_MESSAGES.name),
   phone: indianMobile,
   website: z.string().max(0).optional(),
   page: trimmed(300).optional(),
@@ -71,11 +71,11 @@ export const liveCitySlugs = liveCities().map((c) => c.slug) as [string, ...stri
 export const bookingSchema = z.object({
   type: z.literal("booking"),
   ...common,
-  address: trimmed(200).min(5, "Enter your house or flat number and street"),
-  locality: trimmed(80).min(2, "Enter your locality"),
+  address: trimmed(200).min(5, FIELD_MESSAGES.address),
+  locality: trimmed(80).min(2, FIELD_MESSAGES.locality),
   pincode: z.preprocess(
     (v) => (typeof v === "string" ? v.replace(/\s/g, "") : v),
-    z.string({ message: "Enter your 6-digit PIN code" }).regex(/^[1-9]\d{5}$/, "Enter your 6-digit PIN code"),
+    z.string({ message: FIELD_MESSAGES.pincode }).regex(PINCODE_PATTERN, FIELD_MESSAGES.pincode),
   ),
   // one live city today, so the form sends none and the booking is for that city
   city: z.preprocess((v) => blankToUndefined(v) ?? homeCity.slug, z.enum(liveCitySlugs, { message: "Choose your city" })),
@@ -100,7 +100,7 @@ export const bookingSchema = z.object({
 export const contactSchema = z.object({
   type: z.literal("contact"),
   ...common,
-  message: trimmed(1000).min(5, "Tell us a little about what you need"),
+  message: trimmed(1000).min(5, FIELD_MESSAGES.message),
 });
 
 /** City slugs a quick site-visit request can name (live cities book a visit; "soon" cities join the waitlist). */

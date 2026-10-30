@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import type { NavMenu as Menu, NavNode } from "@/config/nav";
+import { headerSection, type NavMenu as Menu, type NavNode } from "@/config/nav";
 
 // One header dropdown (Services, Cities, Colours). The panel's links are always in the HTML
 // (hidden until opened), so search engines crawl every hub and city page from every page. Opens on
@@ -20,6 +20,8 @@ export function NavMenu({ menu }: { menu: Menu }) {
   // when hovering last opened the menu: a click that follows straight after keeps it open
   const hoverOpenedAt = useRef(0);
   const pathname = usePathname();
+  // the section this page belongs to is marked in the header
+  const current = headerSection(pathname ?? "/") === menu.label;
 
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
@@ -61,6 +63,7 @@ export function NavMenu({ menu }: { menu: Menu }) {
         type="button"
         aria-expanded={open}
         aria-controls={id}
+        aria-current={current ? "true" : undefined}
         onClick={() => {
           // the click decides: a pending hover can no longer flip the menu after it
           clearTimeout(hoverTimer.current);
@@ -69,7 +72,7 @@ export function NavMenu({ menu }: { menu: Menu }) {
           else setOpen((o) => !o);
           hoverOpenedAt.current = 0;
         }}
-        className="inline-flex min-h-11 items-center gap-1 text-ink transition hover:text-terracotta"
+        className={`${navItem} ${current ? navItemCurrent : ""}`}
       >
         {menu.label}
         <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`transition ${open ? "rotate-180" : ""}`}>
@@ -79,7 +82,7 @@ export function NavMenu({ menu }: { menu: Menu }) {
       <div
         id={id}
         hidden={!open}
-        className={`absolute left-1/2 top-full z-50 mt-2 w-max min-w-[260px] -translate-x-1/2 rounded-3xl border border-line bg-paper p-5 shadow-[0_24px_48px_-20px_rgba(36,37,34,0.35)] ${menu.tree ? "max-w-[min(760px,94vw)]" : "max-w-[min(560px,90vw)]"}`}
+        className={`nav-panel absolute left-1/2 top-full z-50 mt-2 w-max min-w-[260px] -translate-x-1/2 rounded-3xl border border-line bg-paper p-5 shadow-[0_24px_48px_-20px_rgba(36,37,34,0.35)] ${menu.tree ? "max-w-[min(760px,94vw)]" : "max-w-[min(560px,90vw)]"}`}
       >
         {menu.tree && <Cascade tree={menu.tree} close={() => setOpen(false)} />}
         <div className={`grid gap-6 ${menu.groups.length > 1 ? "sm:grid-cols-2" : ""} ${menu.groups.length > 2 ? "lg:grid-cols-3" : ""}`}>
@@ -104,6 +107,20 @@ export function NavMenu({ menu }: { menu: Menu }) {
         </Link>
       </div>
     </div>
+  );
+}
+
+/** A header item, and the look of the one for the section the visitor is in. */
+const navItem = "inline-flex min-h-11 items-center gap-1 text-ink transition hover:text-terracotta";
+const navItemCurrent = "text-terracotta underline decoration-2 underline-offset-[10px]";
+
+/** A plain header link (FAQ), marked when it is the page being viewed. */
+export function HeaderLink({ href, label }: { href: string; label: string }) {
+  const current = headerSection(usePathname() ?? "/") === label;
+  return (
+    <Link href={href} aria-current={current ? "page" : undefined} className={`${navItem} ${current ? navItemCurrent : ""}`}>
+      {label}
+    </Link>
   );
 }
 

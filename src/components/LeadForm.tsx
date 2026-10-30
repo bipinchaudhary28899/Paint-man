@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { liveCities } from "@/config/site";
 import { bookingDateRange } from "@/lib/leads/dates";
 import { estimatePaintArea, formatSqft } from "@/lib/leads/estimate";
+import { fieldProblem, isRequiredField, REQUIRED_FIELDS, requiredFieldErrors } from "@/lib/leads/field-checks";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
 import { readTracking } from "./UtmCapture";
 
@@ -66,7 +67,24 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
   // "Add more details" starts open only when the page prefilled the note, so the visitor sees it
   const [moreOpen, setMoreOpen] = useState(Boolean(defaultMessage));
   const live = liveCities();
+  /** Clears a field's error as soon as its value is fine, so the visitor sees the fix land. */
+  function clearFixed(target: EventTarget) {
+    const { name, value } = target as HTMLInputElement;
+    if (!errors[name] || !isRequiredField(name) || fieldProblem(name, value)) return;
+    const next = { ...errors };
+    delete next[name];
+    setErrors(next);
+    if (Object.keys(next).length === 0) setFormError("");
+  }
+  /** Leaving a required field the visitor has typed in checks it there and then (an empty one waits for submit). */
+  function onBlurCheck(e: React.FocusEvent<HTMLFormElement>) {
+    const { name, value } = e.target as EventTarget as HTMLInputElement;
+    if (!isRequiredField(name) || !REQUIRED_FIELDS[type].includes(name) || value.trim() === "") return;
+    const problem = fieldProblem(name, value);
+    if (problem && errors[name] !== problem) setErrors((prev) => ({ ...prev, [name]: problem }));
+  }
   function onJobChange(e: React.FormEvent<HTMLFormElement>) {
+    clearFixed(e.target);
     if (type !== "booking") return;
     const f = e.currentTarget;
     const get = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | HTMLSelectElement | null)?.value ?? "";
@@ -84,12 +102,19 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+    // the required fields are checked here first: no round trip to learn a PIN code is short
+    const missing = requiredFieldErrors(type, data);
+    if (Object.keys(missing).length > 0) {
+      setErrors(missing);
+      setFormError("Please check the highlighted fields.");
+      requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+      return;
+    }
     setSubmitting(true);
     setErrors({});
     setFormError("");
-
-    const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
@@ -116,24 +141,30 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
     errors[name] ? { "aria-invalid": true as const, "aria-describedby": `${name}-error` } : {};
 
   return (
-    <form onSubmit={onSubmit} onChange={onJobChange} noValidate className="space-y-3.5 tab:space-y-4 desk:space-y-5">
+    <form onSubmit={onSubmit} onChange={onJobChange} onBlur={onBlurCheck} noValidate aria-busy={submitting} className="space-y-3.5 tab:space-y-4 desk:space-y-5">
       <div className={PAIR}>
         <Field id="name" label="Your name" error={errors.name}>
           <input id="name" name="name" autoComplete="name" required maxLength={80} className={FIELD} {...aria("name")} />
         </Field>
         <Field id="phone" label="Mobile number" error={errors.phone}>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            required
-            placeholder="10-digit mobile"
-            maxLength={16}
-            className={FIELD}
-            {...aria("phone")}
-          />
+          {/* +91 sits inside the field, as Indian forms show it; the number itself is the 10 digits */}
+          <div className="relative">
+            <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 flex items-center border-r border-line pl-3 pr-2.5 text-[15px] font-medium text-muted tab:pl-3.5 desk:pl-4">
+              +91
+            </span>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel-national"
+              required
+              placeholder="10-digit mobile"
+              maxLength={16}
+              className={`${FIELD} !pl-[3.6rem] desk:!pl-[3.9rem]`}
+              {...aria("phone")}
+            />
+          </div>
         </Field>
       </div>
 
@@ -184,6 +215,7 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
               />
             </Field>
           </div>
+
           {live.length > 1 && (
             <Field id="city" label="City" error={errors.city}>
               <select id="city" name="city" required defaultValue="" className={FIELD} {...aria("city")}>
@@ -317,7 +349,8 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
         </p>
       )}
 
-      <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60 max-desk:min-h-[54px] max-desk:text-base desk:w-auto">
+      <button type="submit" disabled={submitting} className="btn-primary w-full max-desk:min-h-[54px] max-desk:text-base desk:w-auto">
+        {submitting && <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />}
         {submitting ? "Sending…" : type === "booking" ? "Book my inspection" : "Send message"}
       </button>
       {footnote}

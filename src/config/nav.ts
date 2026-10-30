@@ -18,6 +18,20 @@ export function menuLinks(menu: NavMenu): NavLink[] {
   return [...menu.groups.flatMap((g) => g.links), ...walk(menu.tree ?? [])];
 }
 
+/**
+ * The header entry for the section a page belongs to, so the header can mark where the visitor is:
+ * the colour tools under Colours, a city's pages (/services/<service>/<city>) under Cities, the
+ * other /services pages under Services, and the FAQ. Other pages (home, about, booking) have none.
+ */
+export function headerSection(pathname: string): "Services" | "Cities" | "Colours" | "FAQ" | undefined {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  if (/^\/(colours|palettes|shade-cards)(\/|$)/.test(path)) return "Colours";
+  if (path === "/faq") return "FAQ";
+  if (/^\/services\/[^/]+\/[^/]+$/.test(path)) return "Cities";
+  if (/^\/services(\/|$)/.test(path)) return "Services";
+  return undefined;
+}
+
 /** The brand shade cards (/shade-cards/<slug>): the major brands sold in India, the ones we supply. */
 export const shadeCardBrands = [
   { slug: "asian-paints", name: "Asian Paints" },
