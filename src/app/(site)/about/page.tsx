@@ -41,6 +41,10 @@ export default function AboutPage() {
             vetted painting team, arrange materials and check the work. You get one point of contact and one team
             responsible for the result.
           </p>
+          <p className="mt-4 text-lg leading-relaxed text-muted">
+            Hum naye nahi hain. We have been painting homes for {site.yearsPainting} years; what is new is that you can now book us
+            online.
+          </p>
         </div>
         <div className="relative aspect-[4/3]">
           <PhotoCrop image={images.workersTeam} shape="blob2" backdrop="#ffd84d" sizes="(min-width: 1024px) 50vw, 100vw" className="absolute inset-0" />

@@ -354,6 +354,7 @@ describe("header section for each page", () => {
     expect(headerSection("/colours")).toBe("Colours");
     expect(headerSection("/shade-cards/berger/blues")).toBe("Colours");
     expect(headerSection("/palettes")).toBe("Colours");
+    expect(headerSection("/gallery")).toBe("Colours");
     expect(headerSection("/faq")).toBe("FAQ");
     for (const p of ["/", "/about", "/book", "/contact", "/servicesx", "/colourful"]) expect(headerSection(p), p).toBeUndefined();
   });
@@ -364,5 +365,12 @@ describe("live city names in copy", () => {
     const { liveCityNames } = await import("@/config/site");
     expect(liveCityNames()).toBe("Agra, Mathura and Vrindavan");
     expect(liveCityNames("or")).toBe("Agra, Mathura or Vrindavan");
+  });
+});
+
+describe("years painting", () => {
+  it("is the owner's whole number of years, shown as is", () => {
+    expect(Number.isInteger(site.yearsPainting)).toBe(true);
+    expect(site.yearsPainting).toBeGreaterThan(0);
   });
 });

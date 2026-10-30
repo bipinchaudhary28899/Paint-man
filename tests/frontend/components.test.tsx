@@ -392,3 +392,24 @@ describe("LiveCityLinks", () => {
     expect(screen.getByRole("link", { name: "Vrindavan" })).toHaveClass("underline");
   });
 });
+
+describe("GalleryGrid", () => {
+  it("renders a group as a section with its own heading and anchor, and each photo with its alt, proportions and caption", async () => {
+    const { GalleryGrid } = await import("@/components/GalleryGrid");
+    const { galleryGroups } = await import("@/config/gallery");
+    const group = galleryGroups[0];
+    render(<GalleryGrid group={group} />);
+    const section = screen.getByRole("region", { name: group.title });
+    expect(within(section).getByRole("heading", { level: 2, name: group.title })).toHaveAttribute("id", `${group.id}-heading`);
+    const imgs = within(section).getAllByRole("img");
+    expect(imgs).toHaveLength(group.photos.length);
+    group.photos.forEach((p, i) => {
+      expect(imgs[i]).toHaveAttribute("alt", p.alt);
+      // the frame keeps the photo's proportions, so nothing shifts as it loads
+      expect(imgs[i]).toHaveAttribute("width", String(p.width));
+      expect(imgs[i]).toHaveAttribute("height", String(p.height));
+      expect(imgs[i]).not.toHaveAttribute("loading", "eager");
+      expect(within(section).getByText(p.caption).tagName).toBe("FIGCAPTION");
+    });
+  });
+});

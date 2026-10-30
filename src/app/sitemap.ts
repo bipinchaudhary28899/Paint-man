@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/colours",
     ...shadeCardPaths(),
     "/palettes",
+    "/gallery",
     "/book",
     "/about",
     "/faq",

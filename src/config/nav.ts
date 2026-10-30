@@ -25,7 +25,7 @@ export function menuLinks(menu: NavMenu): NavLink[] {
  */
 export function headerSection(pathname: string): "Services" | "Cities" | "Colours" | "FAQ" | undefined {
   const path = pathname.replace(/\/+$/, "") || "/";
-  if (/^\/(colours|palettes|shade-cards)(\/|$)/.test(path)) return "Colours";
+  if (/^\/(colours|palettes|shade-cards|gallery)(\/|$)/.test(path)) return "Colours";
   if (path === "/faq") return "FAQ";
   if (/^\/services\/[^/]+\/[^/]+$/.test(path)) return "Cities";
   if (/^\/services(\/|$)/.test(path)) return "Services";
@@ -84,6 +84,7 @@ export function navMenus(): NavMenu[] {
           links: [
             { href: "/colours", label: "Colour finder", note: "8,500+ shades by code, name or hex" },
             { href: "/palettes", label: "Colour combinations" },
+            { href: "/gallery", label: "Home painting ideas", note: "Photos of Indian homes" },
           ],
         },
         {
@@ -124,6 +125,7 @@ export function footerColumns(): { heading: string; links: NavLink[] }[] {
         { href: "/colours", label: "Colour finder" },
         ...shadeCardBrands.map((b) => ({ href: shadeCardHref(b.slug), label: `${b.name} shade card` })),
         { href: "/palettes", label: "Colour combinations" },
+        { href: "/gallery", label: "Home painting ideas" },
       ],
     },
     {

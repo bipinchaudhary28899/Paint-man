@@ -31,6 +31,9 @@ export const site = {
     locality: "Agra",
     postalCode: "", // TODO
   },
+  // The owner's figure (October 2026): years of painting homes before bookings came online.
+  // Shown as "6 saal" on the home page and the about page; raise it as the years go by.
+  yearsPainting: 6,
   hours: "Mo-Sa 09:00-19:00",
   hoursDisplay: "Monday to Saturday, 9 am to 7 pm",
 

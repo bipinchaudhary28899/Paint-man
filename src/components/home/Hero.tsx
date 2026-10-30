@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Tilt } from "@/components/Tilt";
 import { illustrations } from "@/config/images";
 import { LiveCityLinks } from "@/components/LiveCityLinks";
+import { site } from "@/config/site";
 import { HeroImage } from "./HeroImage";
 
 const facts = [["Payment", "Zero advance"], ["Estimate", "Full, before work starts"], ["Work", "Timed and documented"]] as const;
@@ -37,7 +38,8 @@ export function Hero() {
         {/* On wider tablets the intro keeps a readable measure (about 70 characters) beside the buttons. */}
         <p className="mt-4 text-base leading-[1.6] text-muted tab:mt-7 tab:max-w-[560px] tab:self-end tab:text-[17px] tab:leading-[1.65] desk:max-w-[500px] desk:text-lg desk:leading-[1.65]">
           Ek deewar ho ya poora ghar: a single wall, a door, windows and grills, or the whole house, just tell us what needs paint. We inspect, quote line by line,
-          bring genuine branded paint and a supervised crew, and hand back a spotless home. Now painting in <LiveCityLinks linkClassName="font-semibold text-ink underline" />.
+          bring genuine branded paint and a supervised crew, and hand back a spotless home.{" "}
+          <strong className="font-semibold text-ink">{site.yearsPainting} saal se gharon ko rang rahe hain, ab online bhi.</strong> Now painting in <LiveCityLinks linkClassName="font-semibold text-ink underline" />.
         </p>
         {/* Phones and tablets: the buttons follow the intro (side by side on phones, stacked beside the
             intro on tablets). Desktop: they move under the hero picture. One copy is display:none. */}

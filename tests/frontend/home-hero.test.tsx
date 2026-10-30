@@ -99,9 +99,11 @@ describe("HeroImage", () => {
   });
 });
 
-describe("Hero: cities", () => {
-  it("links every city we paint in", () => {
+describe("Hero: experience and cities", () => {
+  it("says how long we have been painting (from site.ts) and links every city we paint in", async () => {
+    const { site } = await import("@/config/site");
     render(<Hero />);
+    expect(screen.getByText(`${site.yearsPainting} saal se gharon ko rang rahe hain, ab online bhi.`)).toBeInTheDocument();
     for (const [name, slug] of [["Agra", "agra"], ["Mathura", "mathura"], ["Vrindavan", "vrindavan"]]) {
       expect(screen.getByRole("link", { name })).toHaveAttribute("href", `/services/house-painting/${slug}`);
     }
