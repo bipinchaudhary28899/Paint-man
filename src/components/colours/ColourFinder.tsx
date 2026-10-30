@@ -148,6 +148,8 @@ export function ColourFinder({
   const [page, setPage] = useState(0);
   const [pages, setPages] = useState(1);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+  // bumped by "Try again" after a failed load, which runs the first-page load once more
+  const [attempt, setAttempt] = useState(0);
   const [selected, setSelected] = useState<BrandShadeItem | null>(null);
   const showBrandGrid = !brand && !q.trim();
   // Phones: the large preview (PreviewSheet). Opening it pushes a history entry, so the phone's
@@ -257,7 +259,7 @@ export function ColourFinder({
       }
     }, q.trim() ? 250 : 0);
     return () => { live = false; clearTimeout(t); };
-  }, [showBrandGrid, fetchPage, q]);
+  }, [showBrandGrid, fetchPage, q, attempt]);
 
   // infinite scroll: the next page loads about a screen before the end of the list
   const loadingMore = useRef(false);
@@ -412,13 +414,18 @@ export function ColourFinder({
           <>
             <p className="mt-4 text-sm font-semibold text-muted md:mt-6" aria-live="polite">
               {state === "error"
-                ? "Brand shades are unavailable right now. Try again in a minute."
+                ? "Brand shades are unavailable right now. Check your connection and try again."
                 : state === "loading" && items.length === 0
                   ? "Loading shades…"
                   : total === 0
                     ? "No shade matches that. Try a code like 7982, a name, or a hex like #bbc8b2."
                     : `${total.toLocaleString("en-IN")} shade${total === 1 ? "" : "s"}${q ? ` for “${q}”` : ""}${family ? ` · ${cap(family)}` : ""}. Tap one to see it on the wall.`}
             </p>
+            {state === "error" && (
+              <button type="button" onClick={() => setAttempt((a) => a + 1)} className="btn-secondary mt-3">
+                Try again
+              </button>
+            )}
             <ul className="mt-3 grid grid-cols-4 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-4" aria-label="Brand shades">
               {items.map((s) => (
                 <li key={s.id}>
@@ -459,7 +466,7 @@ export function ColourFinder({
           ) : state === "error" ? (
             <>
               <p className="font-display text-2xl">Shades didn&apos;t load</p>
-              <p className="mt-2 text-sm text-muted">Try again in a minute. Every shade you tap shows on the room here.</p>
+              <p className="mt-2 text-sm text-muted">Use Try again beside the list. Every shade you tap shows on the room here.</p>
             </>
           ) : (
             <>

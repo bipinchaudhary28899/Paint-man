@@ -45,9 +45,9 @@ export function LoginForm() {
         <input id="password" name="password" type="password" autoComplete="current-password" required maxLength={200} className="field" />
       </div>
       {error && (
-        <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>
+        <p role="alert" className="rounded-lg bg-peach-wash p-3 text-sm font-semibold text-danger">{error}</p>
       )}
-      <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
+      <button type="submit" disabled={submitting} aria-busy={submitting} className="btn-primary w-full">
         {submitting ? "Signing in…" : "Sign in"}
       </button>
     </form>

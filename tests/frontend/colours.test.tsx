@@ -216,6 +216,20 @@ describe("ColourFinder: the brands", () => {
     await waitFor(() => expect(screen.getByText("Shades didn't load")).toBeInTheDocument());
   });
 
+  it("offers Try again after a failed load, and loads the shades on the second attempt", async () => {
+    const page = { data: [], meta: { total: 0, page: 1, pages: 1 } };
+    const fetchSpy = vi.spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue(new Response(JSON.stringify(page)));
+    const user = userEvent.setup();
+    render(<ColourFinder {...props} initialBrand="asian-paints" />);
+    await waitFor(() => expect(screen.getByText(/unavailable right now/)).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(screen.queryByText(/unavailable right now/)).toBeNull());
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
   it("puts each brand step in the history, so Back returns to the brand grid", async () => {
     servePages();
     const user = userEvent.setup();

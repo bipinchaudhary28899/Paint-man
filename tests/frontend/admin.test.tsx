@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { address, crew, filterLeads, jobSize, LeadsTable } from "@/components/admin/LeadsTable";
+import { address, crew, filterLeads, jobSize, leadsToCsv, LeadsTable, optionsOf, statusOf } from "@/components/admin/LeadsTable";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { SignOutButton } from "@/components/admin/SignOutButton";
 import { LEAD_COLUMNS, type LeadRecord } from "@/lib/leads/store";
@@ -127,10 +127,13 @@ describe("LeadsTable", () => {
 
   it("shows empty states", async () => {
     const { rerender } = render(<LeadsTable leads={[]} />);
-    expect(screen.getByText("No leads yet.")).toBeInTheDocument();
+    expect(screen.getByText(/^No leads yet\./)).toBeInTheDocument();
+    // nothing to clear and nothing to download when there are no leads at all
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Download CSV/ })).toBeNull();
     rerender(<LeadsTable leads={leads} />);
     await userEvent.setup().type(screen.getByLabelText("Search leads"), "zzz");
-    expect(screen.getByText("No leads match your search.")).toBeInTheDocument();
+    expect(screen.getByText("No leads match these filters.")).toBeInTheDocument();
   });
 
   it("renders submitted HTML as plain text (no script injection)", () => {
@@ -175,5 +178,81 @@ describe("job size in the leads table", () => {
     expect(screen.getByRole("columnheader", { name: "Est. area & crew" })).toBeInTheDocument();
     expect(screen.getByText("2 floors · 3 BHK")).toBeInTheDocument();
     expect(screen.getByText(/84 painter-days/)).toBeInTheDocument();
+  });
+});
+
+
+describe("LeadsTable: filters, clearing and the CSV download", () => {
+  const cityLeads = [
+    lead({ "Lead ID": "A1", Name: "Asha", Phone: "9876543210", Type: "booking", City: "Agra", Locality: "Kamla Nagar" }),
+    lead({ "Lead ID": "M1", Name: "Mohan", Phone: "9876500000", Type: "booking", City: "Mathura", Locality: "Krishna Nagar", Status: "Called" }),
+    lead({ "Lead ID": "V1", Name: "Vimla", Phone: "9876511111", Type: "booking", City: "Vrindavan", Locality: "Raman Reti", Status: "" }),
+  ];
+
+  it("offers city and status filters built from the leads, and filters by them", async () => {
+    expect(optionsOf(cityLeads, (l) => l.City)).toEqual(["Agra", "Mathura", "Vrindavan"]);
+    expect(optionsOf(cityLeads, statusOf)).toEqual(["Called", "New"]);
+    render(<LeadsTable leads={cityLeads} />);
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("City"), "Vrindavan");
+    expect(screen.getByText("1 shown")).toBeInTheDocument();
+    expect(screen.getByText("Vimla")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("City"), "");
+    await user.selectOptions(screen.getByLabelText("Status"), "Called");
+    expect(screen.getByText("1 shown")).toBeInTheDocument();
+    expect(screen.getByText("Mohan")).toBeInTheDocument();
+    expect(filterLeads(cityLeads, "", "all", { city: "Agra", status: "New" }).map((l) => l.Name)).toEqual(["Asha"]);
+  });
+
+  it("hides a filter that would have only one choice", () => {
+    render(<LeadsTable leads={[cityLeads[0]]} />);
+    expect(screen.queryByLabelText("City")).toBeNull();
+    expect(screen.queryByLabelText("Status")).toBeNull();
+  });
+
+  it("clears every filter at once, from the toolbar or from the empty state", async () => {
+    render(<LeadsTable leads={cityLeads} />);
+    const user = userEvent.setup();
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+    await user.selectOptions(screen.getByLabelText("City"), "Mathura");
+    await user.type(screen.getByLabelText("Search leads"), "nobody");
+    expect(screen.getByText("No leads match these filters.")).toBeInTheDocument();
+    const buttons = screen.getAllByRole("button", { name: "Clear filters" });
+    expect(buttons).toHaveLength(2);
+    await user.click(buttons[1]);
+    expect(screen.getByText("3 shown")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search leads")).toHaveValue("");
+    expect(screen.getByLabelText("City")).toHaveValue("");
+    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+  });
+
+  it("writes the leads as CSV with quoting, and never lets a cell run as a spreadsheet formula", () => {
+    const csv = leadsToCsv([lead({ Name: "=HYPERLINK(\"x\")", Phone: "+919876543210", Message: "Two rooms, \"urgent\"\nplease", Type: "contact" })]);
+    const [header, row] = csv.split("\r\n");
+    expect(header).toBe("Received,Name,Phone,Type,Address,Property,Service,Job size,Preferred date,Message,Source,Status,Lead ID");
+    expect(row).toContain(`"'=HYPERLINK(""x"")"`);
+    expect(row).toContain("'+919876543210");
+    expect(csv).toContain(`"Two rooms, ""urgent""\nplease"`);
+    expect(row).toContain(",Direct,New,");
+  });
+
+  it("downloads only the leads being shown, as a dated CSV file", async () => {
+    const createObjectURL = vi.fn(() => "blob:leads");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL, revokeObjectURL }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(<LeadsTable leads={cityLeads} />);
+    const user = userEvent.setup();
+    await user.selectOptions(screen.getByLabelText("City"), "Agra");
+    await user.click(screen.getByRole("button", { name: "Download CSV (1)" }));
+    expect(click).toHaveBeenCalledTimes(1);
+    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0];
+    const text = await blob.text();
+    expect(text).toContain("Asha");
+    expect(text).not.toContain("Mohan");
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toMatch(/^paint-saathi-leads-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:leads");
+    click.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

@@ -27,19 +27,80 @@ export function address(l: LeadRecord): string {
   return l["PIN Code"] ? `${place} ${l["PIN Code"]}` : place;
 }
 
-export function filterLeads(leads: LeadRecord[], query: string, type: Filter): LeadRecord[] {
+/** A lead's status, "New" until someone sets one in the sheet. */
+export const statusOf = (l: LeadRecord) => l.Status || "New";
+
+/** The distinct, non-empty values of a column across the leads, sorted: the options of a filter. */
+export function optionsOf(leads: LeadRecord[], pick: (l: LeadRecord) => string): string[] {
+  return [...new Set(leads.map(pick).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+export function filterLeads(leads: LeadRecord[], query: string, type: Filter, more: { city?: string; status?: string } = {}): LeadRecord[] {
   const q = query.trim().toLowerCase();
   return leads.filter((l) => {
     if (type !== "all" && l.Type !== type) return false;
+    if (more.city && l.City !== more.city) return false;
+    if (more.status && statusOf(l) !== more.status) return false;
     if (!q) return true;
     return [l.Name, l.Phone, address(l), l.Service, l.Message, l["Lead ID"]].some((v) => v.toLowerCase().includes(q));
   });
 }
 
+/** The columns of the CSV download, in order, with how each is read from a lead. */
+const CSV_COLUMNS: [string, (l: LeadRecord) => string][] = [
+  ["Received", (l) => l["Submitted At (IST)"]],
+  ["Name", (l) => l.Name],
+  ["Phone", (l) => l.Phone],
+  ["Type", (l) => l.Type],
+  ["Address", address],
+  ["Property", (l) => l["Property Type"]],
+  ["Service", (l) => l.Service],
+  ["Job size", jobSize],
+  ["Preferred date", (l) => l["Preferred Inspection Date"]],
+  ["Message", (l) => l.Message],
+  ["Source", (l) => [l["UTM Source"], l["UTM Campaign"]].filter(Boolean).join(" / ") || "Direct"],
+  ["Status", statusOf],
+  ["Lead ID", (l) => l["Lead ID"]],
+];
+
+/**
+ * The leads as CSV text: quoted where needed, and with any cell that starts like a formula
+ * (=, +, -, @) prefixed with ' so a spreadsheet shows it as text instead of running it.
+ */
+export function leadsToCsv(leads: LeadRecord[]): string {
+  const cell = (v: string) => {
+    const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  };
+  const lines = [CSV_COLUMNS.map(([h]) => h), ...leads.map((l) => CSV_COLUMNS.map(([, get]) => get(l)))];
+  return lines.map((row) => row.map(cell).join(",")).join("\r\n");
+}
+
+/** Saves the leads being shown as a CSV file (built in the browser from what is already on screen). */
+function downloadCsv(leads: LeadRecord[]) {
+  const url = URL.createObjectURL(new Blob([`\ufeff${leadsToCsv(leads)}`], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `paint-saathi-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
   const [query, setQuery] = useState("");
   const [type, setType] = useState<Filter>("all");
-  const shown = useMemo(() => filterLeads(leads, query, type), [leads, query, type]);
+  const [city, setCity] = useState("");
+  const [status, setStatus] = useState("");
+  const cityOptions = useMemo(() => optionsOf(leads, (l) => l.City), [leads]);
+  const statusOptions = useMemo(() => optionsOf(leads, statusOf), [leads]);
+  const shown = useMemo(() => filterLeads(leads, query, type, { city, status }), [leads, query, type, city, status]);
+  const filtered = query.trim() !== "" || type !== "all" || city !== "" || status !== "";
+  const clearFilters = () => {
+    setQuery("");
+    setType("all");
+    setCity("");
+    setStatus("");
+  };
 
   const stats = [
     { label: "Total leads", value: leads.length, tint: "bg-cream-wash" },
@@ -77,17 +138,55 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
           <option value="waitlist">Waitlist (new cities)</option>
           <option value="contact">Messages</option>
         </select>
+        {cityOptions.length > 1 && (
+          <>
+            <label htmlFor="lead-city" className="sr-only">City</label>
+            <select id="lead-city" value={city} onChange={(e) => setCity(e.target.value)} className="field w-auto">
+              <option value="">All cities</option>
+              {cityOptions.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </>
+        )}
+        {statusOptions.length > 1 && (
+          <>
+            <label htmlFor="lead-status" className="sr-only">Status</label>
+            <select id="lead-status" value={status} onChange={(e) => setStatus(e.target.value)} className="field w-auto">
+              <option value="">Any status</option>
+              {statusOptions.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </>
+        )}
         <p className="text-sm text-muted" aria-live="polite">{shown.length} shown</p>
+        {filtered && (
+          <button type="button" onClick={clearFilters} className="btn-secondary !min-h-11 !px-4 text-sm">
+            Clear filters
+          </button>
+        )}
+        {shown.length > 0 && (
+          <button type="button" onClick={() => downloadCsv(shown)} className="btn-secondary !min-h-11 !px-4 text-sm sm:ml-auto">
+            Download CSV ({shown.length})
+          </button>
+        )}
       </div>
 
       {shown.length === 0 ? (
-        <p className="mt-10 rounded-2xl border-2 border-dashed border-ink/30 p-10 text-center text-muted">
-          {leads.length === 0 ? "No leads yet." : "No leads match your search."}
-        </p>
+        <div className="mt-10 rounded-2xl border border-dashed border-line-strong p-10 text-center text-muted">
+          <p>{leads.length === 0 ? "No leads yet. Bookings from the website appear here as they arrive." : "No leads match these filters."}</p>
+          {leads.length > 0 && (
+            <button type="button" onClick={clearFilters} className="btn-secondary mt-4 !min-h-11 text-sm">
+              Clear filters
+            </button>
+          )}
+        </div>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-line bg-paper">
+        // tall lists scroll inside the frame, so the column headings stay in view
+        <div className="mt-6 max-h-[70vh] overflow-auto rounded-2xl border border-line bg-paper">
           <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="bg-ink text-on-ink">
+            <thead className="sticky top-0 z-10 bg-ink text-on-ink">
               <tr>
                 {["Received", "Name", "Phone", "Type", "Address", "Property", "Service", "Job size", "Est. area & crew", "Preferred date", "Message", "Source", "Status"].map((h) => (
                   <th key={h} scope="col" className="px-4 py-3 font-semibold">{h}</th>
@@ -112,7 +211,7 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
                   <td className="max-w-xs px-4 py-3 text-muted">{l.Message}</td>
                   <td className="px-4 py-3 text-muted">{[l["UTM Source"], l["UTM Campaign"]].filter(Boolean).join(" / ") || "Direct"}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-cream-wash px-2.5 py-1 text-xs font-bold">{l.Status || "New"}</span>
+                    <span className="rounded-full bg-cream-wash px-2.5 py-1 text-xs font-bold">{statusOf(l)}</span>
                   </td>
                 </tr>
               ))}
