@@ -15,7 +15,7 @@ const promise = [
 export function PaintSaathiWay() {
   return (
     <section className="container-page relative z-[1] py-14 tab:grid tab:grid-cols-[290px_minmax(0,1fr)] tab:items-stretch tab:gap-9 tab:py-[88px] desk:flex desk:flex-wrap desk:items-center desk:gap-[72px] desk:py-[140px]">
-      <div className="frame-shadow relative h-[220px] min-w-0 overflow-hidden rounded-[22px] tab:h-auto tab:min-h-[560px] tab:rounded-3xl desk:h-[680px] desk:min-h-0 desk:flex-[1_1_380px]">
+      <div className="frame-shadow relative h-[220px] min-w-0 overflow-hidden tab:h-auto tab:min-h-[560px] desk:h-[680px] desk:min-h-0 desk:flex-[1_1_380px]">
         <Image
           src={images.uniformSkimming.src}
           alt={images.uniformSkimming.alt}

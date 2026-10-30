@@ -19,7 +19,7 @@ export function GalleryGrid({ group }: { group: GalleryGroup }) {
               width={p.width}
               height={p.height}
               sizes="(min-width: 1080px) 33vw, (min-width: 721px) 50vw, 100vw"
-              className="h-auto w-full rounded-[20px] bg-sand"
+              className="h-auto w-full bg-sand"
             />
             <figcaption className="mt-2 text-sm text-muted">{p.caption}</figcaption>
           </figure>

@@ -55,7 +55,7 @@ export function ProcessSection() {
         <div className="mt-7 grid grid-cols-2 gap-2.5 tab:mt-12 tab:gap-4 desk:mt-24 desk:gap-6">
           {photos.map((p) => (
             <figure key={p.caption}>
-              <div className="relative h-[210px] overflow-hidden rounded-[16px] tab:h-[300px] tab:rounded-[20px] desk:h-[420px]">
+              <div className="relative h-[210px] overflow-hidden tab:h-[300px] desk:h-[420px]">
                 <Image src={p.image.src} alt={p.image.alt} fill sizes="50vw" className={`object-cover ${p.pos}`} />
               </div>
               <figcaption className="mt-2 text-[12px] leading-[1.4] text-on-sage tab:mt-3 tab:text-[13px] tab:leading-normal desk:mt-3.5">

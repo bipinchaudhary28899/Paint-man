@@ -5,29 +5,73 @@ import { FaqList } from "@/components/FaqList";
 import { AreaLinks } from "@/components/home/AreaLinks";
 import { AreasSection } from "@/components/home/AreasSection";
 import { FaqSection } from "@/components/home/FaqSection";
-import { Finishes } from "@/components/home/Finishes";
+import { collageTiles, Finishes } from "@/components/home/Finishes";
 import { images } from "@/config/images";
-import { areaSlug, generalFaqs, homeCity, site } from "@/config/site";
+import { areaSlug, generalFaqs, homeCity } from "@/config/site";
+
+/** The grid area a tile takes in one layout: phones read the plain classes, tablets up the `tab:` ones over them. */
+function area(place: string, layout: "phone" | "tab") {
+  const classes = place.split(" ");
+  const pick = (name: string, fallback: number) => {
+    const read = (prefix: string) => classes.find((c) => c.startsWith(`${prefix}${name}-`))?.slice(prefix.length + name.length + 1);
+    return Number((layout === "tab" ? read("tab:") : undefined) ?? read("") ?? fallback);
+  };
+  const shown = layout === "tab" ? classes.includes("tab:block") || !classes.includes("hidden") : !classes.includes("hidden");
+  return { shown, col: pick("col-start", NaN), cols: pick("col-span", 1), row: pick("row-start", NaN), rows: pick("row-span", 1) };
+}
 
 describe("Finishes (home)", () => {
-  it("has one h2 with one italic accent and the four example finishes with their captions", () => {
+  it("has one h2 with one italic accent and says the photos are examples, not our jobs", () => {
     render(<Finishes />);
     const heading = screen.getByRole("heading", { level: 2, name: "The finish we work to." });
     expect(heading.querySelectorAll("em")).toHaveLength(1);
-    expect(screen.getByText(new RegExp(`Photos of our own ${site.city} jobs`))).toBeInTheDocument();
-    for (const caption of ["Exterior · white, blue trim", "Living room · warm white", "Bedroom · warm ochre", "Living room · wood accent"]) {
-      expect(screen.getByText(caption).tagName).toBe("FIGCAPTION");
-    }
+    expect(screen.getByText(/example photos of painting across India\. Photos of our own jobs are added/)).toBeInTheDocument();
   });
 
-  it("puts the photos in a keyboard-scrollable, labelled swipe region with descriptive alt text", () => {
+  it("lists the collage photos, painting in India, each with its descriptive alt", () => {
     render(<Finishes />);
-    const region = screen.getByRole("region", { name: "Example finishes" });
-    expect(region).toHaveAttribute("tabindex", "0");
-    expect(region).toHaveClass("swipe");
-    const photos = within(region).getAllByRole("img");
-    expect(photos.map((p) => p.getAttribute("alt"))).toEqual([images.houseExterior.alt, images.livingMoody.alt, images.bedroom.alt, images.livingRoom.alt]);
-    expect(within(region).getAllByRole("figure")).toHaveLength(4);
+    const list = screen.getByRole("list", { name: "Example photos of painting in India" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(collageTiles.length);
+    const alts = within(list).getAllByRole("img").map((p) => p.getAttribute("alt"));
+    expect(alts).toEqual(collageTiles.flatMap((t) => t.pieces.map((p) => p.image.alt)));
+    expect(new Set(alts).size).toBe(alts.length);
+    expect(alts).toContain(images.uniformSpraying.alt);
+  });
+
+  it("cuts the photos into shapes: one-corner, triangles, a disc and its bite, a leaf, a quarter circle, an arch", () => {
+    const { container } = render(<Finishes />);
+    for (const shape of ["shape-tri-high", "shape-tri-low", "shape-disc", "shape-bite", "rounded-t-full"]) {
+      expect(container.querySelectorAll(`.collage-piece.${shape}`), shape).toHaveLength(1);
+    }
+    expect(container.querySelectorAll(".collage-piece")).toHaveLength(collageTiles.flatMap((t) => t.pieces).length);
+  });
+
+  it("gives every piece its place in the hover wave, left to right", () => {
+    const { container } = render(<Finishes />);
+    const tiles = [...container.querySelectorAll<HTMLElement>(".collage > li")];
+    tiles.forEach((li, i) => expect(li.style.getPropertyValue("--wave")).toBe(String(collageTiles[i].wave)));
+    // the two pieces of a pair rise one after the other
+    const pair = collageTiles.find((t) => t.pieces.length === 2)!;
+    expect(pair.pieces[0].wave).toBeLessThan(pair.pieces[1].wave!);
+  });
+
+  it.each([
+    ["phone", 2, 5],
+    ["tab", 6, 3],
+  ] as const)("fills its %s grid (%i by %i) exactly, with no gaps or overlaps", (layout, cols, rows) => {
+    const taken = new Map<string, number>();
+    for (const [i, t] of collageTiles.entries()) {
+      const a = area(t.place, layout);
+      if (!a.shown) continue;
+      for (let c = a.col; c < a.col + a.cols; c++) {
+        for (let r = a.row; r < a.row + a.rows; r++) {
+          expect(c >= 1 && c <= cols && r >= 1 && r <= rows, `tile ${i} at ${c},${r}`).toBe(true);
+          expect(taken.has(`${c},${r}`), `tile ${i} overlaps at ${c},${r}`).toBe(false);
+          taken.set(`${c},${r}`, i);
+        }
+      }
+    }
+    expect(taken.size).toBe(cols * rows);
   });
 });
 

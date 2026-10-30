@@ -176,6 +176,16 @@
 @keyframes wobble {
   to { border-radius: 45% 55% 40% 60% / 60% 45% 55% 40%; }
 }
+/* The home collage: a swell that passes through each piece in turn, and the tiles rising in */
+@keyframes collage-wave {
+  0%, 100% { translate: 0 0; }
+  32% { translate: 0 -10px; }
+  64% { translate: 0 4px; }
+}
+@keyframes collage-in {
+  from { opacity: 0; translate: 0 40px; }
+  to { opacity: 1; translate: 0 0; }
+}
 
 html {
   scroll-behavior: smooth;
@@ -616,6 +626,36 @@ select.field {
 }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .card-hover:hover { transform: translateY(-4px); }
+}
+
+/* Home collage (Finishes): photos cut into shapes that together fill one sharp rectangle, all one
+   gap apart. --gap is the grid gap; --dx shifts each triangle's diagonal sideways so the two
+   triangles of a 2:1 band sit one gap apart too (2 × dx × sin 26° = gap). */
+.collage { --gap: 8px; --dx: calc(var(--gap) * 1.14); gap: var(--gap); }
+@media (min-width: 45.0625rem) { .collage { --gap: 10px; } }
+@media (min-width: 67.5rem) { .collage { --gap: 12px; } }
+.collage-piece { position: absolute; inset: 0; overflow: hidden; }
+.shape-tri-high { clip-path: polygon(var(--dx) 0, calc(100% + var(--dx)) 0, calc(100% + var(--dx)) 100%); }
+.shape-tri-low { clip-path: polygon(calc(-1 * var(--dx)) 0, calc(100% - var(--dx)) 100%, calc(-1 * var(--dx)) 100%); }
+/* A quarter disc centred on the square's bottom-left corner, one gap short of the bite around it */
+.shape-disc { inset: var(--gap) var(--gap) 0 0; border-top-right-radius: 100%; }
+.shape-bite {
+  -webkit-mask-image: radial-gradient(100% 100% at 0 100%, #0000 calc(100% - 1px), #000 100%);
+  mask-image: radial-gradient(100% 100% at 0 100%, #0000 calc(100% - 1px), #000 100%);
+}
+/* Scrolling in, the tiles rise in the wave's order; hovering, a swell runs across the pieces left to
+   right and the photo under the pointer leans in. Transforms and opacity only. */
+@supports (animation-timeline: view()) {
+  .collage > li {
+    animation: collage-in linear both;
+    animation-timeline: view();
+    animation-range: cover calc(var(--wave) * 2%) cover calc(20% + var(--wave) * 2%);
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .collage-piece img { transition: scale 700ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .collage-piece:hover img { scale: 1.07; }
+  .collage:hover .collage-piece { animation: collage-wave 1s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--wave) * 90ms) both; }
 }
 
 /* Header dropdown: drops in and fades up when it opens (it is display:none while hidden, so

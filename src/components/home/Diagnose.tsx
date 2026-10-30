@@ -13,7 +13,7 @@ const diagnostics = ["Moisture reading", "Crack mapping", "Old-paint adhesion", 
 export function Diagnose() {
   return (
     <section aria-label="We diagnose first" className="relative z-[1] mt-14 px-5 tab:mt-[88px] tab:px-8 desk:mt-[120px]">
-      <div className="relative mx-auto h-[620px] max-w-[1200px] overflow-hidden rounded-[24px] bg-sand tab:h-[600px] tab:rounded-[28px] desk:h-[760px]">
+      <div className="relative mx-auto h-[620px] max-w-[1200px] overflow-hidden bg-sand tab:h-[600px] desk:h-[760px]">
         <Image
           src={images.weatheredWall.src}
           alt={images.weatheredWall.alt}

@@ -134,7 +134,7 @@ export function PinnedReveal() {
           {/* The room: on phones it fills what is left of the panel (pinned under the 73px header, its
               bottom padding clearing the bottom nav) after the heading and the stage strip, so the panel
               always fits and the gaps around it stay fixed; 7:8 from tablets up. The wall mask is cover-cropped like the photo, so the two stay aligned. */}
-          <div className="frame-shadow scene relative order-2 mt-4 min-h-[180px] w-full min-w-0 flex-1 overflow-hidden tab:flex-none rounded-[22px] bg-[#d9d2c5] tab:order-none tab:mt-0 tab:aspect-[7/8] tab:h-auto tab:rounded-3xl desk:max-w-[560px] desk:flex-[1_1_440px]">
+          <div className="frame-shadow scene relative order-2 mt-4 min-h-[180px] w-full min-w-0 flex-1 overflow-hidden tab:flex-none bg-[#d9d2c5] tab:order-none tab:mt-0 tab:aspect-[7/8] tab:h-auto desk:max-w-[560px] desk:flex-[1_1_440px]">
             <Image src={photo.src} alt={`Living room with the walls being painted ${wallShade.name}`} fill sizes="(min-width: 1080px) 560px, (min-width: 721px) 360px, 100vw" className="object-cover" />
             <div aria-hidden className="pin-before absolute inset-0" style={js ? { clipPath: `inset(0 0 ${js.fill}% 0)` } : undefined}>
               <span className="tint" style={{ background: putty, ...maskStyle }} />

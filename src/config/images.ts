@@ -26,6 +26,16 @@ export const images = {
   uniformSkimming: { src: "/photos/painter-uniform-skimming.jpg", alt: "Painter in a white Paint Saathi uniform, seen from behind, smoothing a wall with a long trowel" },
   uniformCeiling: { src: "/photos/painter-uniform-ceiling.jpg", alt: "Painter in a white Paint Saathi uniform rolling paint along a ceiling edge beside a taped window" },
   uniformSpraying: { src: "/photos/painter-uniform-spraying.jpg", alt: "Painter in a white Paint Saathi uniform spraying primer onto a bare wall in an unfinished room" },
+  // Painting in India, for the home page collage (Finishes): painted Indian walls and doors, the
+  // tools and a shade card. No painter without the uniform appears in them.
+  blueHouseDoor: { src: pexels("16744860"), alt: "Blue-washed house front with a green wooden door in a red frame above worn stone steps" },
+  twoPaintedDoors: { src: pexels("31050817"), alt: "Two old doors painted lavender and deep blue in carved cream archways on a weathered wall" },
+  rollerOnLadder: { src: pexels("5798984"), alt: "Paint roller resting on a stepladder in front of a wall half covered in terracotta paint" },
+  redHouseWall: { src: pexels("39308720"), alt: "Red house wall with a blue door, a small yellow shrine and a green jali window under a tiled roof" },
+  brushesAndRoller: { src: pexels("5798971"), alt: "Two brushes and a roller loaded with terracotta paint, propped against a wall of the same colour" },
+  shadeCardFan: { src: pexels("6474454"), alt: "Hands fanning out a shade card of paint colour swatches against a grey wall" },
+  turquoiseHouse: { src: pexels("5952254"), alt: "Turquoise house with an outdoor staircase and clothes drying on a line across its courtyard" },
+  redYellowDoor: { src: pexels("37019507"), alt: "Red and yellow double door with brass medallions set in a bright turquoise wall" },
 } as const;
 
 export type SiteImage = (typeof images)[keyof typeof images];
