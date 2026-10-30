@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Paint Saathi",
+    "slug": "paint-saathi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "../public/brand/05-app-icon/app-icon-light-1024.png",
+    "scheme": "paintsaathi",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
+    "backgroundColor": "#f8f5ef",
+    "ios": {
+      "bundleIdentifier": "in.paintsaathi.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "in.paintsaathi.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#f8f5ef",
+        "foregroundImage": "../public/brand/05-app-icon/app-icon-light-1024.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f8f5ef",
+          "image": "../public/brand/04-icon/paintsaathi-icon-color-512.png",
+          "imageWidth": 96
+        }
+      ]
+    ],
+    "experiments": {
+      "reactCompiler": true
+    }
+  }
+}
