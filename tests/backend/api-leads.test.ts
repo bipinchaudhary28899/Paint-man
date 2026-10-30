@@ -16,6 +16,7 @@ const valid = {
   address: "12, Rose Villa, Nehru Road",
   locality: "Kamla Nagar",
   pincode: "282005",
+  city: "agra",
   propertyType: "Apartment / Flat",
   service: "Interior Painting",
   floors: "2",

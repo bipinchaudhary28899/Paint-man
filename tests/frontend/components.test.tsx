@@ -382,3 +382,13 @@ describe("ErrorNotice (a page that broke)", () => {
     expect(screen.getByRole("link", { name: "Book a site visit" })).toHaveAttribute("href", "/book");
   });
 });
+
+describe("LiveCityLinks", () => {
+  it("names every city we paint in, each linking to its page, joined the way a sentence would", async () => {
+    const { LiveCityLinks } = await import("@/components/LiveCityLinks");
+    const { container } = render(<p><LiveCityLinks linkClassName="underline" conjunction="or" /></p>);
+    expect(container.textContent).toBe("Agra, Mathura or Vrindavan");
+    expect(screen.getByRole("link", { name: "Mathura" })).toHaveAttribute("href", "/services/house-painting/mathura");
+    expect(screen.getByRole("link", { name: "Vrindavan" })).toHaveClass("underline");
+  });
+});

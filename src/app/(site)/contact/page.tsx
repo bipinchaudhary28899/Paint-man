@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero } from "@/components/PageHero";
-import { services, site } from "@/config/site";
+import { cityPath, liveCities, liveCityNames, servicePath, services, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -95,7 +95,7 @@ export default function ContactPage() {
             From first call to an itemised <em>quote</em>
           </h2>
           <p className="mt-4 max-w-md leading-[1.65] text-muted">
-            The same steps for a single bedroom or a whole house, anywhere we work in {site.city}.
+            The same steps for a single bedroom or a whole house, anywhere we work in {liveCityNames()}.
           </p>
         </div>
         <ol className="rule-list flex flex-col">
@@ -111,19 +111,24 @@ export default function ContactPage() {
         </ol>
       </section>
 
-      <section className="container-page mt-24 grid gap-10 md:grid-cols-2" aria-label={`Where we work and what we paint in ${site.city}`}>
+      <section className="container-page mt-24 grid gap-10 md:grid-cols-2" aria-label={`Where we work and what we paint in ${liveCityNames()}`}>
         <div className="card p-7 md:p-9">
           <h2 className="text-2xl md:text-3xl">Localities we cover</h2>
-          <p className="mt-3 leading-[1.65] text-muted">{site.areas.join(" · ")}</p>
+          {liveCities().map((c) => (
+            <div key={c.slug} className="mt-4">
+              <h3 className="font-sans text-sm font-semibold">{c.name}</h3>
+              <p className="mt-1 leading-[1.65] text-muted">{c.areas.join(" · ")}</p>
+              <Link href={`${cityPath(c)}#localities`} className="link-arrow min-h-11">Areas we serve in {c.name} <span aria-hidden>→</span></Link>
+            </div>
+          ))}
           <p className="mt-3 text-sm text-muted">Not on the list? Ask anyway. We&apos;ll tell you honestly whether we can supervise your job.</p>
-          <Link href="/services/house-painting/agra#localities" className="link-arrow mt-4 min-h-11">Areas we serve in {site.city} <span aria-hidden>→</span></Link>
         </div>
         <div className="card p-7 md:p-9">
           <h2 className="text-2xl md:text-3xl">What we paint</h2>
           <ul className="mt-3">
             {services.map((s) => (
               <li key={s.slug}>
-                <Link href={`/services/${s.slug}/agra`} className="link-arrow min-h-11">{s.name} in {site.city} <span aria-hidden>→</span></Link>
+                <Link href={servicePath(s)} className="link-arrow min-h-11">{s.name} <span aria-hidden>→</span></Link>
               </li>
             ))}
           </ul>

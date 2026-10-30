@@ -7,6 +7,7 @@ import { illustrations } from "@/config/images";
 import { FaqList } from "@/components/FaqList";
 import { Promises } from "@/components/Promises";
 import { JsonLd } from "@/components/JsonLd";
+import { LiveCityLinks } from "@/components/LiveCityLinks";
 import { bookingFaqs, bookingSteps, services, site } from "@/config/site";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
@@ -104,7 +105,7 @@ export default function BookPage() {
             </h2>
             <p className="mt-4 text-muted">
               More answers on the <Link href="/faq" className="font-bold text-ink underline">painting FAQ</Link>, or see the{" "}
-              <Link href="/services/house-painting/agra#localities" className="font-bold text-ink underline">areas we serve in {site.city}</Link>.
+              areas we serve in <LiveCityLinks linkClassName="font-bold text-ink underline" />.
             </p>
           </div>
           <FaqList faqs={bookingFaqs} />

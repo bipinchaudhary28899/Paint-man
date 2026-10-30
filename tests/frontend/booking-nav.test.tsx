@@ -135,8 +135,9 @@ describe("NavMenu (header dropdowns)", () => {
   it("groups the cities by region, marks the ones coming soon and gives only live cities localities", () => {
     const cities = navMenus().find((m) => m.label === "Cities")!;
     expect(cities.tree!.map((r) => r.label)).toEqual(["Uttar Pradesh", "Delhi NCR", "Karnataka"]);
-    expect(cities.tree![0].children!.map((c) => c.label)).toEqual(["Agra"]);
+    expect(cities.tree![0].children!.map((c) => c.label)).toEqual(["Agra", "Mathura", "Vrindavan"]);
     expect(cities.tree![0].children![0].children!.map((l) => l.label)).toEqual([...site.areas]);
+    for (const c of cities.tree![0].children!) expect(c.children!.length, c.label).toBeGreaterThan(0);
     expect(cities.tree![2].children![0].children).toEqual([]);
     const links = menuLinks(cities);
     expect(links.find((l) => l.href === "/services/house-painting/agra")?.note).toBeUndefined();

@@ -8,6 +8,7 @@ const booking = {
   address: "12, Rose Villa, Nehru Road",
   locality: "Kamla Nagar",
   pincode: "282005",
+  city: "agra",
   propertyType: "Apartment / Flat",
   service: "Interior Painting",
   floors: "1",
@@ -68,11 +69,12 @@ describe("lead schema: bookings", () => {
 
   it("requires name, mobile and the full address, and nothing about the job", () => {
     const fields = errorFields({ type: "booking" });
-    expect(fields.sort()).toEqual(["address", "locality", "name", "phone", "pincode"]);
+    // we paint in more than one city, so the city is required too
+    expect(fields.sort()).toEqual(["address", "city", "locality", "name", "phone", "pincode"]);
     // a single wall or a door books with just the contact details and the address
-    const minimal = { type: "booking", name: "Asha", phone: "9876543210", address: "12 Nehru Road", locality: "Kamla Nagar", pincode: "282005" };
+    const minimal = { type: "booking", name: "Asha", phone: "9876543210", address: "12 Nehru Road", locality: "Raman Reti", pincode: "281121", city: "vrindavan" };
     const r = leadSchema.parse(minimal) as Record<string, unknown>;
-    expect(r.city).toBe("agra");
+    expect(r.city).toBe("vrindavan");
     for (const k of ["service", "propertyType", "floors", "homeSize"]) expect(r[k], k).toBeUndefined();
     const blanks = leadSchema.parse({ ...minimal, service: "", propertyType: "" }) as Record<string, unknown>;
     expect([blanks.service, blanks.propertyType]).toEqual([undefined, undefined]);
@@ -84,7 +86,9 @@ describe("lead schema: bookings", () => {
     expect(errorFields({ ...booking, pincode: 282005 })).toEqual(["pincode"]);
     expect(errorFields({ ...booking, address: "12" })).toEqual(["address"]);
     expect(leadSchema.parse({ ...booking, city: "agra" })).toMatchObject({ city: "agra" });
-    expect(leadSchema.parse({ ...booking, city: "" })).toMatchObject({ city: "agra" });
+    // a blank city is never filed under Agra while we paint in more than one city
+    expect(errorFields({ ...booking, city: "" })).toEqual(["city"]);
+    expect(leadSchema.parse({ ...booking, city: "mathura" })).toMatchObject({ city: "mathura" });
     // only cities we paint in today
     expect(errorFields({ ...booking, city: "bangalore" })).toEqual(["city"]);
   });

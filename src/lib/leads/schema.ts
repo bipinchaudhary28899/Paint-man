@@ -77,8 +77,12 @@ export const bookingSchema = z.object({
     (v) => (typeof v === "string" ? v.replace(/\s/g, "") : v),
     z.string({ message: FIELD_MESSAGES.pincode }).regex(PINCODE_PATTERN, FIELD_MESSAGES.pincode),
   ),
-  // one live city today, so the form sends none and the booking is for that city
-  city: z.preprocess((v) => blankToUndefined(v) ?? homeCity.slug, z.enum(liveCitySlugs, { message: "Choose your city" })),
+  // with one live city the form sends none and the booking is for that city; with several, the
+  // visitor must choose (a blank city is never quietly filed under the home city)
+  city: z.preprocess(
+    (v) => blankToUndefined(v) ?? (liveCitySlugs.length === 1 ? homeCity.slug : undefined),
+    z.enum(liveCitySlugs, { message: FIELD_MESSAGES.city }),
+  ),
   propertyType: optionalChoice(propertyTypes, "Choose a property type"),
   service: optionalChoice(serviceTypes, "Choose what needs painting"),
   preferredDate,

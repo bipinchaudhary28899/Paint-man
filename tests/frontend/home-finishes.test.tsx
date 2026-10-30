@@ -7,7 +7,7 @@ import { AreasSection } from "@/components/home/AreasSection";
 import { FaqSection } from "@/components/home/FaqSection";
 import { Finishes } from "@/components/home/Finishes";
 import { images } from "@/config/images";
-import { areaSlug, generalFaqs, site } from "@/config/site";
+import { areaSlug, generalFaqs, homeCity, site } from "@/config/site";
 
 describe("Finishes (home)", () => {
   it("has one h2 with one italic accent and the four example finishes with their captions", () => {
@@ -32,14 +32,21 @@ describe("Finishes (home)", () => {
 });
 
 describe("AreasSection and AreaLinks (home)", () => {
-  it("links every locality to its anchor on the city page, keeping 'Painters in' in each link name", () => {
+  it("lists every live city under its own heading, each locality linking to its anchor on that city's page", async () => {
+    const { liveCities, cityPath } = await import("@/config/site");
     render(<AreasSection />);
-    expect(screen.getByRole("heading", { level: 2, name: `Painting homes across ${site.city}` })).toBeInTheDocument();
-    const links = within(screen.getByRole("list")).getAllByRole("link");
-    expect(links).toHaveLength(site.areas.length);
-    site.areas.forEach((a, i) => {
-      expect(links[i]).toHaveAccessibleName(`Painters in ${a}`);
-      expect(links[i]).toHaveAttribute("href", `/services/house-painting/agra#${areaSlug(a)}`);
+    expect(screen.getByRole("heading", { level: 2, name: "Painting homes across Agra, Mathura and Vrindavan" })).toBeInTheDocument();
+    const lists = screen.getAllByRole("list");
+    expect(lists).toHaveLength(liveCities().length);
+    liveCities().forEach((c, i) => {
+      expect(screen.getByRole("heading", { level: 3, name: c.name })).toContainElement(screen.getByRole("link", { name: c.name }));
+      expect(screen.getByRole("link", { name: c.name })).toHaveAttribute("href", cityPath(c));
+      const links = within(lists[i]).getAllByRole("link");
+      expect(links).toHaveLength(c.areas.length);
+      c.areas.forEach((a, j) => {
+        expect(links[j]).toHaveAccessibleName(`Painters in ${a}`);
+        expect(links[j]).toHaveAttribute("href", `${cityPath(c)}#${areaSlug(a)}`);
+      });
     });
   });
 
@@ -50,8 +57,8 @@ describe("AreasSection and AreaLinks (home)", () => {
   });
 
   it("keeps a real space between 'Painters in' and the locality in the chip text", () => {
-    render(<AreaLinks areas={["Kamla Nagar"]} />);
-    expect(screen.getByRole("link").textContent).toBe("Painters in Kamla Nagar");
+    render(<AreaLinks city={homeCity} />);
+    expect(screen.getAllByRole("link")[0].textContent).toBe(`Painters in ${homeCity.areas[0]}`);
   });
 });
 

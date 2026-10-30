@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FIELD_MESSAGES, fieldProblem, isRequiredField, normalizeMobile, REQUIRED_FIELDS, requiredFieldErrors } from "@/lib/leads/field-checks";
 import { bookingSchema, contactSchema } from "@/lib/leads/schema";
 
-const booking = { type: "booking", name: "Asha Verma", phone: "9876543210", address: "12, Rose Villa, Nehru Road", locality: "Kamla Nagar", pincode: "282005" };
+const booking = { type: "booking", name: "Asha Verma", phone: "9876543210", address: "12, Rose Villa, Nehru Road", locality: "Kamla Nagar", pincode: "282005", city: "agra" };
 
 describe("field checks shared by the form and the server", () => {
   it("reads a mobile number the way people type it", () => {
@@ -30,6 +30,12 @@ describe("field checks shared by the form and the server", () => {
     expect(Object.keys(requiredFieldErrors("contact", {}))).toEqual(["name", "phone", "message"]);
     expect(requiredFieldErrors("booking", booking)).toEqual({});
     expect(requiredFieldErrors("booking", { ...booking, pincode: "1234" })).toEqual({ pincode: FIELD_MESSAGES.pincode });
+  });
+
+  it("checks the city too when the form asks for it (more than one live city)", () => {
+    const withCity = [...REQUIRED_FIELDS.booking, "city"] as const;
+    expect(requiredFieldErrors("booking", { ...booking, city: "" }, withCity)).toEqual({ city: FIELD_MESSAGES.city });
+    expect(requiredFieldErrors("booking", booking, withCity)).toEqual({});
   });
 
   it("knows which names are required fields", () => {

@@ -3,7 +3,7 @@ import { PhotoCrop } from "@/components/PhotoCrop";
 import { CtaBanner } from "@/components/CtaBanner";
 import { PageHero } from "@/components/PageHero";
 import { images } from "@/config/images";
-import { site } from "@/config/site";
+import { cityPath, liveCities, liveCityNames, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -63,13 +63,17 @@ export default function AboutPage() {
         <div className="card bg-ink p-8 text-on-ink md:p-12">
           <h2 className="text-3xl font-normal md:text-4xl">Where we <em>work</em></h2>
           <p className="mt-4 max-w-3xl text-on-ink/75">
-            We are starting with selected localities of {site.city} so our supervisors can visit every site and fix
-            problems quickly:
+            We paint in {liveCityNames()}, in localities our supervisors can visit every day, so problems are fixed quickly:
           </p>
-          <p className="mt-4 font-display text-xl font-bold text-sunshine">{site.areas.join(" · ")}</p>
-          <Link href="/services/house-painting/agra#localities" className="mt-6 inline-flex min-h-11 items-center font-semibold text-on-ink underline decoration-golden underline-offset-4 hover:text-golden">
-            How we work in each area of {site.city}
-          </Link>
+          {liveCities().map((c) => (
+            <div key={c.slug} className="mt-6">
+              <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-on-ink/60">{c.name}</h3>
+              <p className="mt-1.5 font-display text-xl font-bold text-sunshine">{c.areas.join(" · ")}</p>
+              <Link href={`${cityPath(c)}#localities`} className="mt-2 inline-flex min-h-11 items-center font-semibold text-on-ink underline decoration-golden underline-offset-4 hover:text-golden">
+                How we work in {c.name}
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
       <CtaBanner />

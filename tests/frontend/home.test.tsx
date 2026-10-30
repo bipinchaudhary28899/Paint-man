@@ -7,7 +7,7 @@ import { HeroImage, heroPreloadMedia, heroSideBySide, heroSizes } from "@/compon
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal, reveal } from "@/components/home/PinnedReveal";
 import { images } from "@/config/images";
-import { areaSlug, site } from "@/config/site";
+import { areaSlug, homeCity, site } from "@/config/site";
 import { clamp01, easeInOutQuad } from "@/lib/scroll";
 
 // The shared setup renders next/image as a bare <img>; here the real getImageProps is kept (the
@@ -51,7 +51,7 @@ describe("HeroImage", () => {
 
 describe("AreaLinks", () => {
   it("links every locality to its own entry on the Agra page, using the shared slug from site.ts", () => {
-    render(<AreaLinks areas={site.areas} />);
+    render(<AreaLinks city={homeCity} />);
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(site.areas.length);
     for (const a of site.areas) {

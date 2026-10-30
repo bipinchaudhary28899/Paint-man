@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { navMenus } from "@/config/nav";
-import { site } from "@/config/site";
+import { liveCityNames, site } from "@/config/site";
 import { Wordmark } from "./Logo";
 import { HeaderLink, NavMenu } from "./NavMenu";
 
@@ -10,7 +10,7 @@ export function Header() {
       <div className="container-page flex min-h-[72px] flex-wrap items-center justify-between gap-4 py-3 md:min-h-[86px] md:gap-6">
         <Link href="/" className="flex items-center gap-2.5 text-ink" aria-label={`${site.name} home`}>
           <Wordmark eager />
-          <span className="sr-only"> – painters in {site.city}</span>
+          <span className="sr-only"> – painters in {liveCityNames()}</span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-5 text-[15px] font-medium min-[721px]:flex md:gap-7 lg:gap-9">
           {navMenus().map((m) => (

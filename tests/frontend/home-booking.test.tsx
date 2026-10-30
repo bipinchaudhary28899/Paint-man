@@ -25,7 +25,7 @@ describe("HomeBooking (the booking card after the hero)", () => {
     expect(headings[0].tagName).toBe("H2");
     expect(headings[0].querySelectorAll("em")).toHaveLength(1);
     expect(within(section).getByText(new RegExp(`working hours \\(${site.hoursDisplay}\\)`))).toBeInTheDocument();
-    for (const label of ["Your name", "Mobile number", /House \/ flat no/, "Locality in Agra", "PIN code"]) expect(within(section).getByLabelText(label)).toBeRequired();
+    for (const label of ["Your name", "Mobile number", /House \/ flat no/, "City", "Locality", "PIN code"]) expect(within(section).getByLabelText(label)).toBeRequired();
     expect(within(section).getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
   });
 
@@ -86,9 +86,9 @@ describe("LeadForm layout per screen", () => {
     render(<LeadForm type="booking" />);
     // the grid row a field sits in (the mobile field has a +91 wrapper inside its cell)
     const row = (label: string) => screen.getByLabelText(label).closest(".grid")!;
-    expect(row("Locality in Agra")).toBe(row("PIN code"));
+    expect(row("Locality")).toBe(row("PIN code"));
     expect(row("Your name")).toBe(row("Mobile number"));
-    expect(row("Your name")).not.toBe(row("Locality in Agra"));
+    expect(row("Your name")).not.toBe(row("Locality"));
   });
 
   it("opens Add more details with a tap on its summary, which keeps its label and the optional hint", async () => {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CtaBanner } from "@/components/CtaBanner";
 import { PageHero } from "@/components/PageHero";
 import { images } from "@/config/images";
+import { LiveCityLinks } from "@/components/LiveCityLinks";
 import { cities, cityPath, homeCity, serviceCityTitle, servicePath, services, servicesIn } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -79,9 +80,8 @@ export default function ServicesPage() {
         <div>
           <h2 className="text-2xl font-normal">Where we <em>work</em></h2>
           <p className="mt-3 leading-relaxed text-muted">
-            Homes, rental flats and shops across {homeCity.name}, including {homeCity.areas.slice(0, 4).join(", ")} and more, with{" "}
-            {cities.filter((c) => c.status === "soon").map((c) => c.name).join(" and ")} coming next.{" "}
-            <Link href={cityPath(homeCity)} className={linkClass}>House painting in {homeCity.name}</Link>.
+            Homes, rental flats and shops across <LiveCityLinks linkClassName={linkClass} />, with{" "}
+            {cities.filter((c) => c.status === "soon").map((c) => c.name).join(" and ")} coming next.
           </p>
         </div>
       </section>

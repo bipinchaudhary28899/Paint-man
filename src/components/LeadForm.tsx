@@ -67,6 +67,11 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
   // "Add more details" starts open only when the page prefilled the note, so the visitor sees it
   const [moreOpen, setMoreOpen] = useState(Boolean(defaultMessage));
   const live = liveCities();
+  // with more than one live city the visitor picks it first, and the locality suggestions follow it
+  const askCity = live.length > 1;
+  const [cityPick, setCityPick] = useState("");
+  const requiredFields = type === "booking" && askCity ? ([...REQUIRED_FIELDS.booking, "city"] as const) : REQUIRED_FIELDS[type];
+  const localitySuggestions = (live.find((c) => c.slug === cityPick) ? live.filter((c) => c.slug === cityPick) : live).flatMap((c) => c.areas);
   /** Clears a field's error as soon as its value is fine, so the visitor sees the fix land. */
   function clearFixed(target: EventTarget) {
     const { name, value } = target as HTMLInputElement;
@@ -79,7 +84,7 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
   /** Leaving a required field the visitor has typed in checks it there and then (an empty one waits for submit). */
   function onBlurCheck(e: React.FocusEvent<HTMLFormElement>) {
     const { name, value } = e.target as EventTarget as HTMLInputElement;
-    if (!isRequiredField(name) || !REQUIRED_FIELDS[type].includes(name) || value.trim() === "") return;
+    if (!isRequiredField(name) || !requiredFields.includes(name) || value.trim() === "") return;
     const problem = fieldProblem(name, value);
     if (problem && errors[name] !== problem) setErrors((prev) => ({ ...prev, [name]: problem }));
   }
@@ -105,7 +110,7 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
     const form = e.currentTarget;
     const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
     // the required fields are checked here first: no round trip to learn a PIN code is short
-    const missing = requiredFieldErrors(type, data);
+    const missing = requiredFieldErrors(type, data, requiredFields);
     if (Object.keys(missing).length > 0) {
       setErrors(missing);
       setFormError("Please check the highlighted fields.");
@@ -182,8 +187,18 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
               {...aria("address")}
             />
           </Field>
+          {askCity && (
+            <Field id="city" label="City" error={errors.city}>
+              <select id="city" name="city" required value={cityPick} onChange={(e) => setCityPick(e.target.value)} className={FIELD} {...aria("city")}>
+                <option value="" disabled>Select your city</option>
+                {live.map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
           <div className="grid grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] gap-2.5 tab:grid-cols-2 tab:gap-4 desk:gap-5">
-            <Field id="locality" label={live.length > 1 ? "Locality" : `Locality in ${live[0].name}`} error={errors.locality}>
+            <Field id="locality" label={askCity ? "Locality" : `Locality in ${live[0].name}`} error={errors.locality}>
               <input
                 id="locality"
                 name="locality"
@@ -196,7 +211,7 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
                 {...aria("locality")}
               />
               <datalist id="locality-options">
-                {live.flatMap((c) => c.areas).map((a) => (
+                {localitySuggestions.map((a) => (
                   <option key={a} value={a} />
                 ))}
               </datalist>
@@ -215,17 +230,6 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
               />
             </Field>
           </div>
-
-          {live.length > 1 && (
-            <Field id="city" label="City" error={errors.city}>
-              <select id="city" name="city" required defaultValue="" className={FIELD} {...aria("city")}>
-                <option value="" disabled>Select</option>
-                {live.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.name}</option>
-                ))}
-              </select>
-            </Field>
-          )}
 
           {/* Everything about the job is optional: a single wall or a door books as fast as a house.
               A closed <details> still submits its fields, and it works without JavaScript. */}

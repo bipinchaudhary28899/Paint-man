@@ -10,7 +10,7 @@ import ContactPage, { metadata as contactMeta } from "@/app/(site)/contact/page"
 import PalettesPage, { metadata as palettesMeta } from "@/app/(site)/palettes/page";
 import PrivacyPage, { metadata as privacyMeta } from "@/app/(site)/privacy-policy/page";
 import TermsPage, { metadata as termsMeta } from "@/app/(site)/terms/page";
-import { areaSlug, services, site } from "@/config/site";
+import { areaSlug, homeCity, services, site } from "@/config/site";
 import { fakeContact, withFilledSite } from "../support/filled-site";
 
 vi.mock("next/navigation", () => ({
@@ -94,7 +94,7 @@ describe("/services/house-painting/agra (the city page, formerly /areas)", () =>
   });
 
   it("every home page 'Painters in {area}' link lands on an entry on the rendered city page", async () => {
-    const { container: home } = render(<AreaLinks areas={site.areas} />);
+    const { container: home } = render(<AreaLinks city={homeCity} />);
     const hrefs = [...home.querySelectorAll("a")].map((a) => a.getAttribute("href")!);
     expect(hrefs).toHaveLength(site.areas.length);
     const { container: areas } = render(await agraPage());
@@ -185,8 +185,12 @@ describe("/contact", () => {
     // the call back happens during the published working hours, not a promised response time
     expect(screen.getByText(new RegExp(`we call you back during working hours, ${site.hoursDisplay}`))).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "You get an itemised quotation" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: `Areas we serve in ${site.city}` })).toHaveAttribute("href", "/services/house-painting/agra#localities");
-    for (const s of services) expect(screen.getByRole("link", { name: `${s.name} in ${site.city}` })).toHaveAttribute("href", `/services/${s.slug}/agra`);
+    // every city we paint in has its localities and a link to them
+    for (const [name, slug] of [["Agra", "agra"], ["Mathura", "mathura"], ["Vrindavan", "vrindavan"]]) {
+      expect(screen.getByRole("link", { name: `Areas we serve in ${name}` })).toHaveAttribute("href", `/services/house-painting/${slug}#localities`);
+    }
+    // the services link to their hubs, which serve every city
+    for (const s of services) expect(screen.getByRole("link", { name: s.name })).toHaveAttribute("href", `/services/${s.slug}`);
   });
 });
 

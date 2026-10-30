@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_UPDATED } from "@/config/seo-dates";
-import { liveCities, serviceCityTitle, servicePath, services, site, type City, type Service } from "@/config/site";
+import { homeCity, liveCities, liveCityNames, serviceCityTitle, servicePath, services, site, type City, type Service } from "@/config/site";
 
 /** Appended to every page title by the root layout's title template ("{Topic} in Agra | Paint Saathi"). */
 export const TITLE_SUFFIX = ` | ${site.name}`;
@@ -83,22 +83,35 @@ type OptionalDetails = {
 const extra = () => site as typeof site & OptionalDetails;
 
 const BUSINESS_ID = `${site.url}/#business`;
-const AGRA_ID = `${site.url}/#agra`;
+/** Wikipedia pages that tell search engines which Agra, Mathura or Vrindavan we mean. */
+const CITY_WIKIPEDIA: Record<string, string> = {
+  agra: "https://en.wikipedia.org/wiki/Agra",
+  mathura: "https://en.wikipedia.org/wiki/Mathura",
+  vrindavan: "https://en.wikipedia.org/wiki/Vrindavan",
+};
+const cityId = (city: City) => `${site.url}/#${city.slug}`;
 
-/** The one Agra node every areaServed points at, disambiguated from Agra in Kansas or Oklahoma. */
-export function agraPlace() {
+/**
+ * The one node for a city that every areaServed points at: a live city with its own @id, its
+ * Wikipedia page (Agra, not Agra in Kansas) and its state; a city not live yet is a plain City.
+ */
+export function cityPlace(city: City) {
+  if (city.status !== "live") return { "@type": "City", name: city.name };
   return {
     "@type": "City",
-    "@id": AGRA_ID,
-    name: site.city,
-    sameAs: "https://en.wikipedia.org/wiki/Agra",
+    "@id": cityId(city),
+    name: city.name,
+    sameAs: CITY_WIKIPEDIA[city.slug],
     containedInPlace: {
       "@type": "State",
-      name: site.region,
+      name: city.region,
       containedInPlace: { "@type": "Country", name: "India" },
     },
   };
 }
+
+/** The home city's node (Agra). */
+export const agraPlace = () => cityPlace(homeCity);
 
 const DAYS: Record<string, string> = {
   Mo: "Monday",
@@ -165,7 +178,7 @@ export function localBusinessJsonLd() {
     name: site.name,
     alternateName: extra().alternateName || ALTERNATE_NAME,
     legalName: site.legalName,
-    description: `${site.tagline}. Site inspection, itemised quotations and supervised painting for homes and rental properties in ${site.city}.`,
+    description: `${site.tagline}. Site inspection, itemised quotations and supervised painting for homes and rental properties in ${liveCityNames()}.`,
     url: site.url,
     logo: {
       "@type": "ImageObject",
@@ -190,13 +203,14 @@ export function localBusinessJsonLd() {
       addressCountry: site.country,
     }),
     geo: businessGeo(),
-    areaServed: [
-      agraPlace(),
-      ...site.areas.map((name) => ({ "@type": "Place", name: `${name}, ${site.city}`, containedInPlace: { "@id": AGRA_ID } })),
-    ],
+    // each live city, then its localities, each locality pointing at its city's node
+    areaServed: liveCities().flatMap((c) => [
+      cityPlace(c),
+      ...c.areas.map((name) => ({ "@type": "Place", name: `${name}, ${c.name}`, containedInPlace: { "@id": cityId(c) } })),
+    ]),
     hasOfferCatalog: {
       "@type": "OfferCatalog",
-      name: `House painting services in ${site.city}`,
+      name: `House painting services in ${liveCityNames()}`,
       itemListElement: services.map((s) => ({
         "@type": "Offer",
         // same name as serviceJsonLd(), so the merged graph gives each service one name
@@ -269,7 +283,7 @@ export function serviceJsonLd(service: Service, city?: City) {
       description: service.local[city.slug]?.description ?? service.description,
       url,
       provider: { "@id": BUSINESS_ID },
-      areaServed: city.slug === "agra" ? agraPlace() : { "@type": "City", name: city.name },
+      areaServed: cityPlace(city),
     };
   }
   return {
@@ -281,7 +295,7 @@ export function serviceJsonLd(service: Service, city?: City) {
     description: service.description,
     url: serviceUrl(service),
     provider: { "@id": BUSINESS_ID },
-    areaServed: liveCities().map((c) => (c.slug === "agra" ? agraPlace() : { "@type": "City", name: c.name })),
+    areaServed: liveCities().map(cityPlace),
   };
 }
 

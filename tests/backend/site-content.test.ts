@@ -358,3 +358,11 @@ describe("header section for each page", () => {
     for (const p of ["/", "/about", "/book", "/contact", "/servicesx", "/colourful"]) expect(headerSection(p), p).toBeUndefined();
   });
 });
+
+describe("live city names in copy", () => {
+  it("joins the live cities as a phrase, with 'and' or 'or'", async () => {
+    const { liveCityNames } = await import("@/config/site");
+    expect(liveCityNames()).toBe("Agra, Mathura and Vrindavan");
+    expect(liveCityNames("or")).toBe("Agra, Mathura or Vrindavan");
+  });
+});

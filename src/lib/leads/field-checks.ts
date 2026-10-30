@@ -9,6 +9,7 @@ export const FIELD_MESSAGES = {
   locality: "Enter your locality",
   pincode: "Enter your 6-digit PIN code",
   message: "Tell us a little about what you need",
+  city: "Choose your city",
 } as const;
 
 export type RequiredField = keyof typeof FIELD_MESSAGES;
@@ -30,9 +31,13 @@ const valid: Record<RequiredField, (v: string) => boolean> = {
   locality: (v) => v.trim().length >= 2,
   pincode: (v) => PINCODE_PATTERN.test(v.replace(/\s/g, "")),
   message: (v) => v.trim().length >= 5,
+  city: (v) => v.trim() !== "",
 };
 
-/** The fields each form requires, in the order they appear. */
+/**
+ * The fields each form requires, in the order they appear. The booking form also asks for the city
+ * when we paint in more than one (LeadForm passes its own list then).
+ */
 export const REQUIRED_FIELDS: Record<"booking" | "contact", RequiredField[]> = {
   booking: ["name", "phone", "address", "locality", "pincode"],
   contact: ["name", "phone", "message"],
@@ -44,9 +49,13 @@ export function fieldProblem(field: RequiredField, value: string): string | unde
 }
 
 /** Every required field of the form that needs fixing, with its message. */
-export function requiredFieldErrors(type: "booking" | "contact", values: Record<string, string | undefined>): Record<string, string> {
+export function requiredFieldErrors(
+  type: "booking" | "contact",
+  values: Record<string, string | undefined>,
+  fields: readonly RequiredField[] = REQUIRED_FIELDS[type],
+): Record<string, string> {
   const errors: Record<string, string> = {};
-  for (const field of REQUIRED_FIELDS[type]) {
+  for (const field of fields) {
     const problem = fieldProblem(field, values[field] ?? "");
     if (problem) errors[field] = problem;
   }

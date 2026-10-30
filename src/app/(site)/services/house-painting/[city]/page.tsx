@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { Promises } from "@/components/Promises";
 import { BookingSection } from "@/components/BookingSection";
+import { LiveCityLinks } from "@/components/LiveCityLinks";
 import { areaSlug, cities, cityPath, getCity, homeCity, serviceCityTitle, servicePath, services, servicesIn, site, type City } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -236,8 +237,7 @@ function ComingSoon({ city }: { city: City }) {
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-[1.65] text-muted">{city.intro}</p>
           <p className="mt-6 max-w-2xl leading-[1.65] text-muted">
-            Today we paint in{" "}
-            <Link href={cityPath(homeCity)} className="font-bold text-ink underline">{homeCity.name}</Link>. See how the work is done:{" "}
+            Today we paint in <LiveCityLinks linkClassName="font-bold text-ink underline" />. See how the work is done:{" "}
             {services.map((s, i) => (
               <span key={s.slug}>
                 {i > 0 && ", "}

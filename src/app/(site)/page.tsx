@@ -13,13 +13,13 @@ import { ProcessSection } from "@/components/home/ProcessSection";
 import { ServicesSection } from "@/components/home/ServicesSection";
 import { Promises } from "@/components/Promises";
 import { WorkFlow } from "@/components/WorkFlow";
-import { homeCity, site } from "@/config/site";
+import { liveCityNames, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: `Book House Painters Online in India | ${site.name}`,
   absoluteTitle: true,
-  description: `Book painters online for one wall, a door, windows or the whole house: zero advance payment and a full estimate before work starts. Now painting in ${homeCity.name}.`,
+  description: `Book painters online for a wall, a door or the whole house, with zero advance and a full estimate first. Now painting in ${liveCityNames()}.`,
   path: "/",
 });
 

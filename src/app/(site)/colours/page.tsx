@@ -7,7 +7,7 @@ import { ColourFinderFromUrl } from "@/components/colours/ColourFinder";
 import { JsonLd } from "@/components/JsonLd";
 import { brandList, paintdb, shadeCount, shadeFamilies } from "@/lib/colours/brands";
 import { BRAND_SHADES_ROUNDED } from "@/lib/colours/catalogue";
-import { site } from "@/config/site";
+import { liveCityNames, site } from "@/config/site";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 // Counts in the metadata stay modest on purpose ("8,500+"): the data has 8,539 shades from India's
@@ -59,7 +59,7 @@ export default function ColoursPage() {
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-muted">
                 {shadeCount().toLocaleString("en-IN")} shades from Asian Paints, Berger, Nerolac and Nippon Paint, the major brands in India, searchable by the code on the shade card. Every one is shown on the same living room so you compare shade against shade.
-                Pick one and we bring the real shade card to your home in {site.city}.
+                Pick one and we bring the real shade card to your home in {liveCityNames("or")}.
               </p>
             </div>
             <Image
@@ -99,7 +99,7 @@ export default function ColoursPage() {
         </div>
       </section>
 
-      <CtaBanner heading={`Found a shade? See it on your own wall in ${site.city}.`} />
+      <CtaBanner heading="Found a shade? See it on your own wall." />
     </>
   );
 }

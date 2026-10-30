@@ -98,3 +98,12 @@ describe("HeroImage", () => {
     expect(link?.getAttribute("imagesizes")).toBe(img.getAttribute("sizes"));
   });
 });
+
+describe("Hero: cities", () => {
+  it("links every city we paint in", () => {
+    render(<Hero />);
+    for (const [name, slug] of [["Agra", "agra"], ["Mathura", "mathura"], ["Vrindavan", "vrindavan"]]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", `/services/house-painting/${slug}`);
+    }
+  });
+});

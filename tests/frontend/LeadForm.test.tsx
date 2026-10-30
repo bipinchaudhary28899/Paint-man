@@ -18,7 +18,8 @@ async function fillBooking() {
   await user.type(screen.getByLabelText("Your name"), "Asha Verma");
   await user.type(screen.getByLabelText("Mobile number"), "9876543210");
   await user.type(screen.getByLabelText(/House \/ flat no/), "12, Rose Villa, Nehru Road");
-  await user.type(screen.getByLabelText(/Locality in/), "Kamla Nagar");
+  await user.selectOptions(screen.getByLabelText("City"), "agra");
+  await user.type(screen.getByLabelText("Locality"), "Kamla Nagar");
   await user.type(screen.getByLabelText("PIN code"), "282005");
   return user;
 }
@@ -41,9 +42,10 @@ beforeEach(() => {
 describe("LeadForm (booking)", () => {
   it("asks only for name, mobile and the full address; the job details are optional, behind Add more details", () => {
     const { container } = render(<LeadForm type="booking" />);
-    for (const label of ["Your name", "Mobile number", /House \/ flat no/, "Locality in Agra", "PIN code"]) expect(screen.getByLabelText(label)).toBeRequired();
-    // one live city, so no city choice
-    expect(screen.queryByLabelText("City")).toBeNull();
+    for (const label of ["Your name", "Mobile number", /House \/ flat no/, "City", "Locality", "PIN code"]) expect(screen.getByLabelText(label)).toBeRequired();
+    // we paint in Agra, Mathura and Vrindavan, so the city is chosen first, before the locality
+    expect([...(screen.getByLabelText("City") as HTMLSelectElement).options].map((o) => o.text)).toEqual(["Select your city", "Agra", "Mathura", "Vrindavan"]);
+    expect(screen.getByLabelText("City").compareDocumentPosition(screen.getByLabelText("Locality")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(details(container)).not.toHaveAttribute("open");
     for (const label of ["What needs painting?", "Property type", "Floors to paint", "Home size", /Carpet area per floor/, /Preferred inspection date/, /Anything we should know/]) {
       const field = screen.getByLabelText(label);
@@ -282,5 +284,44 @@ describe("checks in the browser before anything is sent", () => {
     await user.click(screen.getByRole("button", { name: "Book my inspection" }));
     expect(container.querySelector("form")).toHaveAttribute("aria-busy", "true");
     expect(screen.getByRole("button", { name: "Sending…" }).querySelector(".animate-spin")).not.toBeNull();
+  });
+});
+
+describe("choosing the city (we paint in Agra, Mathura and Vrindavan)", () => {
+  it("asks for the city, suggests that city's localities, and flags a missing city before sending", async () => {
+    const fetchSpy = mockFetch(200, { ok: true });
+    const { container } = render(<LeadForm type="booking" />);
+    const user = userEvent.setup();
+    const suggestions = () => [...container.querySelectorAll("#locality-options option")].map((o) => o.getAttribute("value"));
+    expect(suggestions()).toEqual(expect.arrayContaining(["Kamla Nagar", "Krishna Nagar", "Raman Reti"]));
+
+    await user.selectOptions(screen.getByLabelText("City"), "vrindavan");
+    expect(suggestions()).toContain("Raman Reti");
+    expect(suggestions()).not.toContain("Kamla Nagar");
+
+    await user.selectOptions(screen.getByLabelText("City"), "mathura");
+    expect(suggestions()).toContain("Krishna Nagar");
+    expect(suggestions()).not.toContain("Raman Reti");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not send a booking without a city, and clears the error once one is chosen", async () => {
+    const fetchSpy = mockFetch(200, { ok: true });
+    render(<LeadForm type="booking" />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Your name"), "Asha Verma");
+    await user.type(screen.getByLabelText("Mobile number"), "9876543210");
+    await user.type(screen.getByLabelText(/House \/ flat no/), "12, Rose Villa, Nehru Road");
+    await user.type(screen.getByLabelText("Locality"), "Raman Reti");
+    await user.type(screen.getByLabelText("PIN code"), "281121");
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+    expect(screen.getByText("Choose your city")).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    await user.selectOptions(screen.getByLabelText("City"), "vrindavan");
+    expect(screen.queryByText("Choose your city")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Book my inspection" }));
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+    expect(JSON.parse(String(fetchSpy.mock.calls[0][1]?.body))).toMatchObject({ city: "vrindavan", locality: "Raman Reti" });
   });
 });

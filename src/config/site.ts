@@ -288,6 +288,62 @@ export const services: Service[] = [
           },
         ],
       },
+      mathura: {
+        description:
+          "Interior wall painting in Mathura without chasing painters yourself: an on-site inspection, an itemised quote, branded paint and a supervised crew.",
+        intro:
+          "Repaint bedrooms, living rooms, kitchens and pooja rooms in Mathura without managing painters yourself. An inspector visits, you get an itemised quote, and a supervisor stays on the job until the final walkthrough.",
+        notes: [
+          {
+            title: "Before Janmashtami and Diwali",
+            body: "Many Mathura families repaint before Janmashtami and Diwali, the busiest weeks for painters. Booking the inspection a few weeks early leaves time to choose shades and approve the quote before your dates.",
+          },
+          {
+            title: "Pooja rooms and kitchens",
+            body: "Pooja rooms and kitchens collect smoke from diyas, agarbatti and cooking. A washable finish lets soot be wiped off, and the inspector checks for oily patches that need cleaning before the first coat.",
+          },
+          {
+            title: "Damp in the monsoon",
+            body: "Walls beside bathrooms, and outer walls, take on damp in the monsoon. The inspector checks for seepage before quoting, so the cause can be fixed before any paint goes on.",
+          },
+        ],
+        faqs: [
+          {
+            q: "How long does interior painting take for a 2BHK in Mathura?",
+            a: `A full repaint of a 2 BHK in Mathura takes ${twoBhk.duration} with a crew sized to the job, usually ${twoBhk.painters} painters. Heavy crack repair, damp patches or deep shades add time, and your quotation states the expected duration before you approve it.`,
+          },
+          {
+            q: "Can you paint just the pooja room in our Mathura home?",
+            a: "Yes. A single room is a job on its own, with the same inspection and itemised quote. Tell the inspector which days suit your family; the floor and furniture are covered, and the room is cleaned when the work is done.",
+          },
+        ],
+      },
+      vrindavan: {
+        description:
+          "Interior wall painting in Vrindavan for homes and rented flats: an on-site inspection, a line-by-line quote, genuine branded paint and supervised painters.",
+        intro:
+          "Repaint bedrooms, living rooms, kitchens and pooja rooms in Vrindavan, from the parikrama lanes to the colonies on Chhatikara Road. An inspector visits first, the quote is itemised, and a supervisor checks every stage.",
+        notes: [
+          {
+            title: "Calm colours for pooja rooms",
+            body: "Many Vrindavan homes keep a pooja room or a shrine corner. Soft whites, creams and pale yellows keep it bright, and a washable finish lets diya soot be wiped off without marking the colour.",
+          },
+          {
+            title: "Dust from busy lanes",
+            body: "Homes on busy lanes and near the temples get a lot of street dust. Walls are cleaned before primer, and furniture and floors stay covered until the last coat is dry.",
+          },
+        ],
+        faqs: [
+          {
+            q: "How long does interior painting take for a 2BHK in Vrindavan?",
+            a: `A full 2 BHK repaint in Vrindavan takes ${twoBhk.duration}, usually with ${twoBhk.painters} painters, and less when the walls need little putty. Your quotation states the expected duration before you approve it.`,
+          },
+          {
+            q: "Do you paint homes inside the parikrama lanes in Vrindavan?",
+            a: "Yes. Narrow lanes are fine for interior work: the inspector plans how materials reach the house and notes it in the quotation, so nothing changes once work starts.",
+          },
+        ],
+      },
     },
   },
   {
@@ -424,6 +480,50 @@ export const services: Service[] = [
           },
         ],
       },
+      mathura: {
+        description:
+          "Exterior house painting in Mathura that stands up to summer sun, dust and monsoon rain: crack repair, weatherproof coats and an itemised quote.",
+        intro:
+          "Outer walls in Mathura take strong sun, dust and heavy monsoon rain. We inspect the exterior, repair cracks where needed and apply weather-resistant coatings, all set out in an itemised quotation.",
+        notes: [
+          {
+            title: "After the rains",
+            body: "In Mathura the dry months after the monsoon, roughly October to March, are the best time for outside walls. Exterior paint is not applied in heavy rain, because moisture under the coat spoils its grip.",
+          },
+          {
+            title: "Shared walls in the old city",
+            body: "Houses near Holi Gate and in the older lanes often share walls and have little room for ladders. The inspector checks access to every face of the building and lists any scaffolding in the quote.",
+          },
+        ],
+        faqs: [
+          {
+            q: "When should I paint the outside of my house in Mathura?",
+            a: "In the dry months, roughly October to March. Exterior coats need dry walls and dry weather to bond properly, so the monsoon is avoided.",
+          },
+        ],
+      },
+      vrindavan: {
+        description:
+          "Exterior painting in Vrindavan for houses and rental buildings: crack repair, weather-resistant coats and an itemised quote after a site inspection.",
+        intro:
+          "Vrindavan's hot summers, monsoon damp near the Yamuna and weeks of Holi colour all show on outer walls. We inspect the exterior, repair what needs it and apply weather-resistant coats, with an itemised quote.",
+        notes: [
+          {
+            title: "After the Holi season",
+            body: "Holi colour and gulal stain gates and outer walls every spring. Repainting after the Holi weeks keeps the new coat clean, and a smoother exterior finish makes the next year's colour easier to wash off.",
+          },
+          {
+            title: "Damp near the ghats",
+            body: "Walls near the Yamuna and the ghats stay damp longer after the rains. The inspector checks for seepage and algae, and the quotation lists cleaning and any repairs before the primer.",
+          },
+        ],
+        faqs: [
+          {
+            q: "When is the best time for exterior painting in Vrindavan?",
+            a: "The dry months, roughly October to March. If your gate and outer walls get coloured every Holi, painting just after Holi keeps the fresh coat clean for longer.",
+          },
+        ],
+      },
     },
   },
   {
@@ -546,6 +646,50 @@ export const services: Service[] = [
           {
             q: "Do you paint just the main gate or the balcony grills in Agra?",
             a: "Yes. Gates, grills and railings are a job on their own: rust is removed, the metal is primed, and enamel finish coats follow, in the dry months where possible.",
+          },
+        ],
+      },
+      mathura: {
+        description:
+          "Doors, windows, grills or a single wall painted in Mathura, with no job too small: an on-site inspection, an itemised quote and a supervised finish.",
+        intro:
+          "Paint a single wall, a main door, wooden windows or iron grills and gates anywhere in Mathura, without booking a crew for the whole house. You get the same inspection, itemised quote and supervision as a full repaint.",
+        notes: [
+          {
+            title: "Gates and grills before festivals",
+            body: "A freshly painted main gate is a common job before Janmashtami and Diwali. Booking early leaves the enamel time to dry and harden before visitors arrive.",
+          },
+          {
+            title: "Rust after the monsoon",
+            body: "Mathura's monsoon brings rust out on grills, railings and gates. Rust is brushed off and the metal primed before enamel, in the dry months where possible.",
+          },
+        ],
+        faqs: [
+          {
+            q: "Can you paint just our main gate in Mathura before Janmashtami?",
+            a: "Yes. A gate on its own is a job: the rust is removed, the metal primed and enamel coats applied. Book a few weeks ahead so it has time to dry before the festival.",
+          },
+        ],
+      },
+      vrindavan: {
+        description:
+          "Doors, windows and grills painted in Vrindavan, or a single wall: no job too small. Inspection, itemised quote, rust and wood preparation, supervised work.",
+        intro:
+          "Paint a front door, carved wooden windows, iron grills or one wall in Vrindavan without booking a crew for the whole house. Every small job gets the same inspection, itemised quote and supervision.",
+        notes: [
+          {
+            title: "Old wooden doors",
+            body: "Older Vrindavan homes often have heavy wooden doors and window frames with many old coats. Loose paint is scraped back and the wood filled and sanded, so the new enamel lies smooth.",
+          },
+          {
+            title: "Gates after Holi",
+            body: "Holi colour stains gates and grills every year. Painting them after the Holi weeks, once the rust is removed and the metal primed, keeps the finish clean for longer.",
+          },
+        ],
+        faqs: [
+          {
+            q: "Do you repaint old wooden doors in Vrindavan?",
+            a: "Yes. The inspector checks the wood for cracks, rot and old paint, and the quotation lists the scraping, filling and sanding before the enamel coats.",
           },
         ],
       },
@@ -677,6 +821,50 @@ export const services: Service[] = [
           },
         ],
       },
+      mathura: {
+        description:
+          "Rental flats, houses and PGs in Mathura repainted between tenants, without you on site: supervised painters, photo updates and one itemised quote.",
+        intro:
+          "Repaint rented flats, houses and PGs in Mathura between tenants without visiting the site every day. We handle the inspection, painting and cleanup, and send photo updates until the property is ready to let.",
+        notes: [
+          {
+            title: "Owners living away",
+            body: "Many Mathura property owners live in Delhi, Agra or further away. Keys can be collected by arrangement, and the inspection photos, the quote and progress photos all come to you online.",
+          },
+          {
+            title: "Student and job rentals",
+            body: "Rooms let to students and staff change hands often. Tell us the move-out and move-in dates when you book; the quotation states the expected duration so the work fits the gap.",
+          },
+        ],
+        faqs: [
+          {
+            q: "Can you repaint my rental in Mathura if I live in another city?",
+            a: "Yes. Keys can be collected by arrangement, inspection photos and the itemised quote are shared online, and progress photos follow until the job is complete.",
+          },
+        ],
+      },
+      vrindavan: {
+        description:
+          "Repainting for rental homes and PG rooms in Vrindavan between tenants: an inspection, an itemised quote, supervised painters and photo updates throughout.",
+        intro:
+          "Vrindavan has many homes let to families and devotees who stay for months. We repaint rented flats, houses and PG rooms in Vrindavan between tenants, handle the cleanup and send photo updates, so you need not be there.",
+        notes: [
+          {
+            title: "Lets around the festival calendar",
+            body: "Demand for rooms rises around Holi, Janmashtami and Kartik. Tell us when the next tenants arrive; the quotation states how long the work takes, so it can be planned before the busy weeks.",
+          },
+          {
+            title: "Owners who live away",
+            body: "Keys can be collected by arrangement, and the inspection photos, the quote and daily progress photos come to you online, wherever you live.",
+          },
+        ],
+        faqs: [
+          {
+            q: "Can you get my Vrindavan flat ready before the next tenants arrive?",
+            a: "Yes, if the dates allow. Tell us the move-in date when you book; the quotation states the expected duration, and the crew is sized to finish within it.",
+          },
+        ],
+      },
     },
   },
 ];
@@ -712,6 +900,36 @@ export type City = {
   weather: CityWeather[];
 };
 
+/** Mathura localities we serve and supervise (anchors on its city page). */
+const mathuraAreas = [
+  "Krishna Nagar",
+  "Govind Nagar",
+  "Dampier Nagar",
+  "Radhika Vihar",
+  "Laxmi Nagar",
+  "Maholi Road",
+  "Masani",
+  "Bhuteshwar",
+  "Jaisinghpura",
+  "Mahavidya Colony",
+  "Deeg Gate",
+  "Holi Gate",
+] as const;
+
+/** Vrindavan localities we serve and supervise (anchors on its city page). */
+const vrindavanAreas = [
+  "Raman Reti",
+  "Chhatikara Road",
+  "Parikrama Marg",
+  "Gopinath Bazar",
+  "Loi Bazar",
+  "Atalla Chungi",
+  "Gaushala Nagar",
+  "Rukmini Vihar",
+  "Keshi Ghat",
+  "Sunrakh",
+] as const;
+
 export const cities: City[] = [
   {
     slug: "agra",
@@ -739,6 +957,56 @@ export const cities: City[] = [
     ],
   },
   {
+    slug: "mathura",
+    name: "Mathura",
+    region: site.region,
+    status: "live",
+    areas: mathuraAreas,
+    description: "House painting in Mathura, from Krishna Nagar to Dampier Nagar: an on-site inspection, an itemised quote and a supervised crew, with zero advance to pay.",
+    intro: `Interior, exterior and rental painting across ${mathuraAreas.length} localities of Mathura, from the old city lanes near Holi Gate to the colonies off Maholi Road. Every job starts with an on-site inspection and an itemised quotation, and nothing is booked until you approve it.`,
+    weather: [
+      {
+        title: "Summer heat and dust",
+        text: "Mathura's summers are as hot and dusty as Agra's, and fine dust settles on walls and ledges. Walls are cleaned before primer goes on, and a washable finish suits living rooms and kitchens, where marks get wiped off often.",
+        link: { href: "/services/interior-painting/mathura", label: "Interior painting in Mathura" },
+      },
+      {
+        title: "Janmashtami and the monsoon",
+        text: "Janmashtami falls in the monsoon, when outer walls stay damp. Rooms indoors can be painted then once the inspector has checked for seepage; outside walls are best left for the dry months after the rains.",
+      },
+      {
+        title: "Old city lanes",
+        text: "Homes in the older lanes near Holi Gate and Deeg Gate often share walls and have narrow access. The inspector notes how ladders and materials reach each wall, so the quotation covers it before work starts.",
+        link: { href: "/services/exterior-painting/mathura", label: "Exterior painting in Mathura" },
+      },
+    ],
+  },
+  {
+    slug: "vrindavan",
+    name: "Vrindavan",
+    region: site.region,
+    status: "live",
+    areas: vrindavanAreas,
+    description: "House painting in Vrindavan for homes and rental flats, from Raman Reti to Chhatikara Road: an inspection, an itemised quote and a supervised crew.",
+    intro: `Interior, exterior and rental painting across ${vrindavanAreas.length} localities of Vrindavan, from the parikrama lanes to the new colonies on Chhatikara Road. Each job starts with an on-site inspection and an itemised quotation, and nothing is booked until you approve it.`,
+    weather: [
+      {
+        title: "Holi colours on outer walls",
+        text: "Braj Holi lasts for weeks, and colour splashed on gates and outer walls can stain fresh paint. Many owners repaint the outside after the Holi season, and the inspector can suggest finishes that wash clean more easily.",
+        link: { href: "/services/exterior-painting/vrindavan", label: "Exterior painting in Vrindavan" },
+      },
+      {
+        title: "Monsoon damp near the Yamuna",
+        text: "Homes close to the Yamuna and the ghats see more damp in the monsoon. The inspector checks walls for seepage before quoting, because paint over a damp wall peels; the cause is noted so it can be fixed first.",
+      },
+      {
+        title: "Older plaster",
+        text: "Older buildings in the parikrama lanes often have soft or powdery plaster. It is scraped back and sealed with a primer before any finish coat, and the quotation lists that preparation as its own line.",
+        link: { href: "/services/interior-painting/vrindavan", label: "Interior painting in Vrindavan" },
+      },
+    ],
+  },
+  {
     slug: "delhi-ncr",
     name: "Delhi NCR",
     region: "Delhi NCR",
@@ -762,6 +1030,12 @@ export const cities: City[] = [
 
 /** Cities where we paint now. */
 export const liveCities = () => cities.filter((c) => c.status === "live");
+
+/** "Agra, Mathura and Vrindavan" (or "or"): the live cities as a phrase for copy. */
+export function liveCityNames(conjunction: "and" | "or" = "and"): string {
+  const names = liveCities().map((c) => c.name);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} ${conjunction} ${names.at(-1)}` : names.join("");
+}
 
 /** The city the business started in: the home page, the booking form and the schema address. */
 export const homeCity = cities[0];
@@ -853,6 +1127,11 @@ export const generalFaqs: FaqItem[] = [
     q: `Do you have painters near me in ${site.city}?`,
     a: `We currently serve ${site.areas.join(", ")}. If your area is not listed, book anyway and we will confirm whether we can serve you.`,
     link: { href: "/services/house-painting/agra#localities", label: `See the areas we serve in ${site.city}` },
+  },
+  {
+    q: "Which cities do you paint in?",
+    a: `We paint homes in ${liveCityNames()}, each with its own localities and supervisors; ${cities.filter((c) => c.status === "soon").map((c) => c.name).join(" and ")} are coming next. Book in any of them and we call you back to fix the site visit.`,
+    link: { href: "/services/house-painting", label: "See every city we paint in" },
   },
   {
     q: "How is the price calculated?",

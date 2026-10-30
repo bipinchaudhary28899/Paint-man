@@ -2,7 +2,7 @@ import Link from "next/link";
 import { footerColumns } from "@/config/nav";
 import { CtaFooterNav } from "./CtaFooterNav";
 import { StackedLogo } from "./Logo";
-import { promises, site } from "@/config/site";
+import { liveCities, promises, site } from "@/config/site";
 
 // The footer is the site's link hub (as on the big painting sites): every service hub, every page
 // for each live city, the cities, the colour tools and the company pages, from src/config/nav.ts.
@@ -55,7 +55,11 @@ export function Footer() {
         </CtaFooterNav>
       </div>
       <div className="container-page flex flex-col gap-1 pt-5 text-xs tab:gap-2 tab:pb-7 tab:max-desk:relative tab:max-desk:before:absolute tab:max-desk:before:inset-x-8 tab:max-desk:before:top-0 tab:max-desk:before:border-t tab:max-desk:before:border-on-ink/10 desk:border-t desk:border-on-ink/10 desk:flex-row desk:items-center desk:justify-between desk:gap-3 desk:py-6">
-        <p className="max-tab:leading-[1.6]">Painting in {site.city}: {site.areas.join(" · ")}</p>
+        <div className="space-y-1 max-tab:leading-[1.6]">
+          {liveCities().map((c) => (
+            <p key={c.slug}>Painting in {c.name}: {c.areas.join(" · ")}</p>
+          ))}
+        </div>
         {/* Legal links get a 44px tall tap target. On phones and tablets the 44px rows space the wrapped lines; on
             desktop the negative margin keeps the row at the Staff login pill's 26px, so the strip keeps its height. */}
         <p className="flex flex-wrap items-center gap-x-5 tab:gap-y-1 desk:-my-[9px] desk:gap-y-0">

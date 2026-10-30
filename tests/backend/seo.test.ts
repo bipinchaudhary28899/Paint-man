@@ -126,19 +126,25 @@ describe("business structured data", () => {
     }
   });
 
-  it("serves one disambiguated Agra plus each locality inside it", () => {
+  it("serves each live city, disambiguated, with every locality inside it pointing at its city", async () => {
+    const { liveCities } = await import("@/config/site");
     const areas = (localBusinessJsonLd() as Json).areaServed as Json[];
-    expect(areas).toHaveLength(site.areas.length + 1);
-    expect(areas[0]).toEqual(agraPlace());
-    expect(areas[0]).toMatchObject({
-      "@type": "City",
-      "@id": `${site.url}/#agra`,
-      sameAs: "https://en.wikipedia.org/wiki/Agra",
-      containedInPlace: { "@type": "State", name: "Uttar Pradesh", containedInPlace: { "@type": "Country", name: "India" } },
-    });
-    for (const [i, name] of site.areas.entries()) {
-      expect(areas[i + 1]).toEqual({ "@type": "Place", name: `${name}, ${site.city}`, containedInPlace: { "@id": `${site.url}/#agra` } });
+    const live = liveCities();
+    expect(live.map((c) => c.slug)).toEqual(expect.arrayContaining(["agra", "mathura", "vrindavan"]));
+    expect(areas).toHaveLength(live.reduce((n, c) => n + c.areas.length + 1, 0));
+    let i = 0;
+    for (const c of live) {
+      expect(areas[i]).toMatchObject({
+        "@type": "City",
+        "@id": `${site.url}/#${c.slug}`,
+        name: c.name,
+        sameAs: `https://en.wikipedia.org/wiki/${c.name}`,
+        containedInPlace: { "@type": "State", name: "Uttar Pradesh", containedInPlace: { "@type": "Country", name: "India" } },
+      });
+      for (const name of c.areas) expect(areas[++i]).toEqual({ "@type": "Place", name: `${name}, ${c.name}`, containedInPlace: { "@id": `${site.url}/#${c.slug}` } });
+      i++;
     }
+    expect(areas[0]).toEqual(agraPlace());
   });
 
   it("lists every service in an offer catalogue that matches the service pages' schema", () => {
@@ -245,7 +251,8 @@ describe("website, service, FAQ and breadcrumb schema", () => {
       expect(ld["@id"]).toBe(`${site.url}/services/${service.slug}#service`);
       expect(ld.url).toBe(`${site.url}/services/${service.slug}`);
       expect(ld.provider).toEqual({ "@id": `${site.url}/#business` });
-      expect(ld.areaServed).toEqual([agraPlace()]); // Delhi NCR and Bangalore are not live yet
+      // every live city, and not Delhi NCR or Bangalore, which are not live yet
+      expect((ld.areaServed as { name: string }[]).map((p) => p.name)).toEqual(["Agra", "Mathura", "Vrindavan"]);
     }
   });
 

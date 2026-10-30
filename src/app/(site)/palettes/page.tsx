@@ -6,7 +6,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CtaBanner } from "@/components/CtaBanner";
 import { WallPreview } from "@/components/colours/WallPreview";
 import { palettes, shadeDisplayName, type PaletteShade } from "@/config/palettes";
-import { site } from "@/config/site";
+import { liveCityNames, site } from "@/config/site";
 import { getBrandShade, hasShadeCardCode, matchLabel, nearestBrandShades, paintdb } from "@/lib/colours/brands";
 import { pageMetadata } from "@/lib/seo";
 
@@ -46,7 +46,7 @@ export default function PalettesPage() {
               <p className="mt-5 text-lg leading-relaxed text-muted">
                 Ready-made colour combinations, three shades per room: the feature wall, the white around it and one accent. Each
                 shade is an Asian Paints shade-card code, shown with the closest Berger and Nerolac shades. They are set out the way
-                our inspector proposes colours on a site visit in {site.city}, and we bring all three shade cards to your home. Not
+                our inspector proposes colours on a site visit in {liveCityNames("or")}, and we bring all three shade cards to your home. Not
                 sure yet? <Link href="/colours" className="font-bold text-cobalt-text underline">Search single shades</Link> and see
                 each one on the same room.
               </p>
@@ -158,7 +158,7 @@ export default function PalettesPage() {
         </p>
       </div>
 
-      <CtaBanner heading={`Like a palette? We bring the three shade cards to your home in ${site.city}.`} />
+      <CtaBanner heading="Like a palette? We bring the three shade cards to your home." />
     </>
   );
 }
