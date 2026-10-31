@@ -5,7 +5,7 @@ import { Keyboard, Linking, Platform, ScrollView, Text, View } from "react-nativ
 import { activeTab, BottomNav, items } from "~/components/site/BottomNav";
 import { Footer } from "~/components/site/Footer";
 import { NavStateProvider, useNavState } from "~/components/site/nav-state";
-import { Anchor, Container, Page, sectionInView, usePage } from "~/components/site/Page";
+import { Anchor, Container, Page, usePage } from "~/components/site/Page";
 import { BookingSection, Breadcrumbs, CtaBanner, FaqList, PageHero, Promises, WorkFlow } from "~/components/site/Sections";
 import { webUrl } from "~/lib/config";
 import { footerColumns, generalFaqs, images, liveCities, promises, site, WHATSAPP_GREETING, workFlow } from "~/shared";
@@ -189,16 +189,7 @@ describe("Page", () => {
     expect(screen.getByText("register")).toBeOnTheScreen();
   });
 
-  it("finds the section in view: the last whose top passed 55% of the screen", () => {
-    const anchors = new Map([["top", 73], ["services", 1500], ["colour", 3000]]);
-    const ids = ["top", "services", "colour", "book"];
-    expect(sectionInView(anchors, ids, 0, 800)).toBe(0);
-    expect(sectionInView(anchors, ids, 1100, 800)).toBe(1);
-    expect(sectionInView(anchors, ids, 2700, 800)).toBe(2);
-    expect(sectionInView(new Map(), ids, 5000, 800)).toBe(0);
-  });
-
-  it("on the home page, reports the section in view to the bottom nav", async () => {
+  it("on the home page, gives the bottom nav a way to glide to a section, and sends no scroll events to JavaScript", async () => {
     let state: ReturnType<typeof useNavState> | undefined;
     function Probe() {
       state = useNavState();
@@ -213,9 +204,8 @@ describe("Page", () => {
       </NavStateProvider>,
     );
     expect(typeof state!.scrollHome).toBe("function");
-    const scroller = screen.getByTestId("home").children[0] as never;
-    await fireEvent.scroll(scroller, { nativeEvent: { contentOffset: { x: 0, y: 900 } } });
-    expect(state!.homeSection).toBe(0);
+    const scroller = screen.getByTestId("home").children[0] as unknown as { props: Record<string, unknown> };
+    expect(scroller.props.onScroll).toBeUndefined();
     await act(() => state!.scrollHome!("services"));
   });
 });
@@ -315,8 +305,8 @@ describe("BottomNav", () => {
   it("on the home page keeps Home selected, glides Home back to the top, and opens the other tabs' screens", async () => {
     const scrollHome = jest.fn();
     function Register() {
-      const { setScrollHome, setHomeSection } = useNavState();
-      return <Text onPress={() => (setScrollHome(scrollHome), setHomeSection(1))}>register</Text>;
+      const { setScrollHome } = useNavState();
+      return <Text onPress={() => setScrollHome(scrollHome)}>register</Text>;
     }
     await render(
       <NavStateProvider>
@@ -325,7 +315,6 @@ describe("BottomNav", () => {
       </NavStateProvider>,
     );
     await fireEvent.press(screen.getByText("register"));
-    // the services section is in view, but this is still the home screen
     expect(screen.getByRole("tab", { name: "Home" })).toBeSelected();
     await fireEvent.press(screen.getByRole("tab", { name: "Home" }));
     expect(scrollHome).toHaveBeenCalledWith("top");

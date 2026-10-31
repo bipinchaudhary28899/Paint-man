@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { Linking } from "react-native";
-import type { SharedValue } from "react-native-reanimated";
+import { getAnimatedStyle, type SharedValue } from "react-native-reanimated";
 
 import { HomeSections } from "~/components/home/HomeSections";
 import { stageLabels, stages, wallShade } from "~/components/home/PinnedReveal";
@@ -94,6 +94,15 @@ describe("the home page", () => {
     });
     await settle();
     expect(screen.queryByText("0%", { includeHiddenElements: true })).toBeNull();
+    // the bar grows by a transform, never by its width: nothing is laid out again while the panel is pinned
+    const bar = (getAnimatedStyle as unknown as (el: unknown) => { transform?: { scaleX: number }[]; width?: unknown })(screen.getByTestId("reveal-bar-fill", { includeHiddenElements: true }));
+    expect(bar.width).toBeUndefined();
+    expect(bar.transform![0].scaleX).toBeGreaterThan(0);
+    expect(bar.transform![0].scaleX).toBeLessThan(1);
+
+    // halfway: the panel has moved down its track by the scroll past the track's top, so it stays under the header
+    const panel = screen.getByTestId("reveal-panel", { includeHiddenElements: true });
+    expect((getAnimatedStyle as unknown as (el: unknown) => { transform: { translateY: number }[] })(panel).transform[0].translateY).toBe(page!.viewport);
 
     // past the end: the walls are finished
     await act(() => {

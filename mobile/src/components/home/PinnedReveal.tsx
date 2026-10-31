@@ -54,6 +54,7 @@ export function PinnedReveal() {
   const fill = useDerivedValue(() => reveal(progress.value).fill);
   const stage = useDerivedValue(() => reveal(progress.value).stage);
 
+  // `position: sticky` under the header: the panel moves down its track as the page scrolls past it
   const pinned = useAnimatedStyle(() => {
     if (!pinnable || y.value < 0) return { transform: [{ translateY: 0 }] };
     const top = screenTop(y.value, scrollY.value, headerHeight);
@@ -62,7 +63,7 @@ export function PinnedReveal() {
 
   return (
     <View ref={ref} onLayout={onLayout} collapsable={false} testID="reveal-track" style={{ height: trackHeight }}>
-      <Animated.View style={[styles.panel, { height: panelHeight, paddingBottom: NAV_PAD + Math.max(0, insets.bottom - 16) }, pinned]}>
+      <Animated.View testID="reveal-panel" style={[styles.panel, { height: panelHeight, paddingBottom: NAV_PAD + Math.max(0, insets.bottom - 16) }, pinned]}>
         <Container style={styles.column}>
           <View>
             <Eyebrow size={11} style={styles.eyebrow}>
@@ -177,9 +178,13 @@ function Stage({ index, title, stage }: { index: number; title: string; stage: S
   );
 }
 
+/**
+ * The progress bar's fill, scaled across from the left (a transform: nothing is laid out again as it
+ * grows, so the pinned panel moving with the scroll never waits on a layout pass, as an animated width would).
+ */
 function Bar({ fill }: { fill: SharedValue<number> }) {
-  const width = useAnimatedStyle(() => ({ width: `${fill.value}%` }));
-  return <Animated.View style={[styles.barFill, width]} />;
+  const grow = useAnimatedStyle(() => ({ transform: [{ scaleX: fill.value / 100 }] }));
+  return <Animated.View testID="reveal-bar-fill" style={[styles.barFill, grow]} />;
 }
 
 /** `initial`: the fill before any scroll (finished when nothing pins); then the reaction follows the scroll. */
@@ -218,7 +223,7 @@ const styles = StyleSheet.create({
   stageTitle: { fontFamily: fonts.sansSemiBold, fontSize: 12, lineHeight: 15, letterSpacing: -0.12, color: colors.ink },
   progressRow: { marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12 },
   bar: { flex: 1, height: 2, overflow: "hidden", backgroundColor: colors.lineSoft },
-  barFill: { height: "100%", backgroundColor: colors.terracottaLight },
+  barFill: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.terracottaLight, transformOrigin: "left" },
   pct: { minWidth: 36, textAlign: "right", fontFamily: fonts.sansMedium, fontSize: 12, lineHeight: 18, color: colors.muted2 },
   caption: { marginTop: 6, fontFamily: fonts.sans, fontSize: 12, lineHeight: 18, color: colors.muted2 },
   code: { fontFamily: fonts.sansMedium },

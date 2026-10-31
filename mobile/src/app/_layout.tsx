@@ -5,7 +5,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
+import { getStaticFeatureFlag } from "react-native-reanimated";
 
 import { BottomNav } from "~/components/site/BottomNav";
 import { LaunchAnimation } from "~/components/site/LaunchAnimation";
@@ -39,6 +40,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
   }, [loaded, error]);
+
+  // A development build says once whether Reanimated moves scroll-driven views (the pinned reveal) in
+  // the same frame as the scroll: the *_SYNCHRONOUSLY_UPDATE_UI_PROPS flags in package.json, compiled
+  // into native builds. Expo Go is built without them, so it says "off" there.
+  useEffect(() => {
+    if (!__DEV__) return;
+    const flag = Platform.OS === "android" ? "ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS" : "IOS_SYNCHRONOUSLY_UPDATE_UI_PROPS";
+    console.info(`[Reanimated] same-frame UI updates: ${getStaticFeatureFlag(flag) ? "on" : "off"}`);
+  }, []);
 
   if (!loaded && !error) return null;
 

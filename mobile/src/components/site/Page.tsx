@@ -1,7 +1,7 @@
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
-import { Pressable, StyleSheet, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, { makeMutable, useAnimatedRef, useReducedMotion, useScrollOffset, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -56,16 +56,6 @@ const PageCtx = createContext<PageApi>({
 /** Scrolls the current page to one of its anchors (the website's same-page #links). */
 export const usePage = () => useContext(PageCtx);
 
-/** The last section whose top has passed 55% of the screen (MobileCtaBar's activeSection); 0 before any. */
-export function sectionInView(anchors: ReadonlyMap<string, number>, sections: readonly string[], scrollY: number, viewport: number): number {
-  let active = 0;
-  sections.forEach((id, i) => {
-    const y = anchors.get(id);
-    if (y !== undefined && y - scrollY <= viewport * 0.55) active = i;
-  });
-  return active;
-}
-
 /** The website's scroll-margin-top for [id] (6rem). */
 const ANCHOR_MARGIN = 96;
 
@@ -77,7 +67,7 @@ type Props = {
   testID?: string;
   /** the footer closes every page (on by default) */
   footer?: boolean;
-  /** on the home page: the section ids the bottom nav follows (top, services, colour, book) */
+  /** on the home page: its sections (top, services, colour, book); the bottom nav's Home glides back to the first */
   sections?: readonly string[];
 };
 
@@ -99,7 +89,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
   const pathname = usePathname();
   const cta = !(CTA_HIDDEN_ROUTES as readonly string[]).includes(pathname);
   const nav = useNavState();
-  const { setScrollHome, setHomeSection } = nav;
+  const { setScrollHome } = nav;
   const reduced = useReducedMotion();
 
   const offsetFor = useCallback((y: number, margin = ANCHOR_MARGIN) => Math.max(0, y - insets.top - margin), [insets.top]);
@@ -150,17 +140,6 @@ export function Page({ children, testID, footer = true, sections }: Props) {
     return () => setScrollHome(undefined);
   }, [sections, scrollTo, setScrollHome]);
 
-  const last = useRef(0);
-  const onScroll = sections
-    ? (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const active = sectionInView(anchors.current, sections, e.nativeEvent.contentOffset.y, vh);
-        if (active !== last.current) {
-          last.current = active;
-          setHomeSection(active);
-        }
-      }
-    : undefined;
-
   const headerHeight = insets.top + HEADER_HEIGHT;
 
   return (
@@ -174,7 +153,6 @@ export function Page({ children, testID, footer = true, sections }: Props) {
           contentContainerStyle={{ paddingTop: insets.top + HEADER_HEIGHT }}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
-          onScroll={onScroll}
           scrollEventThrottle={8}
         >
           <View ref={contentRef} collapsable={false} onLayout={onContentLayout}>
