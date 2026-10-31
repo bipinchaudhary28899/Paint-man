@@ -8,11 +8,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AccountButton } from "~/components/account/AccountButton";
 import { Logo } from "~/components/ui/Media";
 import { site } from "~/shared";
-import { colors, gutter, HEADER_HEIGHT } from "~/theme";
+import { colors, gutter, HEADER_HEIGHT, NAV_CLEARANCE } from "~/theme";
 import { MenuButton, NavDrawer } from "./Drawer";
 import { Footer } from "./Footer";
 import { useNavState } from "./nav-state";
-import { CTA_GAP, CTA_HEIGHT, CTA_HIDDEN_ROUTES, FORM_ANCHORS, StickyCta } from "./StickyCta";
+import { CTA_HIDDEN_ROUTES, ctaRoomHeight, FORM_ANCHORS, StickyCta } from "./StickyCta";
 
 // Every screen is a website page: the sticky header (the full Paint Saathi logo, and the menu
 // button that opens the drawer), the page's sections, then the footer, all in one scroll. In-page
@@ -159,7 +159,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
             {children}
             {footer && <Footer />}
             {/* room at the very end for the booking pill, so it covers none of the footer's last lines */}
-            {cta && <View style={[styles.ctaRoom, footer && styles.ctaRoomInk]} testID="cta-room" />}
+            {cta && <View style={[{ height: ctaRoomHeight(insets.bottom, footer ? NAV_CLEARANCE : 0) }, footer && styles.ctaRoomInk]} testID="cta-room" />}
           </View>
         </Animated.ScrollView>
         {cta && <StickyCta scrollY={scrollY} viewport={vh} headerHeight={headerHeight} forms={forms} toForm={ownForm ? () => scrollTo(ownForm) : undefined} />}
@@ -226,6 +226,5 @@ const styles = StyleSheet.create({
   headerRow: { minHeight: HEADER_HEIGHT - 1, paddingHorizontal: gutter, paddingVertical: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerEnd: { flexDirection: "row", alignItems: "center", gap: 10 },
   container: { paddingHorizontal: gutter },
-  ctaRoom: { height: CTA_HEIGHT + CTA_GAP },
   ctaRoomInk: { backgroundColor: colors.ink },
 });

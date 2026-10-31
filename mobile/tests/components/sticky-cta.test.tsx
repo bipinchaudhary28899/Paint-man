@@ -1,12 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router, usePathname } from "expo-router";
-import { Linking, Text } from "react-native";
+import { Linking, StyleSheet, Text } from "react-native";
 import { makeMutable, type SharedValue } from "react-native-reanimated";
 
 import { navBottom, navReach } from "~/components/site/BottomNav";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { Anchor, Page, usePage } from "~/components/site/Page";
-import { CTA_GAP, CTA_HIDDEN_ROUTES, ctaVisible, FORM_ANCHORS, SCROLL_SLOP, scrollHeading, StickyCta } from "~/components/site/StickyCta";
+import { CTA_GAP, CTA_HEIGHT, CTA_HIDDEN_ROUTES, ctaRoomHeight, ctaVisible, FORM_ANCHORS, SCROLL_SLOP, scrollHeading, StickyCta } from "~/components/site/StickyCta";
+import { NAV_CLEARANCE } from "~/theme";
 
 jest.mock("expo-router", () => ({
   router: { push: jest.fn(), navigate: jest.fn() },
@@ -209,6 +210,30 @@ describe("the pill on a page", () => {
     // scrolled back up to the form: the pill gives way
     await scroll(page!.scrollY, 4500, 3000);
     await waitFor(() => expect(pill()).toBeNull());
+  });
+
+  it("leaves room under the footer so the pill keeps its gap from \"Back to top\", taller with a home indicator", () => {
+    // where the pill's top sits above the screen's bottom edge, and where the footer's last line ends
+    const pillTop = (inset: number) => navReach(inset) + CTA_GAP + CTA_HEIGHT;
+    const lastLine = (inset: number) => NAV_CLEARANCE + ctaRoomHeight(inset, NAV_CLEARANCE);
+    for (const inset of [0, 20, 34, 48]) expect(lastLine(inset) - pillTop(inset)).toBeGreaterThanOrEqual(CTA_GAP);
+    // the iPhone 16's 34pt home indicator: 18pt more room than the 64 a phone without one gets
+    expect(ctaRoomHeight(0, NAV_CLEARANCE)).toBe(CTA_HEIGHT + CTA_GAP);
+    expect(ctaRoomHeight(34, NAV_CLEARANCE)).toBe(82);
+    // never less than the pill and its gap
+    expect(ctaRoomHeight(0, 500)).toBe(CTA_HEIGHT + CTA_GAP);
+  });
+
+  it("sizes the room at the end of the page for the phone's bottom inset", async () => {
+    await render(
+      <NavStateProvider>
+        <Page>
+          <Text>content</Text>
+        </Page>
+      </NavStateProvider>,
+    );
+    const room = screen.getByTestId("cta-room", { includeHiddenElements: true });
+    expect(StyleSheet.flatten(room.props.style).height).toBe(ctaRoomHeight(0, NAV_CLEARANCE));
   });
 
   it("is left off the booking page, with no room kept for it", async () => {

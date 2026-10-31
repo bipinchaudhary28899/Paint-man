@@ -27,9 +27,19 @@ export const CTA_HIDDEN_ROUTES = ["/book", "/thank-you", "/contact", "/login"] a
 /** The page anchors that hold a booking or contact form (BookingSection, the services' block, the city waitlist, the contact form). */
 export const FORM_ANCHORS: readonly string[] = ["book-visit", "book-inspection", "waitlist", "send-message"];
 
-/** The pill's height and its gap above the nav: the room a page leaves at its end so the pill covers nothing there. */
+/** The pill's height and its gap above the nav. */
 export const CTA_HEIGHT = 52;
 export const CTA_GAP = 12;
+
+/**
+ * The room a page leaves under its last line so the pill, sitting CTA_GAP above the bottom nav, covers
+ * nothing there and keeps the same gap from it (the footer's "Back to top"). The nav rises with the
+ * phone's bottom inset (the home indicator), so the room does too. `below`: what the page already
+ * leaves under its last line (the footer's NAV_CLEARANCE).
+ */
+export function ctaRoomHeight(insetBottom: number, below = 0): number {
+  return Math.max(CTA_HEIGHT + CTA_GAP, navReach(insetBottom) + CTA_GAP + CTA_HEIGHT + CTA_GAP - below);
+}
 
 /** WhatsApp's own green, for its button only. */
 export const WHATSAPP_GREEN = "#25D366";
