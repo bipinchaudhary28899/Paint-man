@@ -40,6 +40,14 @@ describe("LeadForm (booking)", () => {
     expect(screen.getByRole("button", { name: "Book my site visit" })).toBeEnabled();
   });
 
+  it("while customer accounts are coming soon, says the address and the job are taken on the call", () => {
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "closed");
+    render(<LeadForm type="booking" />);
+    expect(screen.getByText("That's all we need to call you. We take the address and what needs painting on the call.")).toBeInTheDocument();
+    expect(screen.queryByText(/in your account/)).toBeNull();
+    vi.unstubAllEnvs();
+  });
+
   it("carries what the page knows: the service of a service page, and a prefilled note the visitor can edit", async () => {
     const fetchSpy = mockFetch(200, { ok: true });
     const { container, unmount } = render(<LeadForm type="booking" defaultService="Exterior Painting" />);

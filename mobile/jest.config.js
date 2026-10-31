@@ -13,7 +13,12 @@ module.exports = {
   // pass the 5 s default on a busy machine (a timeout, not a threshold).
   testTimeout: 20_000,
   // Metro resolves a brand-pack image by its base name (logo.png → logo@2x.png); Jest needs the file itself.
-  moduleNameMapper: { "^(.*/public/brand/0[1-3]-[a-z-]+/paintsaathi-[a-z]+-(?:color|reversed|sand))\\.png$": "$1@2x.png" },
+  // The shared website files resolve packages from the app's node_modules, as Metro's nodeModulesPaths
+  // does: Expo turns their process.env.EXPO_PUBLIC_* reads into an import of expo/virtual/env.
+  moduleNameMapper: {
+    "^(.*/public/brand/0[1-3]-[a-z-]+/paintsaathi-[a-z]+-(?:color|reversed|sand))\\.png$": "$1@2x.png",
+    "^expo/virtual/env$": "<rootDir>/node_modules/expo/virtual/env.js",
+  },
   collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/app/**"],
   coverageThreshold: { global: { statements: 90, branches: 90, functions: 90, lines: 90 } },
   coverageReporters: ["text-summary", "text"],

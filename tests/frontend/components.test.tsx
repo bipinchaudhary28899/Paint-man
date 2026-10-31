@@ -77,11 +77,9 @@ describe("Header and Footer", () => {
     expect(screen.getByRole("link", { name: "Terms of service" })).toHaveAttribute("href", "/terms");
   });
 
-  it("footer has a staff login link that crawlers are told not to follow", () => {
+  it("footer has no staff login (staff use the administrator link on the login page)", () => {
     render(<Footer />);
-    const link = screen.getByRole("link", { name: "Staff login" });
-    expect(link).toHaveAttribute("href", "/admin");
-    expect(link).toHaveAttribute("rel", "nofollow");
+    expect(screen.queryByRole("link", { name: /Staff login/ })).toBeNull();
   });
 
   it("mobile palette nav always offers booking and marks the current page", () => {

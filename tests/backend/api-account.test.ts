@@ -375,6 +375,35 @@ describe("POST /api/v1/bookings", () => {
     expect(await testDb.db.select().from(leads)).toHaveLength(0);
   });
 
+  it("while customer login is closed, books without a token as the website's form does (no project id back)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "closed");
+    const POST = await bookings();
+    const res = await POST(post({ name: "Asha", phone: "+91 98765 43210", city: "agra", locality: "Kamla Nagar" }, { "x-forwarded-for": "203.0.113.7" }));
+    expect(res.status).toBe(201);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    const body = await res.json();
+    expect(body).toMatchObject({ apiVersion: "v1", kind: "booking", data: { received: true }, links: { self: "/api/v1/bookings", html: "/thank-you?type=booking" } });
+    expect(body.data).not.toHaveProperty("projectId");
+    const [lead] = await testDb.db.select().from(leads);
+    expect(lead).toMatchObject({ kind: "booking", source: "app", phone: PHONE, name: "Asha", userId: null });
+    const [project] = await testDb.db.select().from(projects);
+    expect(project).toMatchObject({ userId: null, stage: "booked" });
+
+    // a guest gives the number and the name
+    const missing = await expectError(await POST(post({ city: "agra", locality: "Kamla Nagar" })), 400, "invalid_request");
+    expect(missing.error.details).toMatchObject({ name: "Enter your name", phone: expect.any(String) });
+    // a token that fails is still a 401, so the app signs in again rather than booking as a guest
+    await expectError(await POST(post(booking, { authorization: "Bearer nope" })), 401, "unauthenticated");
+    // 5 guest bookings per IP per 10 minutes
+    const statuses = [];
+    for (let i = 0; i < 5; i++) statuses.push((await POST(post(booking, { "x-forwarded-for": "198.51.100.9" }))).status);
+    expect(statuses).toEqual([201, 201, 201, 201, 201]);
+    await expectError(await POST(post(booking, { "x-forwarded-for": "198.51.100.9" })), 429, "rate_limited");
+    // a signed-in customer books into their account as before
+    const { bearer } = await signedIn();
+    expect((await (await POST(post(booking, bearer))).json()).data.projectId).toEqual(expect.any(String));
+  });
+
   it("413 for a big body, 415 for a non-JSON one, 429 after 5 bookings in 10 minutes", async () => {
     const POST = await bookings();
     const { bearer } = await signedIn();

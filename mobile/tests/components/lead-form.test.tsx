@@ -41,6 +41,8 @@ beforeEach(() => {
 
 const toLogin = { pathname: "/login", params: { next: "/book", resume: "booking" } };
 const booked: Answer = { status: 201, data: { received: true, projectId: "p-1" } };
+/** POST /api/v1/bookings without a session once customer accounts are open */
+const unauthenticated: Answer = { status: 401, error: { code: "unauthenticated", message: "Sign in to continue." } };
 const thanks = { pathname: "/thank-you", params: { type: "booking", sent: "1", project: "p-1" } };
 
 /** The form inside a signed-in session (the saved token checked with /api/v1/me), the booking endpoint answering `bookings`. */
@@ -208,13 +210,33 @@ describe("LeadForm (booking): sending it", () => {
   }
 
   it("signed out, holds the booking and opens the login screen, saying a code comes first", async () => {
+    const calls = mockApi({ "POST /api/v1/bookings": unauthenticated });
     await render(<LeadForm type="booking" />);
     expect(screen.getByText(SIGN_IN_NOTE)).toBeOnTheScreen();
     await fillBooking();
     await press("Book my site visit");
-    expect(router.push).toHaveBeenCalledWith(toLogin);
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(toLogin));
     expect(heldBooking()).toMatchObject({ path: "/book", values: { name: "Asha Verma", phone: "98765 43210", city: "agra", locality: agra.areas[0] } });
     expect(heldBooking()?.pin).toBeUndefined();
+    // it was offered without a session first (the API takes it that way only while accounts are coming soon)
+    expect(bookingCalls(calls)[0].headers).not.toHaveProperty("Authorization");
+  });
+
+  it("while customer accounts are coming soon, books signed out without a code and says the rest is taken on the call", async () => {
+    process.env.NEXT_PUBLIC_CUSTOMER_LOGIN = "closed";
+    try {
+      const calls = mockApi({ "POST /api/v1/bookings": { status: 201, data: { received: true } } });
+      await render(<LeadForm type="booking" />);
+      expect(screen.queryByText(SIGN_IN_NOTE)).toBeNull();
+      expect(screen.getByText("That's all we need to call you. We take the address and what needs painting on the call.")).toBeOnTheScreen();
+      await fillBooking();
+      await press("Book my site visit");
+      await waitFor(() => expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "1" } }));
+      expect(bookingCalls(calls)).toHaveLength(1);
+      expect(heldBooking()).toBeNull();
+    } finally {
+      delete process.env.NEXT_PUBLIC_CUSTOMER_LOGIN;
+    }
   });
 
   it("signed in, starts with the account's name and mobile, and sends who and where", async () => {
@@ -256,7 +278,7 @@ describe("LeadForm (booking): sending it", () => {
   });
 
   it("sends the held booking once the visitor signs in, with nothing retyped", async () => {
-    const calls = mockApi({ "POST /api/v1/auth/verify": { data: { user: asha, token: "new-token", expiresAt: "2027-01-29T00:00:00.000Z" } }, "POST /api/v1/bookings": booked });
+    const calls = mockApi({ "POST /api/v1/auth/verify": { data: { user: asha, token: "new-token", expiresAt: "2027-01-29T00:00:00.000Z" } }, "POST /api/v1/bookings": [unauthenticated, booked] });
     await render(
       <AuthProvider>
         <LeadForm type="booking" />
@@ -265,13 +287,13 @@ describe("LeadForm (booking): sending it", () => {
     );
     await fillBooking();
     await press("Book my site visit");
-    expect(router.push).toHaveBeenLastCalledWith(toLogin);
-    expect(bookingCalls(calls)).toHaveLength(0);
+    await waitFor(() => expect(router.push).toHaveBeenLastCalledWith(toLogin));
+    expect(bookingCalls(calls)).toHaveLength(1); // offered without a session, and refused
     // the login screen signs in; the form under it sends the booking
     await act(async () => void (await auth.signIn("9876543210", "123456")));
     await waitFor(() => expect(router.push).toHaveBeenLastCalledWith(thanks));
-    expect(bookingCalls(calls)).toHaveLength(1);
-    expect(bookingCalls(calls)[0]).toMatchObject({ headers: { Authorization: "Bearer new-token" }, body: { name: "Asha Verma", phone: "9876543210", city: "agra", locality: agra.areas[0] } });
+    expect(bookingCalls(calls)).toHaveLength(2);
+    expect(bookingCalls(calls)[1]).toMatchObject({ headers: { Authorization: "Bearer new-token" }, body: { name: "Asha Verma", phone: "9876543210", city: "agra", locality: agra.areas[0] } });
     expect(heldBooking()).toBeNull();
   });
 

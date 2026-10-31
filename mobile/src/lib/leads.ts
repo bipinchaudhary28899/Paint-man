@@ -1,12 +1,14 @@
 import { liveCities, normalizeMobile, requiredFieldErrors, type City } from "~/shared";
-import { ApiError, BAD_RESPONSE_MESSAGE, type ApiEnvelope, type ApiRequestInit } from "./api";
+import { ApiError, apiRequest, BAD_RESPONSE_MESSAGE, type ApiEnvelope, type ApiRequestInit } from "./api";
 import { FORM_ERROR, toBookingPayload, validateBooking, type BookingField, type BookingValues } from "./booking";
 import type { LatLng } from "./location";
 
 // The website has one lead form (LeadForm) in two kinds: booking, and contact (the contact page, and
 // the waitlist note on a city coming soon). Both check their answers exactly as the website does.
-// A booking is sent to POST /api/v1/bookings with the visitor's session (a verified mobile number):
-// signed out, the form asks them to sign in first and then sends it. The website's /api/leads accepts
+// A booking is sent to POST /api/v1/bookings with the visitor's session (a verified mobile number).
+// Signed out, it is sent without one: while customer accounts are coming soon the API takes it by the
+// number given, as the website's form does; once they are open the API answers 401 and the form asks
+// the visitor to sign in first and then sends it. The website's /api/leads accepts
 // same-origin requests only and there is no app endpoint for contact messages yet, so a contact
 // request is checked and reported as not sent: nothing is transmitted or stored.
 
@@ -47,20 +49,35 @@ type BookingOptions = {
   /** the spot pinned on the map, sent as the booking's `location` */
   location?: LatLng;
   request: AuthedRequest;
+  /** a call without the session, for a signed-out booking (apiRequest) */
+  send?: typeof apiRequest;
 };
 
-/** Checks the booking as the website does, then sends it with the session; signed out, asks for sign-in. */
-export async function submitBooking(values: BookingValues, { live = liveCities(), location, request }: BookingOptions): Promise<SubmitResult> {
+/** Checks the booking as the website does, then sends it with the session; signed out, without it (or asks for sign-in). */
+export async function submitBooking(values: BookingValues, { live = liveCities(), location, request, send = apiRequest }: BookingOptions): Promise<SubmitResult> {
   const errors = validateBooking(values, live);
   if (Object.keys(errors).length > 0) return { ok: false, errors, message: FORM_ERROR };
+  const body = toBookingPayload(values, live, location);
   try {
-    const res = await request<{ received?: boolean; projectId?: unknown }>("/api/v1/bookings", { method: "POST", body: toBookingPayload(values, live, location) });
-    const projectId = res.data?.projectId;
-    return { ok: true, sent: true, projectId: typeof projectId === "string" ? projectId : undefined };
+    return booked(await request<Booked>("/api/v1/bookings", { method: "POST", body }));
+  } catch (err) {
+    if (!(err instanceof ApiError && err.status === 401)) return { ok: false, ...bookingErrors(err) };
+  }
+  // no session (or it expired): booked by the number while accounts are coming soon, else a 401 asks for sign-in
+  try {
+    return booked(await send<Booked>("/api/v1/bookings", { method: "POST", body }));
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) return { ok: false, signIn: true };
     return { ok: false, ...bookingErrors(err) };
   }
+}
+
+type Booked = { received?: boolean; projectId?: unknown };
+
+/** A booking the API took: its project id when it went into the visitor's account. */
+function booked(res: ApiEnvelope<Booked>): SubmitResult {
+  const projectId = res.data?.projectId;
+  return { ok: true, sent: true, projectId: typeof projectId === "string" ? projectId : undefined };
 }
 
 export type ContactValues = { name: string; phone: string; message: string };

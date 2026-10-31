@@ -140,13 +140,12 @@ describe("footer link groups: tap rows on phones, open columns from tablet up", 
     expect(media.listeners.size).toBe(0);
   });
 
-  it("keeps the localities strip, the legal links and the staff login (not followed by crawlers)", () => {
+  it("keeps the localities strip and the legal links; staff log in from the login page, not the footer", () => {
     render(<Footer />);
     expect(screen.getByText(new RegExp(`Painting in ${site.city}: ${site.areas.join(" · ")}`))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Privacy policy" })).toHaveAttribute("href", "/privacy-policy");
     expect(screen.getByRole("link", { name: "Terms of service" })).toHaveAttribute("href", "/terms");
-    const staff = screen.getByRole("link", { name: "Staff login" });
-    expect(staff).toHaveAttribute("href", "/admin");
-    expect(staff).toHaveAttribute("rel", "nofollow");
+    expect(screen.queryByRole("link", { name: /Staff login/ })).toBeNull();
+    expect(document.querySelector('a[href^="/admin"]')).toBeNull();
   });
 });

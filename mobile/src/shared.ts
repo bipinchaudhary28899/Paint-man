@@ -36,6 +36,7 @@ export {
   type ServicePoint,
 } from "@/config/site";
 export { WHATSAPP_GREETING } from "@/config/contact";
+export { customerLoginOpen } from "@/config/login";
 export { detailSteps, stepsProgress, type DetailStep, type DetailStepKey, type ProjectDetailsFields } from "@/lib/projects/details";
 export { reviewMonth, reviewPlace, reviewsToShow, type Review, type ShownReviews } from "@/config/reviews";
 export { footerColumns, headerSection, menuLinks, navMenus, shadeCardBrands, shadeCardHref, type NavGroup, type NavLink, type NavMenu, type NavNode } from "@/config/nav";

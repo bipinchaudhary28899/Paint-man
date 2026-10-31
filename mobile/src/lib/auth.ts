@@ -66,6 +66,12 @@ export async function sendCode(phone: string): Promise<CodeSent> {
 }
 
 /** Checks the code and opens an app session: the user and the bearer token. */
+/** Whether customers can sign in yet (GET /api/v1/auth/status); while it is closed only the tester numbers can. */
+export async function loginOpen(): Promise<boolean> {
+  const res = await apiRequest<{ open?: unknown }>("/api/v1/auth/status");
+  return res.data?.open !== false;
+}
+
 export async function verifyCode(phone: string, code: string): Promise<Session> {
   const res = await apiRequest<Partial<Session>>("/api/v1/auth/verify", { method: "POST", body: { phone: normalizeMobile(phone), code, client: "app" } });
   const { user, token, expiresAt } = res.data;

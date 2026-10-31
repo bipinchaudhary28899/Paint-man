@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { navMenus } from "@/config/nav";
 import { liveCityNames, site } from "@/config/site";
-import { AccountLink, PhoneHeaderAction } from "./account/AccountLink";
+import { AccountLink } from "./account/AccountLink";
 import { Wordmark } from "./Logo";
 import { HeaderLink, NavMenu } from "./NavMenu";
 
@@ -25,11 +25,10 @@ export function Header() {
               {site.phoneDisplay || site.phone}
             </a>
           )}
-          {/* Phones: "Book a visit", or "My account" once signed in (logging in stays in the footer). */}
-          <PhoneHeaderAction className="!min-h-11 w-[7.25rem] !px-0 text-sm min-[721px]:hidden" />
           {/* "Log in" or "My account", chosen in the browser so the page stays static, at one fixed width for both.
-              From 900px up; on narrower tablets the row is full (the footer and the thank-you page link it). */}
-          <AccountLink className="btn-secondary !min-h-[46px] w-[7.25rem] !px-0 text-sm max-[899px]:hidden" />
+              Phones and from 900px up; on narrower tablets the row is full (the footer links it). The login page
+              also leads staff to the administrator login. */}
+          <AccountLink className="btn-secondary !min-h-11 w-[7.25rem] !px-0 text-sm min-[721px]:!min-h-[46px] min-[721px]:max-[899px]:hidden" />
           <Link href="/book" className="btn-primary hidden !min-h-[46px] !px-5 text-sm min-[721px]:inline-flex">
             Book a free site visit
           </Link>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/account/LoginForm";
+import { customerLoginOpen } from "@/config/login";
 import { site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -17,27 +18,71 @@ const perks = [
 ];
 
 // Static: the form reads ?next= in the browser (src/components/useUrlQuery.ts) and talks to
-// /api/v1/auth/*. Kept out of the index (noindex) and out of the sitemap.
+// /api/v1/auth/*. Kept out of the index (noindex) and out of the sitemap. While customer login is
+// closed (src/config/login.ts) the page says accounts are coming soon and points to booking; the
+// tester numbers sign in from a fold-out. Staff always find the administrator login here.
 export default function LoginPage() {
+  const open = customerLoginOpen();
   return (
     <div className="container-page py-10 tab:py-14 desk:py-20">
       <div className="grid gap-8 desk:grid-cols-[minmax(0,1fr)_440px] desk:items-start desk:gap-x-16 desk:gap-y-10">
         <div className="desk:col-start-1">
           <p className="eyebrow">My account</p>
           <h1 className="mt-3 text-[clamp(36px,5vw,60px)] leading-[1.05] tracking-[-0.02em]">
-            Log in to track your <em>project</em>
+            {open ? (
+              <>
+                Log in to track your <em>project</em>
+              </>
+            ) : (
+              <>
+                Customer accounts are coming <em>soon</em>
+              </>
+            )}
           </h1>
           <p className="mt-4 max-w-xl text-lg leading-[1.6] text-muted">
-            Use the mobile number you booked with, and follow your painting project from our call to the handover.
+            {open
+              ? "Use the mobile number you booked with, and follow your painting project from our call to the handover."
+              : "Soon you'll log in with the mobile number you booked with and follow your painting project from our call to the handover. Until then, book a visit and we call you at every step."}
           </p>
         </div>
 
         <div className="card p-5 tab:p-8 desk:col-start-2 desk:row-span-2 desk:row-start-1">
-          <LoginForm />
+          {open ? (
+            <>
+              <LoginForm />
+              <p className="mt-5 border-t border-line-soft pt-4 text-sm leading-relaxed text-muted">
+                First time here? Your account is made when you log in, and every booking made with your number shows up in it.{" "}
+                <Link href="/privacy-policy" className="font-semibold text-ink underline underline-offset-4 hover:text-terracotta">
+                  How we handle your number
+                </Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-display text-2xl">Booking is open now</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
+                Leave your name, mobile number and area, and we call you back to fix a free site visit.
+              </p>
+              <Link href="/book" className="btn-primary mt-5 w-full">
+                Book a free site visit
+              </Link>
+              <details className="group mt-5 border-t border-line-soft pt-1">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                  Testing for {site.name}? Use a tester number
+                  <span aria-hidden className="text-xl leading-none transition-transform group-open:rotate-45 motion-reduce:transition-none">
+                    +
+                  </span>
+                </summary>
+                <div className="pt-3">
+                  <LoginForm />
+                </div>
+              </details>
+            </>
+          )}
           <p className="mt-5 border-t border-line-soft pt-4 text-sm leading-relaxed text-muted">
-            First time here? Your account is made when you log in, and every booking made with your number shows up in it.{" "}
-            <Link href="/privacy-policy" className="font-semibold text-ink underline underline-offset-4 hover:text-terracotta">
-              How we handle your number
+            {site.name} team?{" "}
+            <Link href="/admin/login" rel="nofollow" prefetch={false} className="font-semibold text-ink underline underline-offset-4 hover:text-terracotta">
+              Log in as an administrator
             </Link>
           </p>
         </div>
@@ -51,12 +96,14 @@ export default function LoginPage() {
           ))}
         </ul>
       </div>
-      <p className="mt-10 text-[15px] text-muted">
-        Not booked yet?{" "}
-        <Link href="/book" className="link-arrow inline-flex text-[15px] font-semibold">
-          Book a free site visit <span aria-hidden>→</span>
-        </Link>
-      </p>
+      {open && (
+        <p className="mt-10 text-[15px] text-muted">
+          Not booked yet?{" "}
+          <Link href="/book" className="link-arrow inline-flex text-[15px] font-semibold">
+            Book a free site visit <span aria-hidden>→</span>
+          </Link>
+        </p>
+      )}
     </div>
   );
 }

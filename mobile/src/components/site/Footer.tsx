@@ -75,11 +75,6 @@ export function Footer({ details = site }: { details?: Details }) {
           <Text style={[styles.small, styles.legalLink]}>
             © {year} {site.legalName || site.name}
           </Text>
-          <Pressable accessibilityRole="link" onPress={() => openHref("/admin")} style={styles.staffHit}>
-            <View style={styles.staff}>
-              <Text style={styles.small}>Staff login</Text>
-            </View>
-          </Pressable>
         </View>
       </View>
 
@@ -160,8 +155,6 @@ const styles = StyleSheet.create({
   small: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 19.2, color: colors.onInkMuted },
   legal: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: 20 },
   legalLink: { minHeight: 44, lineHeight: 44 },
-  staffHit: { minHeight: 44, justifyContent: "center" },
-  staff: { borderRadius: 999, borderWidth: 1, borderColor: "rgba(248, 245, 239, 0.2)", paddingHorizontal: 12, paddingVertical: 4 },
   top: {
     marginTop: 28,
     alignSelf: "center",

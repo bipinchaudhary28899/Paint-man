@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Container } from "~/components/site/Page";
 import { Button } from "~/components/ui/Button";
@@ -9,10 +9,11 @@ import { Field, Input, PhoneInput, type InputHandle } from "~/components/ui/Fiel
 import { Em, Eyebrow, H, P } from "~/components/ui/Text";
 import { TapLink } from "~/components/content/Inline";
 import { ApiError } from "~/lib/api";
-import { cleanCode, CODE_LENGTH, codeProblem, errorMessage, phoneProblem, retryAfter, sendCode } from "~/lib/auth";
+import { cleanCode, CODE_LENGTH, codeProblem, errorMessage, loginOpen, phoneProblem, retryAfter, sendCode } from "~/lib/auth";
 import { useAuth } from "~/lib/auth-context";
 import { openHref } from "~/lib/links";
 import { heldBooking, releaseBooking } from "~/lib/pending-booking";
+import { customerLoginOpen, site } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 
 // The login screen (the website's /login): the mobile number with "+91" as the booking form shows it,
@@ -22,8 +23,39 @@ import { colors, fonts, radii } from "~/theme";
 // expired code, too many tries with the wait, sign-in codes not set up yet. Signed in, the visitor
 // goes back where they came from: the booking they were sending (`resume`), the screen in `next`,
 // or their account.
+// While customer accounts are coming soon (GET /api/v1/auth/status; the build's own setting until it
+// answers) the screen says so and points to booking, and the tester numbers sign in from a fold-out.
+// Staff always find the administrator login (the website's /admin/login) at the bottom.
 
 type Phase = "phone" | "code";
+
+/** The API's answer, asked once a session: the screen opens in the right state from then on. */
+let knownOpen: boolean | undefined;
+
+/** Whether customers can sign in yet: the build's setting until the API answers (kept if it cannot). */
+export function useLoginOpen(): boolean {
+  const [open, setOpen] = useState(() => knownOpen ?? customerLoginOpen());
+  useEffect(() => {
+    if (knownOpen !== undefined) return;
+    let live = true;
+    loginOpen().then(
+      (value) => {
+        knownOpen = value;
+        if (live) setOpen(value);
+      },
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+  return open;
+}
+
+/** Sets (or, with undefined, forgets) the API's answer: for tests. */
+export const rememberLoginStatus = (open: boolean | undefined) => {
+  knownOpen = open;
+};
 
 /** "0:27": the wait before a new code, as minutes and seconds. */
 export const countdown = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
@@ -60,6 +92,8 @@ type Props = {
 
 export function Login({ next, resume = false }: Props) {
   const auth = useAuth();
+  const open = useLoginOpen();
+  const [testing, setTesting] = useState(false);
   const [phase, setPhase] = useState<Phase>("phone");
   // a held booking already has the mobile number the visitor typed
   const [phone, setPhone] = useState(() => (resume ? (heldBooking()?.values.phone ?? "") : ""));
@@ -183,6 +217,116 @@ export function Login({ next, resume = false }: Props) {
       </Text>
     ) : null;
 
+  const form =
+    phase === "phone" ? (
+      <View style={styles.form}>
+        <Field label="Mobile number" error={phoneError}>
+          <PhoneInput
+            ref={phoneInput}
+            value={phone}
+            onChangeText={(v) => {
+              setPhone(v);
+              if (phoneError && !phoneProblem(v)) setPhoneError("");
+            }}
+            accessibilityLabel="Mobile number"
+            error={phoneError || undefined}
+            returnKeyType="send"
+            onSubmitEditing={() => void send()}
+          />
+        </Field>
+        {errorLine}
+        <Button label="Send code" busyLabel="Sending…" busy={sending} disabled={wait > 0} onPress={() => void send()} height={54} fontSize={16} />
+        {wait > 0 && <Text style={styles.hint}>You can ask for a code again in {countdown(wait)}.</Text>}
+      </View>
+    ) : (
+      <View style={styles.form}>
+        <View>
+          <Text style={styles.sent} accessibilityLiveRegion="polite">
+            We sent a {CODE_LENGTH}-digit code to <Text style={styles.sentPhone}>{sentTo.phone}</Text>. It works for {sentTo.minutes} minutes.
+          </Text>
+          <TapLink label="Change number" onPress={changeNumber} textStyle={styles.change} />
+        </View>
+        <Field label={`${CODE_LENGTH}-digit code`} error={codeError}>
+          <Input
+            ref={codeInput}
+            value={code}
+            onChangeText={typeCode}
+            accessibilityLabel={`${CODE_LENGTH}-digit code`}
+            error={codeError || undefined}
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            autoComplete="sms-otp"
+            maxLength={CODE_LENGTH + 4}
+            returnKeyType="done"
+            onSubmitEditing={() => void check()}
+            style={styles.code}
+          />
+        </Field>
+        {notice !== "" && (
+          <Text style={styles.hint} accessibilityLiveRegion="polite">
+            {notice}
+          </Text>
+        )}
+        {errorLine}
+        <Button label="Log in" busyLabel="Checking…" busy={checking} onPress={() => void check()} height={54} fontSize={16} />
+        <Button
+          label={wait > 0 ? `Send a new code in ${countdown(wait)}` : "Send a new code"}
+          accessibilityLabel={wait > 0 ? `Send a new code in ${wait} seconds` : "Send a new code"}
+          variant="secondary"
+          small
+          busy={sending}
+          disabled={wait > 0 || checking}
+          onPress={() => void send()}
+        />
+      </View>
+    );
+
+  const admin = (
+    <Text style={styles.admin}>
+      {site.name} team?{" "}
+      <Text accessibilityRole="link" style={styles.adminLink} onPress={() => openHref("/admin/login")}>
+        Log in as an administrator
+      </Text>
+    </Text>
+  );
+
+  if (!open && !resume) {
+    return (
+      <Container style={styles.page}>
+        <Eyebrow>Your account</Eyebrow>
+        <H size={40} leading={1.04} tracking={-0.02} style={styles.title}>
+          Customer accounts are coming <Em>soon</Em>
+        </H>
+        <P size={18} leading={1.6} color={colors.muted} style={styles.intro}>
+          Soon you&apos;ll log in with your mobile number and follow your painting project from the first call to the handover. Until then, book a visit and we call you at every
+          step.
+        </P>
+        <Card style={styles.card}>
+          <Text accessibilityRole="header" style={styles.soonTitle}>
+            Booking is open now
+          </Text>
+          <P size={15} leading={1.5} color={colors.muted} style={styles.soonText}>
+            Leave your name, mobile number and area, and we call you back to fix a free site visit.
+          </P>
+          <Button label="Book a free site visit" accessibilityRole="link" onPress={() => router.push("/book")} height={54} fontSize={16} style={styles.soonButton} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: testing }}
+            onPress={() => setTesting((t) => !t)}
+            style={({ pressed }) => [styles.tester, pressed && styles.pressed]}
+          >
+            <Text style={styles.testerText}>Testing for {site.name}? Use a tester number</Text>
+            <Text aria-hidden style={styles.plus}>
+              {testing ? "−" : "+"}
+            </Text>
+          </Pressable>
+          {testing && form}
+        </Card>
+        {admin}
+      </Container>
+    );
+  }
+
   return (
     <Container style={styles.page}>
       <Eyebrow>Your account</Eyebrow>
@@ -202,70 +346,7 @@ export function Login({ next, resume = false }: Props) {
         </View>
       )}
 
-      <Card style={styles.card}>
-        {phase === "phone" ? (
-          <View style={styles.form}>
-            <Field label="Mobile number" error={phoneError}>
-              <PhoneInput
-                ref={phoneInput}
-                value={phone}
-                onChangeText={(v) => {
-                  setPhone(v);
-                  if (phoneError && !phoneProblem(v)) setPhoneError("");
-                }}
-                accessibilityLabel="Mobile number"
-                error={phoneError || undefined}
-                returnKeyType="send"
-                onSubmitEditing={() => void send()}
-              />
-            </Field>
-            {errorLine}
-            <Button label="Send code" busyLabel="Sending…" busy={sending} disabled={wait > 0} onPress={() => void send()} height={54} fontSize={16} />
-            {wait > 0 && <Text style={styles.hint}>You can ask for a code again in {countdown(wait)}.</Text>}
-          </View>
-        ) : (
-          <View style={styles.form}>
-            <View>
-              <Text style={styles.sent} accessibilityLiveRegion="polite">
-                We sent a {CODE_LENGTH}-digit code to <Text style={styles.sentPhone}>{sentTo.phone}</Text>. It works for {sentTo.minutes} minutes.
-              </Text>
-              <TapLink label="Change number" onPress={changeNumber} textStyle={styles.change} />
-            </View>
-            <Field label={`${CODE_LENGTH}-digit code`} error={codeError}>
-              <Input
-                ref={codeInput}
-                value={code}
-                onChangeText={typeCode}
-                accessibilityLabel={`${CODE_LENGTH}-digit code`}
-                error={codeError || undefined}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                autoComplete="sms-otp"
-                maxLength={CODE_LENGTH + 4}
-                returnKeyType="done"
-                onSubmitEditing={() => void check()}
-                style={styles.code}
-              />
-            </Field>
-            {notice !== "" && (
-              <Text style={styles.hint} accessibilityLiveRegion="polite">
-                {notice}
-              </Text>
-            )}
-            {errorLine}
-            <Button label="Log in" busyLabel="Checking…" busy={checking} onPress={() => void check()} height={54} fontSize={16} />
-            <Button
-              label={wait > 0 ? `Send a new code in ${countdown(wait)}` : "Send a new code"}
-              accessibilityLabel={wait > 0 ? `Send a new code in ${wait} seconds` : "Send a new code"}
-              variant="secondary"
-              small
-              busy={sending}
-              disabled={wait > 0 || checking}
-              onPress={() => void send()}
-            />
-          </View>
-        )}
-      </Card>
+      <Card style={styles.card}>{form}</Card>
 
       <Text style={styles.privacy}>
         We use your number only to sign you in and link your bookings. See our{" "}
@@ -274,6 +355,7 @@ export function Login({ next, resume = false }: Props) {
         </Text>
         .
       </Text>
+      {admin}
     </Container>
   );
 }
@@ -295,4 +377,13 @@ const styles = StyleSheet.create({
   formError: { borderRadius: 8, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.danger, padding: 12, fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.danger },
   privacy: { marginTop: 20, textAlign: "center", fontFamily: fonts.sans, fontSize: 12, lineHeight: 16, color: colors.muted },
   link: { textDecorationLine: "underline" },
+  soonTitle: { fontFamily: fonts.serif, fontSize: 24, lineHeight: 30, color: colors.ink },
+  soonText: { marginTop: 8 },
+  soonButton: { marginTop: 18 },
+  tester: { marginTop: 18, minHeight: 48, borderTopWidth: 1, borderTopColor: colors.lineSoft, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  testerText: { flex: 1, fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.ink },
+  plus: { fontFamily: fonts.sans, fontSize: 22, lineHeight: 24, color: colors.ink },
+  pressed: { opacity: 0.7 },
+  admin: { marginTop: 24, borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 16, textAlign: "center", fontFamily: fonts.sans, fontSize: 14, lineHeight: 22, color: colors.muted },
+  adminLink: { fontFamily: fonts.sansSemiBold, color: colors.ink, textDecorationLine: "underline" },
 });

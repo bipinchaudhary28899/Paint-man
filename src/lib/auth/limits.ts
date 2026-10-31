@@ -18,8 +18,11 @@ export const otpPhoneShortLimit = lazy("otp-phone-short", 1, 30 * 1000);
 export const otpPhoneHourLimit = lazy("otp-phone-hour", 5, HOUR);
 /** Checking codes: 30 tries per IP per 15 minutes (each code also allows only 5). */
 export const verifyIpLimit = lazy("otp-verify-ip", 30, 15 * MINUTE);
-/** App bookings: 5 per account per 10 minutes. */
+/** Tester sign-ins (src/lib/auth/testers.ts): 10 code checks per tester number an hour, so the code cannot be guessed. */
+export const testerVerifyLimit = lazy("tester-verify", 10, HOUR);
+/** App bookings: 5 per account per 10 minutes; while customer login is closed, 5 per IP per 10 minutes without one. */
 export const bookingUserLimit = lazy("booking-user", 5, 10 * MINUTE);
+export const bookingGuestLimit = lazy("booking-guest", 5, 10 * MINUTE);
 /** Profile changes: 20 per account per 10 minutes. */
 export const profileUserLimit = lazy("profile-user", 20, 10 * MINUTE);
 

@@ -7,11 +7,10 @@ import { initials } from "~/lib/auth";
 import { useAuth } from "~/lib/auth-context";
 import { colors, fonts, radii } from "~/theme";
 
-// The account control in the sticky header, beside the menu button, for a signed-in customer only: a
-// round button with their initials (a "My account" pill while the account has no name yet), opening
-// their account. Signed out there is none: most people here have not booked yet, so the header stays
-// the logo and the menu, and "Log in" is in the menu (the drawer). Nothing shows while the saved
-// session is being read at launch.
+// The account control in the sticky header, beside the menu button: a "Log in" pill when signed out;
+// signed in, a round button with the customer's initials (a "My account" pill while the account has
+// no name yet). Both open their screen. Nothing shows while the saved session is being read at launch,
+// and the login screen leaves out its own "Log in" pill (staff find the administrator login there).
 
 /** Where the account link goes and what it is called, for the header and the drawer; null while the session is read. */
 export function useAccountLink(): { href: "/account" | "/login"; label: "My account" | "Log in" } | null {
@@ -24,7 +23,7 @@ export function AccountButton() {
   const { user } = useAuth();
   const link = useAccountLink();
   const pathname = usePathname();
-  if (!link || link.href === "/login") return null;
+  if (!link || pathname === "/login") return null;
   const letters = link.href === "/account" ? initials(user?.name) : null;
   const go = () => router.push(link.href);
   if (letters) {

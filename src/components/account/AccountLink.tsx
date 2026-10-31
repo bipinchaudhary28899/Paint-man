@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { customerLoginOpen } from "@/config/login";
 import { ACCOUNT_PATH, hasSignedInHint, LOGIN_PATH, loginHref } from "@/lib/account";
 
 // "Log in" or "My account", chosen in the browser from the readable `ps_signed_in` hint cookie, so
@@ -41,26 +42,13 @@ export function AccountLink({ className = "" }: { className?: string }) {
 }
 
 /**
- * The phone header's one button (Header): "Book a visit" for a visitor who isn't signed in, since
- * most people here have not booked yet, and "My account" once they are. Logging in stays one tap
- * away in the footer ("My account") and on the thank-you page. Both states keep the same width.
- */
-export function PhoneHeaderAction({ className = "" }: { className?: string }) {
-  const signedIn = useSignedInHint();
-  if (signedIn) return <AccountLink className={`btn-secondary ${className}`} />;
-  return (
-    <Link href="/book" className={`btn-primary ${className}`}>
-      Book a visit
-    </Link>
-  );
-}
-
-/**
  * After a booking (the thank-you page): follow it in the account. Signed in, the booking is already
  * linked there; otherwise logging in with the same mobile number links it.
  */
 export function TrackBookingInvite() {
   const signedIn = useSignedInHint();
+  // while customer accounts are coming soon there is nothing to log in to yet
+  if (!signedIn && !customerLoginOpen()) return null;
   return (
     <section aria-labelledby="track-booking" className="mx-auto mt-6 max-w-md rounded-[20px] border border-line-soft bg-sand/45 p-5 text-left tab:p-6">
       <h2 id="track-booking" className="text-2xl">

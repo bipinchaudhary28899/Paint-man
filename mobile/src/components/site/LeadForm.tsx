@@ -11,7 +11,7 @@ import { submitBooking, submitContact, type SubmitResult } from "~/lib/leads";
 import { openHref } from "~/lib/links";
 import { heldBooking, holdBooking, takeBooking } from "~/lib/pending-booking";
 import { NOT_LISTED_NOTE } from "~/lib/location";
-import { fieldProblem, isRequiredField, liveCities, type City, type RequiredField } from "~/shared";
+import { customerLoginOpen, fieldProblem, isRequiredField, liveCities, type City, type RequiredField } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 
 // The website's LeadForm on phones (src/components/LeadForm.tsx), with the website's fields, checks,
@@ -183,7 +183,8 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   const notes = (
     <>
       {footnote ? <Text style={styles.footnote}>{footnote}</Text> : null}
-      {booking && auth.status !== "signedIn" ? <Text style={styles.footnote}>{SIGN_IN_NOTE}</Text> : null}
+      {/* while customer accounts are coming soon a signed-out booking goes without a code */}
+      {booking && auth.status !== "signedIn" && customerLoginOpen() ? <Text style={styles.footnote}>{SIGN_IN_NOTE}</Text> : null}
       <Text style={styles.privacy}>
         We use your details only to respond to this request. See our{" "}
         <Text accessibilityRole="link" style={styles.link} onPress={() => openHref("/privacy-policy")}>
@@ -252,7 +253,11 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
           ) : null}
         </View>
       )}
-      <Text style={styles.note}>That&apos;s all we need to call you. Add the address and what needs painting later in your account, or tell us on the call.</Text>
+      <Text style={styles.note}>
+        {customerLoginOpen()
+          ? "That's all we need to call you. Add the address and what needs painting later in your account, or tell us on the call."
+          : "That's all we need to call you. We take the address and what needs painting on the call."}
+      </Text>
       {errorLine}
       <Button label="Book my site visit" busyLabel="Sending…" busy={submitting} onPress={() => void submit()} height={54} fontSize={16} />
       {notes}

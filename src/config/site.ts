@@ -1,6 +1,7 @@
 import { crewEstimate, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 import type { serviceTypes } from "@/lib/leads/options";
 import { images, type SiteImage } from "./images";
+import { customerLoginOpen } from "./login";
 
 // Central business details. Fill the TODO fields before launch: they feed the
 // header, footer, contact page and the LocalBusiness schema Google reads.
@@ -1082,8 +1083,16 @@ export const promises: { title: string; text: string }[] = [
  * How the work is done, from booking to handover: the flow on the home page and the house-painting
  * hub. Each step can take an illustration (`image`, a PNG of people painting) when the owner sends one.
  */
+/** Whether customers can sign in yet (src/config/login.ts): the copy says where the address and job are added. */
+const accounts = customerLoginOpen();
+
 export const workFlow: { title: string; text: string; image?: { src: string; alt: string } }[] = [
-  { title: "Book online", text: "Just your name, mobile number and area. Add the address and what needs painting later in your account: one wall, a door, the window grills or the whole house." },
+  {
+    title: "Book online",
+    text: accounts
+      ? "Just your name, mobile number and area. Add the address and what needs painting later in your account: one wall, a door, the window grills or the whole house."
+      : "Just your name, mobile number and area. We take the address and what needs painting on the call: one wall, a door, the window grills or the whole house.",
+  },
   { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
   { title: "Site inspection", text: "The inspector measures, checks walls for damp and cracks, wood for rot and metal for rust, and brings shade cards so you choose colours in your own light." },
   { title: "Full estimate, in writing", text: "An itemised quote: each wall, door or grill, the preparation, the paint and its coats, and how long it takes. Nothing starts until you approve it, and there is no advance payment." },
@@ -1097,7 +1106,12 @@ export const workFlow: { title: string; text: string; image?: { src: string; alt
  * the form's fields, the call-back hours, the free estimate and approval before any work.
  */
 export const bookingSteps: { title: string; text: string }[] = [
-  { title: "Fill in the form", text: "Just your name, mobile number and area: it takes under a minute. Add the address and what needs painting later in your account, or tell us on the call." },
+  {
+    title: "Fill in the form",
+    text: accounts
+      ? "Just your name, mobile number and area: it takes under a minute. Add the address and what needs painting later in your account, or tell us on the call."
+      : "Just your name, mobile number and area: it takes under a minute. We take the address and what needs painting on the call.",
+  },
   { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
   { title: "Inspection and itemised quote", text: "Our inspector measures the walls, checks for damp and cracks, and you get a line-by-line quotation." },
   { title: "Approve, then we paint", text: "Nothing is scheduled until you approve the quote, and there is no advance payment. A supervised crew then paints to the stated timeline." },
@@ -1118,11 +1132,15 @@ export const bookingFaqs: FaqItem[] = [
   },
   {
     q: "What details do I need to book painters online?",
-    a: "Your name, a 10-digit mobile number and your area or locality (and the city). That's all. Log in with the same number afterwards to add your address and what needs painting, the property, its size, a good day for the visit and a note, or tell us on the call.",
+    a: accounts
+      ? "Your name, a 10-digit mobile number and your area or locality (and the city). That's all. Log in with the same number afterwards to add your address and what needs painting, the property, its size, a good day for the visit and a note, or tell us on the call."
+      : "Your name, a 10-digit mobile number and your area or locality (and the city). That's all: we take your address and what needs painting, the property and its size on the call.",
   },
   {
     q: "Can I choose the inspection date?",
-    a: "Yes. After booking, log in with the same mobile number, open your project and pick a good day for the visit, any day from today up to a year ahead, or tell us on the call. We confirm the exact time when we call.",
+    a: accounts
+      ? "Yes. After booking, log in with the same mobile number, open your project and pick a good day for the visit, any day from today up to a year ahead, or tell us on the call. We confirm the exact time when we call."
+      : "Yes. Tell us a good day when we call, any day from today up to a year ahead, and we confirm the exact time.",
   },
 ];
 

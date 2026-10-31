@@ -67,16 +67,11 @@ export function Footer() {
           ))}
         </div>
         {/* Legal links get a 44px tall tap target. On phones and tablets the 44px rows space the wrapped lines; on
-            desktop the negative margin keeps the row at the Staff login pill's 26px, so the strip keeps its height. */}
+            desktop the negative margin keeps the strip at its 26px line. (Staff log in from the login page.) */}
         <p className="flex flex-wrap items-center gap-x-5 tab:gap-y-1 desk:-my-[9px] desk:gap-y-0">
           <Link href="/privacy-policy" className="inline-flex min-h-11 items-center hover:text-on-ink">Privacy policy</Link>
           <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-on-ink">Terms of service</Link>
           <span className="whitespace-nowrap">© {year} {site.legalName || site.name}</span>
-          {/* Staff entry to the private leads page. nofollow keeps crawlers out; the page itself requires sign-in. */}
-          {/* The link is a 44px tall hit area around the 26px pill; on desktop its negative margin keeps the strip at the height it had with the bare pill. */}
-          <Link href="/admin" rel="nofollow" prefetch={false} className="group/staff inline-flex min-h-11 shrink-0 items-center whitespace-nowrap desk:-my-[9px]">
-            <span className="rounded-full border border-on-ink/20 px-3 py-1 group-hover/staff:border-golden group-hover/staff:text-golden">Staff login</span>
-          </Link>
         </p>
       </div>
     </footer>

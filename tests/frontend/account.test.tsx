@@ -56,12 +56,14 @@ describe("AccountLink (header)", () => {
     expect(await screen.findByRole("link", { name: "My account" })).toBeInTheDocument();
   });
 
-  it("is in the header on every screen size, beside the booking button", () => {
+  it("is in the header on every screen size, phones included, beside the booking button", () => {
     pathname.mockReturnValue("/login");
     render(<Header />);
     const login = screen.getByRole("link", { name: "Log in" });
     expect(login).toHaveAttribute("aria-current", "page");
     expect(login.className).toContain("w-[7.25rem]"); // one width for both labels: no shift when it changes
+    // only the narrow tablet row (721-899px) leaves it out; phones show it
+    expect([...login.classList].filter((c) => c.endsWith("hidden"))).toEqual(["min-[721px]:max-[899px]:hidden"]);
     expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
   });
 });
@@ -78,6 +80,17 @@ describe("TrackBookingInvite (thank-you page)", () => {
     signIn();
     render(<TrackBookingInvite />);
     expect(screen.getByRole("link", { name: "Go to my account" })).toHaveAttribute("href", "/account");
+  });
+
+  it("stays away while customer accounts are coming soon, unless a tester is signed in", () => {
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "closed");
+    const { container, unmount } = render(<TrackBookingInvite />);
+    expect(container).toBeEmptyDOMElement();
+    unmount();
+    signIn();
+    render(<TrackBookingInvite />);
+    expect(screen.getByRole("link", { name: "Go to my account" })).toHaveAttribute("href", "/account");
+    vi.unstubAllEnvs();
   });
 
   it("shows after a booking only", async () => {

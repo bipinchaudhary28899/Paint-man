@@ -1,9 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
+import { Linking } from "react-native";
 
-import { countdown, goAfterSignIn, Login } from "~/components/account/Login";
+import { countdown, goAfterSignIn, Login, rememberLoginStatus } from "~/components/account/Login";
 import { AuthProvider } from "~/lib/auth-context";
 import { emptyBooking } from "~/lib/booking";
+import { webUrl } from "~/lib/config";
 import { heldBooking, holdBooking, releaseBooking } from "~/lib/pending-booking";
 import { FIELD_MESSAGES } from "~/shared";
 import { asha, mockApi, offline, savedToken, seedToken, type Answer } from "./helpers";
@@ -37,6 +39,8 @@ async function toCode() {
 beforeEach(() => {
   jest.clearAllMocks();
   releaseBooking();
+  // login open, as the API says on a development server (the coming-soon tests ask it)
+  rememberLoginStatus(true);
 });
 
 describe("the login screen: the mobile number", () => {
@@ -206,6 +210,69 @@ describe("the login screen: the code", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe("the login screen while customer accounts are coming soon", () => {
+  const closed: Answer = { data: { open: false } };
+
+  it("asks the API once, says accounts are coming soon and offers booking instead", async () => {
+    rememberLoginStatus(undefined);
+    const calls = mockApi({ "GET /api/v1/auth/status": closed });
+    await show();
+    expect(await screen.findByRole("header", { name: "Customer accounts are coming soon" })).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Mobile number")).toBeNull();
+    await fireEvent.press(screen.getByRole("link", { name: "Book a free site visit" }));
+    expect(router.push).toHaveBeenCalledWith("/book");
+    await screen.unmount();
+    // the next time it opens straight in that state, without asking again
+    await show();
+    expect(screen.getByRole("header", { name: "Customer accounts are coming soon" })).toBeOnTheScreen();
+    expect(calls.filter((c) => c.path === "/api/v1/auth/status")).toHaveLength(1);
+  });
+
+  it("keeps the build's setting when the API cannot answer", async () => {
+    rememberLoginStatus(undefined);
+    mockApi({ "GET /api/v1/auth/status": offline });
+    await show();
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(screen.getByRole("header", { name: "Log in to your account" })).toBeOnTheScreen();
+  });
+
+  it("lets a tester number sign in from the fold-out", async () => {
+    rememberLoginStatus(false);
+    const calls = mockApi({ "POST /api/v1/auth/otp": sent, "POST /api/v1/auth/verify": session, "GET /api/v1/me": { data: asha } });
+    await show({ next: "/account" });
+    const fold = screen.getByRole("button", { name: /Use a tester number/ });
+    expect(fold).toHaveProp("accessibilityState", { expanded: false });
+    await fireEvent.press(fold);
+    expect(screen.getByRole("button", { name: /Use a tester number/ })).toHaveProp("accessibilityState", { expanded: true });
+    await toCode();
+    await fireEvent.changeText(codeField(), "482915");
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/account"));
+    expect(calls.find((c) => c.path === "/api/v1/auth/verify")?.body).toEqual({ phone: "9876543210", code: "482915", client: "app" });
+    expect(savedToken()).toBe("new-token");
+  });
+
+  it("still shows a booking waiting for sign-in its form", async () => {
+    rememberLoginStatus(false);
+    holdBooking({ path: "/book", values: emptyBooking({ phone: "98765 43210" }) });
+    mockApi({});
+    await show({ resume: true });
+    expect(screen.getByText("Your booking is waiting")).toBeOnTheScreen();
+    expect(phoneField()).toHaveProp("value", "98765 43210");
+  });
+});
+
+describe("the administrator login", () => {
+  it.each([true, false])("is linked at the bottom whether or not customer login is open (open: %s), on the website", async (open) => {
+    rememberLoginStatus(open);
+    mockApi({});
+    const visit = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
+    await show();
+    expect(screen.getByText(/Paint Saathi team\?/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole("link", { name: "Log in as an administrator" }));
+    expect(visit).toHaveBeenCalledWith(webUrl("/admin/login"));
   });
 });
 

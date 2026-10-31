@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { failure, fieldErrors, personalError, personalOk, readJsonBody } from "@/lib/api-personal";
-import { checkLimits, rateLimited, verifyIpLimit } from "@/lib/auth/limits";
+import { checkLimits, rateLimited, testerVerifyLimit, verifyIpLimit } from "@/lib/auth/limits";
+import { isTester, testerCodeMatches } from "@/lib/auth/testers";
+import { customerLoginOpen, LOGIN_NOT_OPEN_MESSAGE } from "@/config/login";
 import { maskPhone, OTP_LENGTH, verifyOtpChallenge } from "@/lib/auth/otp";
 import { createUserSession, setSessionCookies } from "@/lib/auth/user-session";
 import { signInUser } from "@/lib/auth/users";
@@ -25,9 +27,11 @@ const verifySchema = z.object({
  * linking every booking made with that number. Body: { "phone": "9876543210", "code": "123456",
  * "client": "web" | "app" }. "web" sets the httpOnly `ps_session` cookie and the readable
  * `ps_signed_in=1` hint (30 days); "app" returns the bearer token in the body (90 days) for
- * `Authorization: Bearer <token>`. Errors: 400 invalid_request (details: field → message),
- * 401 invalid_code (details.attemptsLeft), 403 forbidden, 410 code_expired (expired, used up or
- * never sent: ask for a new code), 413, 415, 429 rate_limited (30 tries per IP per 15 minutes).
+ * `Authorization: Bearer <token>`. A tester number (src/lib/auth/testers.ts) signs in with the
+ * tester code, 10 tries an hour; while customer login is closed (src/config/login.ts) no one else can.
+ * Errors: 400 invalid_request (details: field → message), 401 invalid_code (details.attemptsLeft),
+ * 403 forbidden, 403 login_not_open, 410 code_expired (expired, used up or never sent: ask for a new
+ * code), 413, 415, 429 rate_limited (30 tries per IP per 15 minutes).
  * Example: POST /api/v1/auth/verify { "phone": "9876543210", "code": "123456", "client": "app" } → 200
  *   { "kind": "session", "data": { "user": { "id": "…", "phone": "9876543210", "name": null }, "token": "…", "expiresAt": "2027-01-29T…Z" } }
  */
@@ -43,6 +47,14 @@ export async function POST(req: NextRequest) {
     const wait = await checkLimits([[verifyIpLimit(), clientIp(req)]]);
     if (wait) return rateLimited(wait);
 
+    if (isTester(phone)) {
+      const tries = await checkLimits([[testerVerifyLimit(), phone]]);
+      if (tries) return rateLimited(tries);
+      if (!testerCodeMatches(code)) return personalError(401, "invalid_code", "That code is not right.", { attemptsLeft: 0 });
+      return signedIn(phone, client);
+    }
+    if (!customerLoginOpen()) return personalError(403, "login_not_open", LOGIN_NOT_OPEN_MESSAGE);
+
     const check = await verifyOtpChallenge(phone, code);
     if (!check.ok && check.reason === "expired") {
       return personalError(410, "code_expired", "This code has expired or was used up. Ask for a new code.");
@@ -53,17 +65,22 @@ export async function POST(req: NextRequest) {
       return personalError(401, "invalid_code", message, { attemptsLeft: check.attemptsLeft });
     }
 
-    const user = await signInUser(phone);
-    const { token, expiresAt } = await createUserSession(user.id, client);
-    const res = personalOk({
-      kind: "session",
-      label: `Signed in with ${maskPhone(user.phone)}; the session lasts until ${expiresAt.toISOString().slice(0, 10)}.`,
-      data: { user: { id: user.id, phone: user.phone, name: user.name }, ...(client === "app" && { token }), expiresAt: expiresAt.toISOString() },
-      links: { self: "/api/v1/auth/verify", me: "/api/v1/me", projects: "/api/v1/projects", html: "/account" },
-    });
-    if (client === "web") setSessionCookies(res, token, expiresAt);
-    return res;
+    return signedIn(phone, client);
   } catch (err) {
     return failure(err, "Signing in");
   }
+}
+
+/** Opens the account (made on first sign-in) and the session: a cookie for the website, a token for the app. */
+async function signedIn(phone: string, client: "web" | "app") {
+  const user = await signInUser(phone);
+  const { token, expiresAt } = await createUserSession(user.id, client);
+  const res = personalOk({
+    kind: "session",
+    label: `Signed in with ${maskPhone(user.phone)}; the session lasts until ${expiresAt.toISOString().slice(0, 10)}.`,
+    data: { user: { id: user.id, phone: user.phone, name: user.name }, ...(client === "app" && { token }), expiresAt: expiresAt.toISOString() },
+    links: { self: "/api/v1/auth/verify", me: "/api/v1/me", projects: "/api/v1/projects", html: "/account" },
+  });
+  if (client === "web") setSessionCookies(res, token, expiresAt);
+  return res;
 }

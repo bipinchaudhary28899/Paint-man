@@ -93,6 +93,7 @@ describe("POST /api/v1/auth/otp", () => {
 
   it("answers 503 otp_unavailable without an SMS provider or a secret in production, or when the SMS fails", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "open");
     let { otp } = await routes();
     await expectEnvelopeError(await otp(postJson(OTP_URL, { body: { phone: PHONE } })), 503, "otp_unavailable");
 
@@ -115,6 +116,7 @@ describe("POST /api/v1/auth/otp", () => {
 
   it("answers 503 database_unavailable when production has no database", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "open");
     vi.stubEnv("MSG91_AUTH_KEY", "key");
     vi.stubEnv("MSG91_OTP_TEMPLATE_ID", "tmpl");
     vi.stubEnv("DATABASE_URL", "");
@@ -237,5 +239,73 @@ describe("POST /api/v1/auth/logout", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { logout } = await routes();
     await expectEnvelopeError(await logout(postJson(LOGOUT_URL, { headers: { authorization: `Bearer ${"t".repeat(43)}` } })), 503, "database_unavailable");
+  });
+});
+
+describe("customer login closed (production until NEXT_PUBLIC_CUSTOMER_LOGIN=open), with a tester", () => {
+  const TESTER = "9000000009";
+  const CODE = "482915";
+  const closed = () => {
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "closed");
+    vi.stubEnv("LOGIN_TEST_PHONES", `98765 00000, ${TESTER}, not-a-number`);
+    vi.stubEnv("LOGIN_TEST_CODE", CODE);
+  };
+
+  it("refuses codes to everyone else, sending nothing, and says accounts are coming soon", async () => {
+    closed();
+    const { otp, verify } = await routes();
+    const res = await expectEnvelopeError(await otp(postJson(OTP_URL, { body: { phone: PHONE } })), 403, "login_not_open");
+    expect(res.error.message).toMatch(/coming soon/);
+    expect(info).not.toHaveBeenCalled();
+    expect(await testDb.db.select().from(otpChallenges)).toHaveLength(0);
+    await expectEnvelopeError(await verify(postJson(VERIFY_URL, { body: { phone: PHONE, code: "123456", client: "web" } })), 403, "login_not_open");
+  });
+
+  it("lets a tester in with the tester code and no SMS, answering the code request as for anyone", async () => {
+    closed();
+    const { otp, verify } = await routes();
+    const sent = await otp(postJson(OTP_URL, { body: { phone: `+91 ${TESTER}` } }));
+    expect(sent.status).toBe(200);
+    expect((await sent.json()).data).toEqual({ sent: true, phone: "******0009", expiresInSeconds: 300, resendInSeconds: 30 });
+    expect(info).not.toHaveBeenCalled();
+    expect(await testDb.db.select().from(otpChallenges)).toHaveLength(0);
+
+    const wrong = await expectEnvelopeError(await verify(postJson(VERIFY_URL, { body: { phone: TESTER, code: "111112", client: "app" } })), 401, "invalid_code");
+    expect(wrong.error.details).toEqual({ attemptsLeft: 0 });
+    const ok = await verify(postJson(VERIFY_URL, { body: { phone: TESTER, code: CODE, client: "app" } }));
+    expect(ok.status).toBe(200);
+    const body = await ok.json();
+    expect(body).toMatchObject({ kind: "session", data: { user: { phone: TESTER, name: null } } });
+    expect(typeof body.data.token).toBe("string");
+    expect(await testDb.db.select().from(sessions)).toHaveLength(1);
+  });
+
+  it("limits tester code checks to 10 an hour, so the code cannot be guessed", async () => {
+    closed();
+    const { verify } = await routes();
+    const statuses = [];
+    for (let i = 0; i < 11; i++) statuses.push((await verify(postJson(VERIFY_URL, { body: { phone: TESTER, code: "111112", client: "web" } }))).status);
+    expect(statuses.slice(0, 10).every((s) => s === 401)).toBe(true);
+    expect(statuses[10]).toBe(429);
+  });
+
+  it("keeps the tester way in once login is open, still without an SMS", async () => {
+    vi.stubEnv("LOGIN_TEST_PHONES", TESTER);
+    vi.stubEnv("LOGIN_TEST_CODE", CODE);
+    const { otp, verify } = await routes();
+    expect((await otp(postJson(OTP_URL, { body: { phone: TESTER } }))).status).toBe(200);
+    expect(info).not.toHaveBeenCalled();
+    expect((await verify(postJson(VERIFY_URL, { body: { phone: TESTER, code: CODE, client: "web" } }))).status).toBe(200);
+  });
+});
+
+describe("GET /api/v1/auth/status", () => {
+  it("says whether customer login is open, cached for a minute", async () => {
+    const { GET } = await import("@/app/api/v1/auth/status/route");
+    const open = GET();
+    expect(open.headers.get("cache-control")).toBe("public, max-age=60");
+    expect(await open.json()).toMatchObject({ apiVersion: "v1", kind: "login-status", data: { open: true }, links: { self: "/api/v1/auth/status" } });
+    vi.stubEnv("NEXT_PUBLIC_CUSTOMER_LOGIN", "closed");
+    expect(await GET().json()).toMatchObject({ data: { open: false }, label: "Customer accounts are coming soon." });
   });
 });

@@ -28,9 +28,18 @@ describe("submitBooking", () => {
     await expect(submitBooking(complete, { live, request })).resolves.toEqual({ ok: true, sent: true, projectId: undefined });
   });
 
-  it("asks for sign-in when there is no session or it expired", async () => {
-    const request = jest.fn().mockRejectedValue(new ApiError("unauthenticated", "Sign in to continue", 401));
-    await expect(submitBooking(complete, { live, request })).resolves.toEqual({ ok: false, signIn: true });
+  it("signed out, sends it without the session, and asks for sign-in only when the API wants one", async () => {
+    const signedOut = () => jest.fn().mockRejectedValue(new ApiError("unauthenticated", "Sign in to continue", 401));
+    // while customer accounts are coming soon the API takes it by the number given: no project id
+    const send = jest.fn().mockResolvedValue(ok({ received: true }));
+    await expect(submitBooking(complete, { live, request: signedOut(), send })).resolves.toEqual({ ok: true, sent: true, projectId: undefined });
+    expect(send).toHaveBeenCalledWith("/api/v1/bookings", { method: "POST", body: toBookingPayload(complete, live) });
+    // once accounts are open it answers 401: sign in first
+    const wantsSignIn = jest.fn().mockRejectedValue(new ApiError("unauthenticated", "Sign in to continue", 401));
+    await expect(submitBooking(complete, { live, request: signedOut(), send: wantsSignIn })).resolves.toEqual({ ok: false, signIn: true });
+    // anything else is the API's message
+    const limited = new ApiError("rate_limited", "Too many requests. Try again in 40 seconds.", 429, { retryAfterSeconds: 40 });
+    await expect(submitBooking(complete, { live, request: signedOut(), send: jest.fn().mockRejectedValue(limited) })).resolves.toEqual({ ok: false, errors: {}, message: limited.message });
   });
 
   it("shows the API's field messages, and its one message otherwise", async () => {

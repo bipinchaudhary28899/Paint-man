@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { customerLoginOpen } from "@/config/login";
 import { liveCities } from "@/config/site";
 import { fieldProblem, isRequiredField, REQUIRED_FIELDS, requiredFieldErrors } from "@/lib/leads/field-checks";
 import type { serviceTypes } from "@/lib/leads/options";
@@ -190,7 +191,9 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
             </Field>
           )}
           <p className="text-[13px] leading-normal text-muted">
-            That&apos;s all we need to call you. Add the address and what needs painting later in your account, or tell us on the call.
+            {customerLoginOpen()
+              ? "That's all we need to call you. Add the address and what needs painting later in your account, or tell us on the call."
+              : "That's all we need to call you. We take the address and what needs painting on the call."}
           </p>
         </>
       )}

@@ -7,7 +7,6 @@ import { Footer } from "~/components/site/Footer";
 import { NavStateProvider, useNavState } from "~/components/site/nav-state";
 import { Anchor, Container, Page, usePage } from "~/components/site/Page";
 import { BookingSection, Breadcrumbs, CtaBanner, FaqList, PageHero, Promises, WorkFlow } from "~/components/site/Sections";
-import { webUrl } from "~/lib/config";
 import { footerColumns, generalFaqs, images, liveCities, promises, site, WHATSAPP_GREETING, workFlow } from "~/shared";
 import { whatsappUrl } from "~/lib/contact";
 
@@ -269,9 +268,10 @@ describe("Footer", () => {
     await render(<Footer />);
     await fireEvent.press(screen.getByRole("link", { name: "Privacy policy" }));
     await fireEvent.press(screen.getByRole("link", { name: "Terms of service" }));
-    await fireEvent.press(screen.getByRole("link", { name: "Staff login" }));
     expect((router.push as jest.Mock).mock.calls.map(([r]) => r.pathname)).toEqual(["/privacy-policy", "/terms"]);
-    expect(open).toHaveBeenCalledWith(webUrl("/admin"));
+    // staff log in from the login screen, not the footer
+    expect(screen.queryByRole("link", { name: /Staff login/ })).toBeNull();
+    expect(open).not.toHaveBeenCalled();
   });
 });
 
