@@ -1,14 +1,15 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Anchor, Container, usePage } from "~/components/site/Page";
 import { Card, LinkArrow, TitleLink } from "~/components/ui/Bits";
+import { ListRows } from "~/components/ui/ListRows";
 import { Em, H, P } from "~/components/ui/Text";
 import { formatCount, joinAnd, shadeCardPath, type CardList, type ShadeCard, type ShadeCardWithSamples, type ShadeCredit, type ShadeFamily } from "~/lib/colours";
 import { openHref } from "~/lib/links";
-import { colors, fonts } from "~/theme";
+import { colors } from "~/theme";
 import { ColourTools } from "./ColourTools";
 import { HeroText } from "./Hero";
-import { CompareSection, FamilyChip } from "./Sections";
+import { CompareSection } from "./Sections";
 import { PaintDbCredit, ShadeSwatches } from "./ShadeSwatches";
 
 // The brands' shade-card pages on phones (/shade-cards, /shade-cards/<brand>, /shade-cards/<brand>/<family>),
@@ -51,17 +52,14 @@ export function HubCards({ list }: { list: CardList }) {
               <P color={colors.muted} style={styles.mt4}>
                 {formatCount(c.count)} shades in {c.families.length} colour families, LRV {c.lrv.min} to {c.lrv.max}.
               </P>
-              <View style={styles.familyLinks} accessibilityLabel={`${c.shortName} colour families`}>
-                {c.families
+              <ListRows
+                accessibilityLabel={`${c.shortName} colour families`}
+                columns={2}
+                style={styles.familyLinks}
+                rows={c.families
                   .filter((f) => f.hasPage)
-                  .map((f) => (
-                    <Pressable key={f.family} accessibilityRole="link" onPress={() => openHref(shadeCardPath(c.slug, f.family))} style={styles.familyLink}>
-                      <Text style={styles.familyLinkText}>
-                        {f.label} <Text style={styles.familyCount}>{f.count}</Text>
-                      </Text>
-                    </Pressable>
-                  ))}
-              </View>
+                  .map((f) => ({ key: f.family, label: f.label, detail: String(f.count), swatch: f.swatch, onPress: () => openHref(shadeCardPath(c.slug, f.family)) }))}
+              />
             </View>
           </Card>
         ))}
@@ -88,11 +86,12 @@ export function CardIntro({ card }: { card: ShadeCardWithSamples }) {
         LRV (light reflectance value) runs from {card.lrv.min} to {card.lrv.max} on this card: the higher the number, the more light the wall gives back. A high LRV keeps a small or
         north-facing room bright; a low one suits a feature wall.
       </HeroText>
-      <View accessibilityLabel={`${card.shortName} colour families`} style={styles.chips}>
-        {card.families.map((f) => (
-          <FamilyChip key={f.family} label={f.label} count={f.count} dot={f.swatch} onPress={() => scrollTo(f.family)} />
-        ))}
-      </View>
+      <ListRows
+        accessibilityLabel={`${card.shortName} colour families`}
+        columns={2}
+        style={styles.chips}
+        rows={card.families.map((f) => ({ key: f.family, label: f.label, detail: String(f.count), swatch: f.swatch, onPress: () => scrollTo(f.family) }))}
+      />
     </>
   );
 }
@@ -155,15 +154,18 @@ export function FamilyIntro({ family: f, card }: { family: ShadeFamily; card?: S
         {f.undertones.join(" or ")} undertone. Each swatch shows the code to quote to a painter or a paint shop. Tap one to see it on a room wall.
       </HeroText>
       {card && (
-        <View accessibilityLabel={`Other ${f.shortName} colour families`} style={styles.chips}>
-          {card.families.map((x) =>
-            x.family === f.family ? (
-              <FamilyChip key={x.family} label={x.label} current />
-            ) : (
-              <FamilyChip key={x.family} label={x.label} onPress={() => openHref(x.hasPage ? shadeCardPath(card.slug, x.family) : `${shadeCardPath(card.slug)}#${x.family}`)} />
-            ),
-          )}
-        </View>
+        <ListRows
+          accessibilityLabel={`Other ${f.shortName} colour families`}
+          columns={2}
+          style={styles.chips}
+          rows={card.families.map((x) => ({
+            key: x.family,
+            label: x.label,
+            swatch: x.swatch,
+            current: x.family === f.family,
+            onPress: () => openHref(x.hasPage ? shadeCardPath(card.slug, x.family) : `${shadeCardPath(card.slug)}#${x.family}`),
+          }))}
+        />
       )}
     </>
   );
@@ -219,10 +221,7 @@ const styles = StyleSheet.create({
   card: { overflow: "hidden" },
   strip: { height: 64, flexDirection: "row" },
   cardBody: { padding: 24 },
-  familyLinks: { marginTop: 16, flexDirection: "row", flexWrap: "wrap", columnGap: 16 },
-  familyLink: { minHeight: 44, justifyContent: "center" },
-  familyLinkText: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 22.5, letterSpacing: -0.08, color: colors.ink },
-  familyCount: { fontFamily: fonts.sans, color: colors.muted },
-  chips: { marginTop: 32, flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  familyLinks: { marginTop: 16 },
+  chips: { marginTop: 32 },
   arrowText: { fontSize: 15 },
 });

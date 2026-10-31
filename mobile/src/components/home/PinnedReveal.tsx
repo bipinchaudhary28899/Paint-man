@@ -1,13 +1,13 @@
 import { BlendColor, Canvas, Group, Image as SkiaImage, useImage } from "@shopify/react-native-skia";
 import { useState } from "react";
-import { StyleSheet, Text, View, type LayoutChangeEvent, Dimensions } from "react-native";
+import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useAnimatedReaction, useAnimatedStyle, useDerivedValue, useReducedMotion, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 
 import { Container, usePage } from "~/components/site/Page";
 import { Em, Eyebrow, H } from "~/components/ui/Text";
-import { genericScene, images } from "~/shared";
+import { genericScene } from "~/shared";
 import { colors, fonts } from "~/theme";
 import { containProgress, reveal, screenTop, stageOpacity, stickyOffset } from "./motion";
 import { skiaSource } from "./pictures";
@@ -96,17 +96,24 @@ export function PinnedReveal() {
 /** The room: the photo, the putty above the wet edge and the shade below it, the edge itself and the stage sticker. */
 function Room({ fill, stage }: { fill: SharedValue<number>; stage: SharedValue<number> }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  // the room is drawn across the screen: fetched at the screen's width (as a full-bleed Photo)
-  const photo = useImage(skiaSource(images.livingMoody.src, Dimensions.get("window").width));
+  // the colour previews' Indian living room, its walls in bare primer white (bundled with the app)
+  const photo = useImage(skiaSource(genericScene.image.src));
   const mask = useImage(skiaSource(genericScene.mask));
   const { width, height } = size;
+  // The canvas mounts once the room has its size and both pictures have loaded, so its first frame is the
+  // whole room (mounted empty at no size, it sometimes stayed blank after they arrived); until then the
+  // room's sand fill shows, as under a loading Photo.
+  const ready = photo !== null && mask !== null && width > 0 && height > 0;
   const before = useDerivedValue(() => ({ x: 0, y: 0, width, height: (height * (100 - fill.value)) / 100 }));
   const after = useDerivedValue(() => ({ x: 0, y: (height * (100 - fill.value)) / 100, width, height: (height * fill.value) / 100 }));
   const edge = useAnimatedStyle(() => {
     const f = fill.value;
     return { opacity: f > 1 && f < 99 ? 1 : 0, transform: [{ translateY: (height * (100 - f)) / 100 }] };
   });
-  const onLayout = (e: LayoutChangeEvent) => setSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height });
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width: w, height: h } = e.nativeEvent.layout;
+    if (w !== width || h !== height) setSize({ width: w, height: h });
+  };
 
   return (
     <View style={styles.room}>
@@ -117,19 +124,21 @@ function Room({ fill, stage }: { fill: SharedValue<number>; stage: SharedValue<n
         accessibilityRole="image"
         accessibilityLabel={`Living room with the walls being painted ${wallShade.name}`}
       >
-        <Canvas style={StyleSheet.absoluteFill} testID="reveal-canvas">
-          <SkiaImage image={photo} x={0} y={0} width={width} height={height} fit="cover" />
-          <Group clip={before} blendMode="multiply">
-            <SkiaImage image={mask} x={0} y={0} width={width} height={height} fit="cover">
-              <BlendColor color={putty} mode="srcIn" />
-            </SkiaImage>
-          </Group>
-          <Group clip={after} blendMode="multiply">
-            <SkiaImage image={mask} x={0} y={0} width={width} height={height} fit="cover">
-              <BlendColor color={wallShade.hex} mode="srcIn" />
-            </SkiaImage>
-          </Group>
-        </Canvas>
+        {ready && (
+          <Canvas style={StyleSheet.absoluteFill} testID="reveal-canvas">
+            <SkiaImage image={photo} x={0} y={0} width={width} height={height} fit="cover" />
+            <Group clip={before} blendMode="multiply">
+              <SkiaImage image={mask} x={0} y={0} width={width} height={height} fit="cover">
+                <BlendColor color={putty} mode="srcIn" />
+              </SkiaImage>
+            </Group>
+            <Group clip={after} blendMode="multiply">
+              <SkiaImage image={mask} x={0} y={0} width={width} height={height} fit="cover">
+                <BlendColor color={wallShade.hex} mode="srcIn" />
+              </SkiaImage>
+            </Group>
+          </Canvas>
+        )}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, edge]}>
           <View style={styles.edge} />
         </Animated.View>

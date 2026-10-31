@@ -2,6 +2,7 @@ import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
 import { Container } from "~/components/site/Page";
 import { Card } from "~/components/ui/Bits";
+import { ListRows } from "~/components/ui/ListRows";
 import { Photo } from "~/components/ui/Media";
 import { Reveal } from "~/components/ui/Reveal";
 import { Em, Eyebrow, H, P } from "~/components/ui/Text";
@@ -65,13 +66,7 @@ export function Trust() {
               Before anyone opens a tin, our inspector reads the wall: moisture, hairline cracks, flaking and old paint that won&apos;t hold. What we find goes on
               your quotation as separate lines, so you pay for repairs you can see, and never for surprises.
             </P>
-            <View style={styles.checks} accessibilityLabel="What the inspection checks">
-              {checks.map((c) => (
-                <View key={c} style={styles.check}>
-                  <Text style={styles.checkText}>{c}</Text>
-                </View>
-              ))}
-            </View>
+            <ListRows accessibilityLabel="What the inspection checks" columns={2} style={styles.checks} rows={checks.map((c) => ({ key: c, label: c }))} />
           </View>
         </View>
       </Reveal>
@@ -113,9 +108,7 @@ const styles = StyleSheet.create({
   panelInner: { overflow: "hidden", borderRadius: radii.xl, backgroundColor: colors.sand },
   wall: { height: 140 },
   panelBody: { padding: 20 },
-  checks: { marginTop: 16, flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  check: { borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: "rgba(248, 245, 239, 0.9)", borderWidth: 1, borderColor: colors.lineSoft },
-  checkText: { fontFamily: fonts.sansMedium, fontSize: 13, lineHeight: 18, color: colors.ink },
+  checks: { marginTop: 16 },
   label: { marginTop: 28, fontFamily: fonts.sansSemiBold, fontSize: 11, lineHeight: 16.5, letterSpacing: 1.32, textTransform: "uppercase", color: colors.muted2 },
   grid: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: TILE_GAP },
   tile: { padding: 14, gap: 8 },

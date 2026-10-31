@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ColoursPage from "@/app/(site)/colours/page";
 import { ColourFinder, ColourFinderFromUrl, PER_PAGE, type BrandShadeItem } from "@/components/colours/ColourFinder";
 import { WallPreview } from "@/components/colours/WallPreview";
-import { genericScene } from "@/config/scenes";
+import { finderScene, genericScene } from "@/config/scenes";
 
 /** The visitor arrives on this address. */
 const open = (url: string) => window.history.replaceState(null, "", url);
@@ -438,7 +438,7 @@ describe("/colours page", () => {
 describe("WallPreview", () => {
   it("shows the one generic room with a tint layer masked to the detected walls in the shade's colour", () => {
     const { container } = render(<WallPreview colour={{ name: "Red Rust-n", code: "Asian Paints 9937", hex: "#c76944", lrv: 23 }} />);
-    const photo = screen.getByAltText("A cosy living room, repainted in Red Rust-n");
+    const photo = screen.getByAltText("An Indian living room, repainted in Red Rust-n");
     expect(photo).not.toHaveAttribute("fetchpriority"); // previews lazy-load; nothing is preloaded
     const tints = container.querySelectorAll<HTMLElement>(".tint");
     // one multiply layer, exactly as the home-page reveal paints the same room: crisp wall texture
@@ -446,12 +446,12 @@ describe("WallPreview", () => {
     expect([...tints].map((t) => t.dataset.blend)).toEqual(["multiply"]);
     expect(tints[0]).toHaveClass("tint-multiply");
     expect(tints[0].style.background).toBe("rgb(199, 105, 68)");
-    expect(tints[0].style.maskImage).toContain("/scenes/living-moody-mask.png");
+    expect(tints[0].style.maskImage).toContain("/scenes/indian-living-room-mask.png");
     expect(tints[0].style.maskImage).toContain(genericScene.mask);
     // the whole photo, never cropped: the frame keeps the photo's shape and narrows to a height cap
     const frame = container.querySelector<HTMLElement>(".scene")!;
-    expect(frame.style.aspectRatio).toBe("933 / 1400");
-    expect(frame.style.width).toMatch(/^min\(100%, (calc\(75vh \* 0\.6664\)|49\.98vh)\)$/);
+    expect(frame.style.aspectRatio).toBe("1600 / 1200");
+    expect(frame.style.width).toMatch(/^min\(100%, (calc\(75vh \* 1\.3333\)|99\.9975vh)\)$/);
     expect(container.querySelector("figcaption")).toHaveTextContent("Red Rust-n Asian Paints 9937#C76944 · LRV 23");
   });
 
@@ -469,10 +469,19 @@ describe("WallPreview", () => {
     expect(frame.dataset.crop).toBe("desktop");
     expect(frame.className).toContain("lg:aspect-[7/8]!");
     expect(frame.className).toContain("lg:w-full!");
-    expect(frame.style.aspectRatio).toBe("933 / 1400"); // below lg: the whole photo
-    // compact (phone strip) previews never crop
+    expect(frame.style.aspectRatio).toBe("1600 / 1200"); // below lg: the whole photo
+    // compact (phone strip) previews are a 3:4 crop around the centre, so the landscape room never widens the strip
     const strip = render(<WallPreview colour={shade} desktopCrop compact />).container.querySelector<HTMLElement>(".scene")!;
     expect(strip.dataset.crop).toBeUndefined();
+    expect(strip.style.aspectRatio).toBe("3 / 4");
+  });
+
+  it("shows the colour finder's sofa room when given it, keeping the portrait photo whole even in the phone strip", () => {
+    const shade = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2" };
+    const { container } = render(<WallPreview colour={shade} scene={finderScene} compact />);
+    expect(screen.getByAltText("A cosy living room, repainted in Pepper Leaf")).toBeInTheDocument();
+    expect(container.querySelector<HTMLElement>(".tint")!.style.maskImage).toContain("/scenes/living-moody-mask.png");
+    expect(container.querySelector<HTMLElement>(".scene")!.style.aspectRatio).toBe("933 / 1400");
   });
 });
 

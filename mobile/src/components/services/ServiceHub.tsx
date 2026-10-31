@@ -4,6 +4,7 @@ import { Container, usePage } from "~/components/site/Page";
 import { CtaBanner, FaqList, PageHero } from "~/components/site/Sections";
 import { Card } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
+import { ListRows } from "~/components/ui/ListRows";
 import { Reveal } from "~/components/ui/Reveal";
 import { Em, H, P } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
@@ -48,13 +49,7 @@ export function ServiceHub({ service }: { service: Service }) {
         <H size={30} leading={1.2} style={styles.mt56}>
           Suitable <Em>for</Em>
         </H>
-        <View style={styles.suits}>
-          {service.suitableFor.map((s) => (
-            <View key={s} style={styles.suit}>
-              <Text style={styles.suitText}>{s}</Text>
-            </View>
-          ))}
-        </View>
+        <ListRows style={styles.suits} rows={service.suitableFor.map((s) => ({ key: s, label: s }))} />
 
         <H size={30} leading={1.2} style={styles.mt56}>
           {service.name} <Em>FAQs</Em>
@@ -136,9 +131,7 @@ const styles = StyleSheet.create({
   mt56: { marginTop: 56 },
   heroButton: { marginTop: 32, alignSelf: "flex-start" },
   main: { marginTop: 64 },
-  suits: { marginTop: 20, flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  suit: { borderRadius: 999, backgroundColor: colors.creamWash, paddingHorizontal: 16, paddingVertical: 8 },
-  suitText: { fontFamily: fonts.sansBold, fontSize: 14, lineHeight: 20, color: colors.ink },
+  suits: { marginTop: 20 },
   aside: { marginTop: 48, gap: 24 },
   offered: { marginTop: 12, gap: 4 },
   others: { marginTop: 12, gap: 8 },

@@ -58,6 +58,12 @@ describe("images config", () => {
     }
   });
 
+  it("the colour previews' room, a stock photo with its walls taken back to primer, never claims a place or a finished job", () => {
+    const edited = all.filter(([, i]) => i.src.startsWith("/scenes/"));
+    expect(edited.map(([key]) => key)).toEqual(["previewRoom"]);
+    for (const [key, img] of edited) expect(stockAltProblems(img.alt), key).toEqual([]);
+  });
+
   it("tells stock from job photos by host, so a real job photo may carry a local alt", () => {
     const job = { src: "/photos/dayalbagh-living-room.jpg", alt: `Freshly painted teal living room in Dayalbagh, ${site.city}` };
     expect(isStock(job)).toBe(false);

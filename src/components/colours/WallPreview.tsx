@@ -1,20 +1,23 @@
 import Image from "next/image";
-import { genericScene } from "@/config/scenes";
+import { genericScene, type PhotoScene } from "@/config/scenes";
 
 /** The shade a preview shows: a name and hex, plus its shade-card code and LRV when known. */
 export type PreviewShade = { name: string; code?: string; hex: string; lrv?: number };
 
-// Every shade on the same ordinary room: the photo never changes, only the wall colour does,
-// so shades compare fairly. Tint layers in the shade's hex are masked by the scene's wall
+// Every shade on the same room: the photo never changes, only the wall colour does, so shades
+// compare fairly. `scene` picks the room (src/config/scenes.ts): the Indian living room by default,
+// the sofa room in the colour finder. Tint layers in the shade's hex are masked by the scene's wall
 // mask (a PNG from the wall detector) and blended onto the photograph (see scenes.ts for the
 // two blend modes); shadows and texture stay real and the furniture is untouched.
-// The whole photo is always shown (never cropped). `maxHeight` caps how tall it gets: the frame
-// narrows to keep the photo's shape. `compact` (phones): the height comes from `frameClassName`,
-// the width follows the photo's shape, and there is no caption. Every preview sits below the
-// fold or beside the list, so the photo lazy-loads (no preload: it would compete with the CSS).
-// `desktopCrop`: from the lg breakpoint the frame fills its column at a 7:8 crop of the room
-// (sofa, shelf and walls up close); phones keep the whole photo. Photo and mask are both
-// cover-cropped around the centre, so the tint stays aligned at either shape.
+// The whole photo is shown (not cropped). `maxHeight` caps how tall it gets: the frame narrows to
+// keep the photo's shape. `compact` (phones): the height comes from `frameClassName`, the width
+// follows the photo's shape, cropped around the centre to 3:4 at most, so a landscape room never
+// widens the strip it sits in, and there is no caption. Every preview sits below the fold or beside the list, so the photo lazy-loads (no
+// preload: it would compete with the CSS). `desktopCrop`: from the lg breakpoint the frame fills its
+// column at a 7:8 crop of the room (door, TV and walls up close); phones keep the whole photo.
+// Photo and mask are both cover-cropped around the centre, so the tint stays aligned at any shape.
+
+
 export function WallPreview({
   colour,
   className = "",
@@ -23,11 +26,11 @@ export function WallPreview({
   frameClassName = "",
   maxHeight = "75vh",
   desktopCrop = false,
-}: { colour: PreviewShade; className?: string; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string; desktopCrop?: boolean }) {
-  const scene = genericScene;
+  scene = genericScene,
+}: { colour: PreviewShade; className?: string; sizes?: string; compact?: boolean; frameClassName?: string; maxHeight?: string; desktopCrop?: boolean; scene?: PhotoScene }) {
   const ratio = scene.width / scene.height;
   const frame = compact
-    ? { aspectRatio: `${scene.width} / ${scene.height}` }
+    ? { aspectRatio: ratio > 3 / 4 ? "3 / 4" : `${scene.width} / ${scene.height}` }
     : { aspectRatio: `${scene.width} / ${scene.height}`, width: `min(100%, calc(${maxHeight} * ${ratio.toFixed(4)}))`, marginInline: "auto" };
   return (
     <figure className={`overflow-hidden rounded-3xl border border-line bg-paper ${className}`}>

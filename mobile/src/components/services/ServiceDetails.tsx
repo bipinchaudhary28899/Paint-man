@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { ListRows } from "~/components/ui/ListRows";
 import { Reveal } from "~/components/ui/Reveal";
 import { openHref } from "~/lib/links";
 import { Em, H, P } from "~/components/ui/Text";
@@ -83,19 +84,6 @@ export function JobSizeTable({ examples }: { examples: { home: string; carpetAre
   );
 }
 
-/** A brand shade as a chip: swatch, name and code, opening its search in the colour finder. */
-function ShadeChip({ shade }: { shade: PaletteShade }) {
-  const name = shadeDisplayName(shade.name);
-  return (
-    <Pressable accessibilityRole="link" accessibilityLabel={`${name} ${shade.code}`} onPress={() => openHref(finderSearchHref(shade))} style={styles.chip}>
-      <View aria-hidden style={[styles.swatch, { backgroundColor: shade.hex }]} />
-      <Text style={styles.chipText}>
-        {name} <Text style={styles.chipCode}>{shade.code}</Text>
-      </Text>
-    </Pressable>
-  );
-}
-
 /** "Shades that suit": the service's palettes with their shade chips, the PaintDB credit and links to the finder and the combinations. */
 export function ServiceShades({ service }: { service: Service }) {
   const palettes = service.shades.palettes.map(getPalette).filter((p): p is Palette => p !== undefined);
@@ -118,11 +106,13 @@ export function ServiceShades({ service }: { service: Service }) {
             <P size={14} leading={1.43} color={colors.muted} style={styles.mt4}>
               {p.mood} · {paletteBrands(p).join(" and ")} shades
             </P>
-            <View style={styles.chips}>
-              {p.shades.map((s) => (
-                <ShadeChip key={s.id} shade={s} />
-              ))}
-            </View>
+            <ListRows
+              style={styles.chips}
+              rows={p.shades.map((s) => {
+                const name = shadeDisplayName(s.name);
+                return { key: s.id, label: name, detail: s.code, swatch: s.hex, accessibilityLabel: `${name} ${s.code}`, onPress: () => openHref(finderSearchHref(s)) };
+              })}
+            />
           </View>
         ))}
       </View>
@@ -268,11 +258,7 @@ const styles = StyleSheet.create({
   caption: { borderTopWidth: 1, borderColor: colors.line, paddingHorizontal: 16, paddingVertical: 12, fontFamily: fonts.sans, fontSize: 12, lineHeight: 16, color: colors.muted },
   palettes: { marginTop: 24, gap: 16 },
   paletteName: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
-  chips: { marginTop: 12, flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.line, paddingHorizontal: 12 },
-  swatch: { width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: colors.line },
-  chipText: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.ink },
-  chipCode: { fontFamily: fonts.sans, color: colors.muted },
+  chips: { marginTop: 12 },
   more: { marginTop: 24, flexDirection: "row", flexWrap: "wrap", columnGap: 24, rowGap: 4 },
   moreLink: { fontFamily: fonts.sansBold, fontSize: 14, lineHeight: 20 },
 });

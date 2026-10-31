@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { memo, useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { shadeDisplayName } from "@/config/palettes";
+import { finderScene } from "@/config/scenes";
 import { useUrlQuery } from "../useUrlQuery";
 import { PreviewSheet } from "./PreviewSheet";
 import { WallPreview } from "./WallPreview";
@@ -313,7 +314,7 @@ export function ColourFinder({
           <div className="flex items-stretch gap-3">
             {/* tap the room for the large preview, where picking goes on */}
             <button type="button" onClick={openSheet} aria-label={`See ${view.name} larger`} className="relative shrink-0 rounded-2xl">
-              <WallPreview colour={view} compact frameClassName="h-[26svh] min-h-[180px] max-h-[240px]" sizes="45vw" className="!rounded-2xl" />
+              <WallPreview colour={view} scene={finderScene} compact frameClassName="h-[26svh] min-h-[180px] max-h-[240px]" sizes="45vw" className="!rounded-2xl" />
               <span aria-hidden className="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-canvas/90 shadow-sm">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
               </span>
@@ -479,7 +480,7 @@ export function ColourFinder({
 
       {view && (
         <section className="hidden rounded-[2rem] border border-line bg-paper p-5 lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto" aria-labelledby="active-colour">
-          <WallPreview colour={view} desktopCrop maxHeight="min(56vh, 600px)" sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
+          <WallPreview colour={view} scene={finderScene} desktopCrop maxHeight="min(56vh, 600px)" sizes="(min-width: 1280px) 440px, (min-width: 1024px) 400px, 100vw" />
           <div className="mt-5 flex items-center gap-4">
             <span className="h-14 w-14 shrink-0 rounded-2xl border border-line" style={{ background: view.hex }} />
             <div className="min-w-0">

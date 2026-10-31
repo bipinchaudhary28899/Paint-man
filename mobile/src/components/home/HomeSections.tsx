@@ -4,7 +4,6 @@ import { Anchor } from "~/components/site/Page";
 import { CtaBanner } from "~/components/site/Sections";
 import { Reveal } from "~/components/ui/Reveal";
 import { AreasSection } from "./AreasSection";
-import { BeforeAfterSection } from "./BeforeAfterSection";
 import { ColourExplorer } from "./ColourExplorer";
 import { FaqSection } from "./FaqSection";
 import { Finishes } from "./Finishes";
@@ -46,9 +45,6 @@ export function HomeSections() {
           <ColourExplorer />
         </Reveal>
       </Anchor>
-      <Reveal>
-        <BeforeAfterSection />
-      </Reveal>
       <Finishes />
       <Reveal>
         <AreasSection />

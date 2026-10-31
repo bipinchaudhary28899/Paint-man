@@ -1,20 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { CtaBanner, PageHero } from "~/components/site/Sections";
+import { ListRows } from "~/components/ui/ListRows";
 import { RevealContainer } from "~/components/ui/Reveal";
 import { Em, H, P } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
 import { cities, images, liveCities, servicePath, servicesIn } from "~/shared";
 import { colors, fonts } from "~/theme";
-import { chip, LiveCityLinks, TextLink } from "./bits";
+import { LiveCityLinks, TextLink } from "./bits";
 import { ServiceCarousel } from "./ServiceCarousel";
 
 // /services on a phone (src/app/(site)/services/page.tsx): the hero, every service as a swipe row of
 // cards (photo with its sticker, name, one line, "View service" and "Book site visit"), each live city
-// with its service pages as chips, then three short notes on colours, price and where we work, and the
+// with its service pages as a list, then three short notes on colours, price and where we work, and the
 // closing banner.
 
-/** Each live city with a chip per service it has a page for (/services/<service>/<city>). */
+/** Each live city with a row per service it has a page for (/services/<service>/<city>). */
 function ServicesByCity() {
   return (
     <RevealContainer style={styles.byCity}>
@@ -27,13 +28,10 @@ function ServicesByCity() {
             <Text accessibilityRole="header" style={styles.city}>
               {c.name}
             </Text>
-            <View style={[chip.row, styles.chips]}>
-              {servicesIn(c).map((s) => (
-                <Pressable key={s.slug} accessibilityRole="link" accessibilityLabel={`${s.name} in ${c.name}`} onPress={() => openHref(servicePath(s, c))} style={chip.box}>
-                  <Text style={chip.text}>{s.name}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <ListRows
+              style={styles.chips}
+              rows={servicesIn(c).map((s) => ({ key: s.slug, label: s.name, accessibilityLabel: `${s.name} in ${c.name}`, onPress: () => openHref(servicePath(s, c)) }))}
+            />
           </View>
         ))}
       </View>

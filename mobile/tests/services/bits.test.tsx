@@ -9,7 +9,6 @@ import {
   CreamHero,
   GradientWord,
   LiveCityLinks,
-  LocalityChip,
   NotFound,
   SectionHead,
   ServiceSticker,
@@ -104,13 +103,6 @@ describe("links", () => {
       expect(router.push).toHaveBeenLastCalledWith({ pathname: `/services/house-painting/${c.slug}`, params: {} });
     }
     expect(screen.getByText(`We paint in ${live.slice(0, -1).map((c) => c.name).join(", ")} or ${live.at(-1)!.name}`)).toBeOnTheScreen();
-  });
-
-  it("presses a locality chip", async () => {
-    const onPress = jest.fn();
-    await render(<LocalityChip name="Tajganj" onPress={onPress} />);
-    await fireEvent.press(screen.getByRole("link", { name: "Tajganj" }));
-    expect(onPress).toHaveBeenCalled();
   });
 });
 

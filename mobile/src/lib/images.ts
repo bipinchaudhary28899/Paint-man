@@ -3,8 +3,8 @@ import { PixelRatio } from "react-native";
 
 // Pictures for the app. The website's config (src/config/images.ts, gallery.ts, scenes.ts) names each
 // photo and illustration with its alt text; here those web paths become sources. Our own files (brand
-// art, uniform photos, the wall mask) are bundled from ../public (Metro watches it), so they show
-// offline; Pexels stock photos load from Pexels at the width they are drawn at (photoSource).
+// art, uniform photos, the Indian preview room and the two rooms' wall masks) are bundled from ../public
+// (Metro watches it), so they show offline; Pexels stock photos load from Pexels at the width they are drawn at (photoSource).
 
 const bundled: Record<string, number> = {
   "/brand/illustrations/paint-brands.webp": require("../../../public/brand/illustrations/paint-brands.webp"),
@@ -14,6 +14,8 @@ const bundled: Record<string, number> = {
   "/photos/painter-uniform-skimming.jpg": require("../../../public/photos/painter-uniform-skimming.jpg"),
   "/photos/painter-uniform-ceiling.jpg": require("../../../public/photos/painter-uniform-ceiling.jpg"),
   "/photos/painter-uniform-spraying.jpg": require("../../../public/photos/painter-uniform-spraying.jpg"),
+  "/scenes/indian-living-room.jpg": require("../../../public/scenes/indian-living-room.jpg"),
+  "/scenes/indian-living-room-mask.png": require("../../../public/scenes/indian-living-room-mask.png"),
   "/scenes/living-moody-mask.png": require("../../../public/scenes/living-moody-mask.png"),
 };
 

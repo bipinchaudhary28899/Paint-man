@@ -4,12 +4,13 @@ import { Container, usePage } from "~/components/site/Page";
 import { CtaBanner, FaqList, PageHero } from "~/components/site/Sections";
 import { Card } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
+import { ListRows } from "~/components/ui/ListRows";
 import { Reveal } from "~/components/ui/Reveal";
 import { Em, H, P } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
 import { areaSlug, cityPath, getCity, getService, serviceCityTitle, servicePath, servicesIn, site, type City, type Service, type ServiceLocal } from "~/shared";
 import { colors } from "~/theme";
-import { asideStyles, BlockLink, BookInspection, chip, Included, LocalityChip, TextLink } from "./bits";
+import { asideStyles, BlockLink, BookInspection, Included, TextLink } from "./bits";
 import { accentCity } from "./ServiceDetails";
 
 // A service in one city on a phone (src/app/(site)/services/[slug]/[city]/page.tsx): the local
@@ -73,11 +74,12 @@ export function ServiceCity({ service, city, local }: ServiceInCity) {
         <H size={30} leading={1.2} style={styles.mt56}>
           Where we paint in <Em>{city.name}</Em>
         </H>
-        <View style={[chip.row, styles.mt20]}>
-          {city.areas.map((a) => (
-            <LocalityChip key={a} name={a} onPress={() => openHref(`${cityPath(city)}#${areaSlug(a)}`)} />
-          ))}
-        </View>
+        <ListRows
+          accessibilityLabel={`Where we paint in ${city.name}`}
+          columns={2}
+          style={styles.mt20}
+          rows={city.areas.map((a) => ({ key: a, label: a, onPress: () => openHref(`${cityPath(city)}#${areaSlug(a)}`) }))}
+        />
         <P size={14} leading={1.43} color={colors.muted} style={styles.mt12}>
           Not on the list? <TextLink href={`/book?service=${service.slug}`}>Book anyway</TextLink> and we&apos;ll tell you whether we can take the job.
         </P>

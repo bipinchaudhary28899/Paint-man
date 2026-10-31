@@ -4,11 +4,12 @@ import type { SharedValue } from "react-native-reanimated";
 import { Dimensions, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
 
 import { photoSource } from "~/lib/images";
-import { genericScene } from "~/shared";
+import { genericScene, type PhotoScene } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 
-// Every shade on the same ordinary room (the website's WallPreview): the photo never changes, only
-// the wall colour does, so shades compare fairly. The wall mask (alpha = wall) is filled with the
+// Every shade on the same room (the website's WallPreview): the photo never changes, only the wall
+// colour does, so shades compare fairly. `scene` picks the room (src/config/scenes.ts): the Indian
+// living room by default (palettes, the before/after slider), the sofa room in the colour finder. The wall mask (alpha = wall) is filled with the
 // shade's hex and multiplied onto the photograph, exactly as the website's `mix-blend-mode: multiply`
 // tint layer does (white × shade = shade), so shadows and texture stay real and the furniture is
 // untouched. Photo and mask are both cover-cropped around the centre, so the tint stays aligned at
@@ -17,21 +18,18 @@ import { colors, fonts, radii } from "~/theme";
 /** The shade a preview shows: a name and hex, plus its shade-card code and LRV when known. */
 export type PreviewShade = { name: string; code?: string; hex: string; lrv?: number };
 
-const scene = genericScene;
-/** The room's width over its height. */
-export const SCENE_RATIO = scene.width / scene.height;
+/** A room's width over its height. */
+export const sceneRatio = (scene: PhotoScene) => scene.width / scene.height;
 
 // the room is drawn at most the screen's width (the finder's full-bleed preview), so it is fetched at that size
 const uri = (src: string) => {
   const source = photoSource(src, Dimensions.get("window").width);
   return typeof source === "number" ? source : (source.uri as string);
 };
-const PHOTO = uri(scene.image.src);
-const MASK = uri(scene.mask);
 
-/** The room's photo and its wall mask as Skia images (null while they load). */
-export function useSceneImages(): { photo: SkImage | null; mask: SkImage | null } {
-  return { photo: useImage(PHOTO), mask: useImage(MASK) };
+/** A room's photo and its wall mask as Skia images (null while they load). */
+export function useSceneImages(scene: PhotoScene = genericScene): { photo: SkImage | null; mask: SkImage | null } {
+  return { photo: useImage(uri(scene.image.src)), mask: useImage(uri(scene.mask)) };
 }
 
 /**
@@ -47,8 +45,8 @@ export function WallTint({ mask, width, height, color }: { mask: SkImage; width:
 }
 
 /** The room tinted in `hex`, filling its box (cover, centred). */
-export function SceneCanvas({ colour, style }: { colour: PreviewShade; style?: StyleProp<ViewStyle> }) {
-  const { photo, mask } = useSceneImages();
+export function SceneCanvas({ colour, style, scene = genericScene }: { colour: PreviewShade; style?: StyleProp<ViewStyle>; scene?: PhotoScene }) {
+  const { photo, mask } = useSceneImages(scene);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -79,11 +77,23 @@ export function SceneCanvas({ colour, style }: { colour: PreviewShade; style?: S
  * (name, code, hex and LRV), as on the palettes page. `fill`: the room fills the box it is given (the
  * finder's large preview), cropped around the centre.
  */
-export function WallPreview({ colour, fill = false, radius = radii.xl, style }: { colour: PreviewShade; fill?: boolean; radius?: number; style?: StyleProp<ViewStyle> }) {
-  const frame: StyleProp<ViewStyle> = fill ? styles.flex : { width: "100%", aspectRatio: SCENE_RATIO };
+export function WallPreview({
+  colour,
+  fill = false,
+  radius = radii.xl,
+  style,
+  scene = genericScene,
+}: {
+  colour: PreviewShade;
+  fill?: boolean;
+  radius?: number;
+  style?: StyleProp<ViewStyle>;
+  scene?: PhotoScene;
+}) {
+  const frame: StyleProp<ViewStyle> = fill ? styles.flex : { width: "100%", aspectRatio: sceneRatio(scene) };
   return (
     <View style={[styles.figure, { borderRadius: radius }, fill && styles.flex, style]}>
-      <SceneCanvas colour={colour} style={frame} />
+      <SceneCanvas colour={colour} style={frame} scene={scene} />
       {!fill && (
         <View style={styles.caption}>
           <Text style={styles.captionName}>

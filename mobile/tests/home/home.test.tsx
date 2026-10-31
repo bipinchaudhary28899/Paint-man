@@ -123,6 +123,8 @@ describe("the home page", () => {
     const at = order.map((name) => headers.indexOf(name));
     expect(at.every((i) => i >= 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
+    // the colour preview slider is not on the home page (it stays on the gallery)
+    expect(headers).not.toContain("Slide to see the walls repainted.");
   });
 
   it("shows every service as a swipe card opening its hub, then all services", async () => {

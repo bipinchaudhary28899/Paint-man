@@ -5,15 +5,15 @@ import { Linking, Text } from "react-native";
 import { ColourTools, colourTools } from "~/components/colours/ColourTools";
 import { ColourHero, Glow, HeroText } from "~/components/colours/Hero";
 import { PaletteCard, PaletteJump, PaletteList } from "~/components/colours/Palettes";
-import { ColourFaqs, CompareSection, FamilyChip, LoadState } from "~/components/colours/Sections";
+import { ColourFaqs, CompareSection, LoadState } from "~/components/colours/Sections";
 import { CardFamilies, CardIntro, FamilyIntro, FamilyShades, HubCards, HubIntro, OtherCards, SameFamily } from "~/components/colours/ShadeCards";
 import { PaintDbCredit, ShadeSwatches } from "~/components/colours/ShadeSwatches";
 import { useLoad } from "~/components/colours/useLoad";
 import { nearEnd, stickyOffset } from "~/components/colours/useStickyScroll";
-import { SCENE_RATIO, WallPreview } from "~/components/colours/WallPreview";
+import { sceneRatio, WallPreview } from "~/components/colours/WallPreview";
 import { ApiError } from "~/lib/api";
 import { FALLBACK_CREDIT, type CardFamily, type CardList, type ShadeCard, type ShadeCardWithSamples, type ShadeFamily, type Swatch } from "~/lib/colours";
-import { BRAND_SHADES_ROUNDED, PAINTDB, palettes, site } from "~/shared";
+import { BRAND_SHADES_ROUNDED, finderScene, genericScene, PAINTDB, palettes, site } from "~/shared";
 import { skiaImages } from "./skia-mock";
 
 jest.mock("@shopify/react-native-skia", () => require("./skia-mock"));
@@ -119,16 +119,24 @@ describe("WallPreview", () => {
 
   it("multiplies the shade onto the room's wall once it has a size, with a caption", async () => {
     await render(<WallPreview colour={colour} />);
-    const room = screen.getByLabelText("A cosy living room, repainted in Pepper Leaf");
+    const room = screen.getByLabelText("An Indian living room, repainted in Pepper Leaf");
     expect(screen.queryByTestId("skia-canvas")).toBeNull();
-    await fireEvent(room, "layout", layout(325, 325 / SCENE_RATIO));
-    await fireEvent(room, "layout", layout(325, 325 / SCENE_RATIO));
+    await fireEvent(room, "layout", layout(325, 325 / sceneRatio(genericScene)));
+    await fireEvent(room, "layout", layout(325, 325 / sceneRatio(genericScene)));
     const [photo, tint] = screen.getAllByTestId("skia-image");
     expect(photo.props.skia).toMatchObject({ fit: "cover", width: 325 });
     expect(tint.props.skia).toMatchObject({ blendMode: "multiply", fit: "cover" });
     expect(screen.getByTestId("skia-blend-color").props.skia).toEqual({ color: "#bbc8b2", mode: "srcIn" });
     expect(screen.getByText("Pepper Leaf Asian Paints 8386")).toBeOnTheScreen();
     expect(screen.getByText("#BBC8B2 · LRV 55")).toBeOnTheScreen();
+  });
+
+  it("shows the colour finder's sofa room when given it, at that photo's own portrait shape", async () => {
+    await render(<WallPreview colour={colour} scene={finderScene} />);
+    const room = screen.getByLabelText("A cosy living room, repainted in Pepper Leaf");
+    expect(room).toHaveStyle({ aspectRatio: sceneRatio(finderScene) });
+    expect(sceneRatio(finderScene)).toBeLessThan(1);
+    expect(sceneRatio(genericScene)).toBeGreaterThan(1);
   });
 
   it("draws nothing until the photo and mask load, and has no caption when filling", async () => {
@@ -175,20 +183,6 @@ describe("ColourFaqs", () => {
 });
 
 describe("small pieces", () => {
-  it("FamilyChip: the current family is not a link", async () => {
-    const onPress = jest.fn();
-    await render(
-      <>
-        <FamilyChip label="Blue" count={346} dot="#6c93c4" onPress={onPress} />
-        <FamilyChip label="White" current />
-      </>,
-    );
-    await fireEvent.press(screen.getByRole("link", { name: "Blue 346" }));
-    expect(onPress).toHaveBeenCalled();
-    expect(screen.queryByRole("link", { name: "White" })).toBeNull();
-    expect(screen.getByText("White")).toBeOnTheScreen();
-  });
-
   it("LoadState: skeletons while loading, a failure with Try again, and a 404", async () => {
     const retry = jest.fn();
     const view = await render(<LoadState loading="Loading the shade cards…" retry={retry} />);
@@ -266,7 +260,7 @@ describe("the palettes", () => {
 
   it("a palette card: the room first, the shades by role with their LRV and closest matches, the tip and the booking", async () => {
     await render(<PaletteCard palette={p} facts={facts} />);
-    expect(screen.getByLabelText(`A cosy living room, repainted in ${p.shades[0].name.replace(/-[a-z]$/, "")}`)).toBeOnTheScreen();
+    expect(screen.getByLabelText(`An Indian living room, repainted in ${p.shades[0].name.replace(/-[a-z]$/, "")}`)).toBeOnTheScreen();
     expect(screen.getByRole("header", { name: p.name })).toBeOnTheScreen();
     expect(screen.getByText(p.mood)).toBeOnTheScreen();
     expect(screen.getByText(p.rooms.join(" · "))).toBeOnTheScreen();

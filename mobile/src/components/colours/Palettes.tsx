@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Anchor, Container, usePage } from "~/components/site/Page";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Bits";
+import { ListRows } from "~/components/ui/ListRows";
 import { Reveal } from "~/components/ui/Reveal";
 import { Skeleton, SkeletonGroup } from "~/components/ui/Skeleton";
 import { Eyebrow, H, P, Strong } from "~/components/ui/Text";
@@ -22,17 +23,15 @@ import { WallPreview } from "./WallPreview";
 
 const roles = ["Feature wall", "Other walls & ceiling", "Accent"] as const;
 
-/** The chips under the hero that scroll to each palette. */
+/** The list under the hero that scrolls to each palette, each row dotted with its feature-wall shade. */
 export function PaletteJump({ palettes }: { palettes: Palette[] }) {
   const { scrollTo } = usePage();
   return (
-    <View accessibilityLabel="Jump to a palette" style={styles.jump}>
-      {palettes.map((p) => (
-        <Pressable key={p.slug} accessibilityRole="link" onPress={() => scrollTo(p.slug)} style={styles.jumpChip}>
-          <Text style={styles.jumpText}>{p.name}</Text>
-        </Pressable>
-      ))}
-    </View>
+    <ListRows
+      accessibilityLabel="Jump to a palette"
+      style={styles.jump}
+      rows={palettes.map((p) => ({ key: p.slug, label: p.name, swatch: p.shades[0].hex, onPress: () => scrollTo(p.slug) }))}
+    />
   );
 }
 
@@ -167,9 +166,7 @@ const styles = StyleSheet.create({
   mt8: { marginTop: 8 },
   mt12: { marginTop: 12 },
   mt20: { marginTop: 20 },
-  jump: { marginTop: 32, flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  jumpChip: { minHeight: 44, justifyContent: "center", borderRadius: radii.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper, paddingHorizontal: 16 },
-  jumpText: { fontFamily: fonts.sansBold, fontSize: 14, lineHeight: 20, letterSpacing: -0.07, color: colors.ink },
+  jump: { marginTop: 32 },
   list: { marginTop: 32, gap: 32 },
   card: { overflow: "hidden" },
   preview: { borderBottomWidth: 1, borderColor: colors.line, backgroundColor: colors.chalk, padding: 12 },

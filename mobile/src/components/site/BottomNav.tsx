@@ -163,8 +163,9 @@ export function BottomNav() {
               <Rect x={0} y={0} width={width} height={BAR} fill="#fff" />
               <AnimatedCircle animatedProps={dipProps} cy={0} r={DIP - 1} fill="#000" />
             </Mask>
+            {/* the bar's own pill, so over Home and Estimate the rim never runs past its rounded ends */}
             <ClipPath id="lower">
-              <Rect x={0} y={0} width={width} height={BAR} />
+              <Rect x={0} y={0} width={width} height={BAR} rx={BAR / 2} />
             </ClipPath>
             {/* the charcoal, lighter at the top and deeper at the bottom */}
             <LinearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
@@ -274,7 +275,9 @@ function DabGloss() {
 const styles = StyleSheet.create({
   nav: { position: "absolute", left: 16, right: 16, height: BAR },
   // the bar's shadow on a transparent box (an outer shadow draws only outside its box, so nothing
-  // shows through the bar's fill or the dip): a tight contact shadow under a deeper, softer one
+  // shows through the bar's fill or the dip): a tight contact shadow under a deeper, softer one. Each
+  // one's offset and spread outweigh its blur, so none rises above the top edge: there it would show
+  // as a faint line across the dip, where the bar's edge is cut away.
   shadow: {
     position: "absolute",
     left: 0,
@@ -282,7 +285,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     borderRadius: BAR / 2,
-    boxShadow: "0px 2px 4px rgba(20, 20, 18, 0.22), 0px 16px 28px -10px rgba(20, 20, 18, 0.5), 0px 32px 56px -18px rgba(20, 20, 18, 0.45)",
+    boxShadow: "0px 3px 4px -1px rgba(20, 20, 18, 0.22), 0px 16px 28px -12px rgba(20, 20, 18, 0.5), 0px 32px 56px -24px rgba(20, 20, 18, 0.45)",
   },
   dab: { position: "absolute", top: -DAB / 2, left: 0, width: DAB, height: DAB, zIndex: 1 },
   dabInner: {

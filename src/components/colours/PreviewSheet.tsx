@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, type KeyboardEvent, type UIEvent } from "react";
+import { finderScene } from "@/config/scenes";
 import { WallPreview } from "./WallPreview";
 
 /** The shade the sheet shows, as the finder describes it. */
@@ -107,7 +108,7 @@ export function PreviewSheet({
       </div>
 
       <div className="mt-3 min-h-0 flex-1">
-        <WallPreview colour={view} compact frameClassName="!w-full h-full" sizes="100vw" className="h-full !rounded-3xl" />
+        <WallPreview colour={view} scene={finderScene} compact frameClassName="!w-full h-full" sizes="100vw" className="h-full !rounded-3xl" />
       </div>
 
       <ul

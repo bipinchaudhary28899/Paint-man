@@ -17,6 +17,7 @@ import { scheduleOnRN } from "react-native-worklets";
 
 import { Button } from "~/components/ui/Button";
 import { openHref } from "~/lib/links";
+import { finderScene } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 import { WallPreview } from "./WallPreview";
 
@@ -155,7 +156,7 @@ export function PreviewSheet({
           </View>
 
           <View style={styles.room}>
-            <WallPreview colour={view} fill radius={radii.xl} />
+            <WallPreview colour={view} fill radius={radii.xl} scene={finderScene} />
           </View>
 
           <ScrollView

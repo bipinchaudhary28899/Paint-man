@@ -52,7 +52,7 @@ export {
   type PaletteShade,
   type Room,
 } from "@/config/palettes";
-export { genericScene, photoScenes, type PhotoScene } from "@/config/scenes";
+export { finderScene, genericScene, photoScenes, type PhotoScene } from "@/config/scenes";
 export { FIELD_MESSAGES, fieldProblem, isRequiredField, normalizeMobile, REQUIRED_FIELDS, requiredFieldErrors, type RequiredField } from "@/lib/leads/field-checks";
 export { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
 export { BOOKING_DAYS_AHEAD, bookingDateRange, indiaToday, isCalendarDate } from "@/lib/leads/dates";

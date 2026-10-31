@@ -13,6 +13,8 @@ export const SITE_UPDATED = "2026-10-29";
  */
 export const sectionUpdated: Record<string, string> = {
   "/": "2026-10-31",
+  // the palettes' room became a real Indian living room
+  "/palettes": "2026-10-31",
   "/privacy-policy": "2026-10-31",
   "/terms": "2026-10-19",
 };

@@ -4,12 +4,13 @@ import { Anchor, Container, usePage } from "~/components/site/Page";
 import { BookingSection, CtaBanner, Promises } from "~/components/site/Sections";
 import { Card } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
+import { ListRows } from "~/components/ui/ListRows";
 import { RevealContainer } from "~/components/ui/Reveal";
 import { Em, Eyebrow, H, P } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
 import { areaSlug, cityPath, serviceCityTitle, servicePath, services, servicesIn, site, type City } from "~/shared";
 import { colors, fonts } from "~/theme";
-import { ArrowLink, BlockLink, chip, CreamHero, HeroTitle, linkStyles, LiveCityLinks, LocalityChip, SectionHead, TextLink } from "./bits";
+import { ArrowLink, BlockLink, CreamHero, HeroTitle, linkStyles, LiveCityLinks, SectionHead, TextLink } from "./bits";
 import { CardTitle } from "./HousePainting";
 
 // A city's main painting page on a phone (src/app/(site)/services/house-painting/[city]/page.tsx):
@@ -69,11 +70,12 @@ function LiveCity({ city }: { city: City }) {
         <P size={18} leading={1.65} color={colors.muted} style={styles.mt20}>
           {city.intro}
         </P>
-        <View accessibilityLabel={`Jump to a locality in ${city.name}`} style={[chip.row, styles.mt32]}>
-          {city.areas.map((a) => (
-            <LocalityChip key={a} name={a} onPress={() => scrollTo(areaSlug(a))} />
-          ))}
-        </View>
+        <ListRows
+          accessibilityLabel={`Jump to a locality in ${city.name}`}
+          columns={2}
+          style={styles.mt32}
+          rows={city.areas.map((a) => ({ key: a, label: a, onPress: () => scrollTo(areaSlug(a)) }))}
+        />
         <Button label="Book a site visit" large onPress={() => scrollTo("book-visit")} style={styles.heroButton} />
       </CreamHero>
 

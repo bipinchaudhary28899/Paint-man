@@ -39,7 +39,7 @@ beforeEach(() => {
 });
 
 describe("the colour preview slider", () => {
-  it("shows the room half as photographed, half repainted, once it has a size", async () => {
+  it("shows the room half before colouring, half painted, once it has a size", async () => {
     await render(<BeforeAfter />);
     expect(screen.queryByTestId("skia-canvas")).toBeNull();
     expect(frame()).toHaveStyle({ aspectRatio: FRAME_RATIO });
@@ -53,8 +53,8 @@ describe("the colour preview slider", () => {
     const colour = screen.getByTestId("skia-blend-color").props.skia as { color: SharedValue<string>; mode: string };
     expect(colour.mode).toBe("srcIn");
     expect(colour.color.value).toBe(pepper.hex);
-    expect(screen.getByText("As photographed")).toBeOnTheScreen();
-    expect(screen.getByText("Repainted")).toBeOnTheScreen();
+    expect(screen.getByText("Before")).toBeOnTheScreen();
+    expect(screen.getByText("After")).toBeOnTheScreen();
   });
 
   it("draws nothing until the photo and mask load", async () => {
@@ -100,7 +100,7 @@ describe("the colour preview slider", () => {
   it("is an adjustable control for screen readers, a step at a time, within 0 and 100", async () => {
     await laidOut();
     const room = screen.getByRole("adjustable");
-    expect(room).toHaveAccessibleName(`Colour preview on an example room: on the left as photographed, on the right with the walls repainted in ${pepper.name}, Asian Paints ${pepper.code}`);
+    expect(room).toHaveAccessibleName(`Colour preview on an example room: on the left before colouring, with bare walls, on the right with the walls painted in ${pepper.name}, Asian Paints ${pepper.code}`);
     expect(room.props.accessibilityHint).toBe("Swipe up or down to show more or less of the repainted room.");
     expect(room).toHaveAccessibilityValue({ now: 50, text: "50% repainted" });
     await fireEvent(room, "accessibilityAction", { nativeEvent: { actionName: "increment" } });
@@ -124,8 +124,8 @@ describe("the colour preview slider", () => {
     expect(chips.getByRole("button", { name: `${pepper.name} ${pepper.code}` })).not.toBeSelected();
     await settle();
     expect((screen.getByTestId("skia-blend-color").props.skia as { color: SharedValue<string> }).color.value).toMatch(/^(#fee19d|rgba\(254, 225, 157, 1\))$/i);
-    expect(screen.getByRole("adjustable")).toHaveAccessibleName(new RegExp(`repainted in ${second.name}, Asian Paints ${second.code}$`));
-    expect(screen.getByText(new RegExp(`recoloured on screen, in ${second.name}, Asian Paints ${second.code}`))).toBeOnTheScreen();
+    expect(screen.getByRole("adjustable")).toHaveAccessibleName(new RegExp(`painted in ${second.name}, Asian Paints ${second.code}$`));
+    expect(screen.getByText(new RegExp(`bare on the left, in ${second.name}, Asian Paints ${second.code} on the right`))).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole("button", { name: "Book an inspection with this shade" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: { shade: second.id } });
@@ -133,7 +133,7 @@ describe("the colour preview slider", () => {
 
   it("says plainly that it is a preview on an example room, not a finished job", async () => {
     await laidOut();
-    expect(screen.getByText(/^A colour preview on an example room, not a finished job of ours\. Only the walls of this stock photo are recoloured/)).toBeOnTheScreen();
+    expect(screen.getByText(/^A colour preview on an example room, not a finished job of ours\. Only the walls of this stock photo change on screen/)).toBeOnTheScreen();
   });
 
   it("takes its own list of shades", async () => {

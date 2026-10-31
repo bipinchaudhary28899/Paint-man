@@ -221,21 +221,6 @@ export function SectionHead({ eyebrow, children, style }: { eyebrow: string; chi
   );
 }
 
-/** A locality as a rounded chip (min-h-11 rounded-full border bg-paper px-4 text-sm semibold). */
-export function LocalityChip({ name, onPress }: { name: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="link" accessibilityLabel={name} onPress={onPress} style={chip.box}>
-      <Text style={chip.text}>{name}</Text>
-    </Pressable>
-  );
-}
-
-export const chip = StyleSheet.create({
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  box: { minHeight: 44, justifyContent: "center", borderRadius: 999, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper, paddingHorizontal: 16 },
-  text: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.ink },
-});
-
 const notFoundLinks = [
   { href: "/services", label: "Painting services" },
   { href: "/colours", label: "Colour finder" },

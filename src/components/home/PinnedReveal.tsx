@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
-import { images } from "@/config/images";
+import { genericScene } from "@/config/scenes";
 import { clamp01, easeInOutQuad, useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
 // "Watch the colour go on": the room stays in full colour; only the WALLS start as bare
 // putty and take their shade from the floor up as the page scrolls 300vh with the panel
-// pinned. The walls come from an exact detector mask of the photo, so the tint never touches
-// curtains, shelves or plants.
+// pinned. The room is the colour previews' Indian living room (src/config/scenes.ts), its walls
+// in bare primer white; they come from an exact detector mask of the photo, so the tint never
+// touches the door, the TV or the chair.
 // In browsers with CSS scroll timelines one named view timeline on the track drives the
 // two clips, the stage list, the bar and the counter (see .pin-* in globals.css). Elsewhere
 // a passive, rAF-throttled handler computes the same progress and applies it inline.
@@ -27,11 +28,11 @@ export const wallShade = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: 
 const putty = "#cfc9bf";
 
 /**
- * Exact wall mask of the photo (alpha = wall), produced once with a SegFormer-B1
- * wall detector (see src/config/scenes.ts). `.tint` sizes it with cover + centre, the same
- * crop `object-cover` gives the photo, so the 7:8 frame and the mask stay aligned.
+ * Exact wall mask of the photo (alpha = wall), produced once with a SegFormer wall detector
+ * (see src/config/scenes.ts). `.tint` sizes it with cover + centre, the same crop
+ * `object-cover` gives the photo, so the 7:8 frame and the mask stay aligned.
  */
-export const wallMask = "/scenes/living-moody-mask.png";
+export const wallMask = genericScene.mask;
 const maskStyle = { maskImage: `url(${wallMask})`, WebkitMaskImage: `url(${wallMask})` } as const;
 
 /**
@@ -58,7 +59,7 @@ export function reveal(p: number) {
 }
 
 export function PinnedReveal() {
-  const photo = images.livingMoody;
+  const photo = genericScene.image;
   const needsJs = useNeedsJsScroll();
   const track = useRef<HTMLElement>(null);
   const panel = useRef<HTMLDivElement>(null);

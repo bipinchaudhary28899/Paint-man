@@ -12,10 +12,10 @@ import { colors, fonts, radii } from "~/theme";
 import { ChoicePill } from "./Pills";
 import { useSceneImages, WallTint } from "./WallPreview";
 
-// The colour preview slider: the finder's example living room (a stock photo, never one of our jobs)
-// with a divider the visitor drags sideways. Left of it the photo as it is; right of it the same photo
-// with its walls repainted in the chosen shade, by the same Skia multiply tint as every other preview
-// (WallPreview). The shades are the palettes' feature walls: real Asian Paints shade-card codes. The
+// The colour preview slider: the finder's example room, a real Indian living room (a stock photo, never
+// one of our jobs), with a divider the visitor drags sideways. Left of it the room before colouring, its
+// walls in bare primer white; right of it the same photo with its walls painted in the chosen shade, by
+// the same Skia multiply tint as every other preview (WallPreview). The shades are the palettes' feature walls: real Asian Paints shade-card codes. The
 // divider lives in a shared value, so a drag moves the line, the handle, the stickers and the tint's clip
 // on the UI thread without re-rendering React; the drag itself is a PanResponder that claims sideways
 // moves only, so a vertical swipe over the photo still scrolls the page. Screen readers get an
@@ -25,7 +25,7 @@ import { useSceneImages, WallTint } from "./WallPreview";
 /** A shade the preview can show. */
 export type PreviewChoice = { id: string; name: string; code: string; brandName: string; hex: string };
 
-/** Whether a shade is so pale (every channel at E0 or above) that the room's warm white walls would barely change. */
+/** Whether a shade is so pale (every channel at E0 or above) that the room's bare white walls would barely change. */
 export const isNearWhite = (hex: string) => [1, 3, 5].every((i) => parseInt(hex.slice(i, i + 2), 16) >= 0xe0);
 
 /** The palettes' feature walls, each once, leaving out the near-whites. */
@@ -37,7 +37,7 @@ export const previewShades: PreviewChoice[] = palettes
 /** The booking page for a shade, as the finder links it. */
 export const bookShadeHref = (s: Pick<PreviewChoice, "id">) => `/book?shade=${encodeURIComponent(s.id)}`;
 
-/** Keeps the divider inside the frame (0: all repainted, 1: all as photographed). */
+/** Keeps the divider inside the frame (0: all painted, 1: all bare). */
 export const clampSplit = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Whether a move is a sideways drag (past 6pt, more across than down): only those move the divider. */
@@ -45,7 +45,7 @@ export const isSideways = (dx: number, dy: number) => Math.abs(dx) > 6 && Math.a
 
 /** How far one screen-reader step moves the divider, in percent of the frame. */
 export const STEP = 10;
-/** The frame's width over its height: the portrait room cropped around its centre. */
+/** The frame's width over its height: the room cropped around its centre to a portrait frame. */
 export const FRAME_RATIO = 4 / 5;
 const HANDLE = 44;
 const ease = { duration: 350, easing: Easing.bezier(0.2, 0.8, 0.2, 1), reduceMotion: ReduceMotion.System };
@@ -115,7 +115,7 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
         onLayout={onLayout}
         accessible
         accessibilityRole="adjustable"
-        accessibilityLabel={`Colour preview on an example room: on the left as photographed, on the right with the walls repainted in ${full}`}
+        accessibilityLabel={`Colour preview on an example room: on the left before colouring, with bare walls, on the right with the walls painted in ${full}`}
         accessibilityHint="Swipe up or down to show more or less of the repainted room."
         accessibilityValue={{ min: 0, max: 100, now: repainted, text: `${repainted}% repainted` }}
         accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
@@ -132,12 +132,12 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
         )}
         <Animated.View style={[styles.half, leftBox]} pointerEvents="none">
           <Animated.View style={[StyleSheet.absoluteFill, leftInner]}>
-            <Sticker style={styles.stickerLeft}>As photographed</Sticker>
+            <Sticker style={styles.stickerLeft}>Before</Sticker>
           </Animated.View>
         </Animated.View>
         <Animated.View style={[styles.half, rightBox]} pointerEvents="none">
           <Animated.View style={[StyleSheet.absoluteFill, rightInner]}>
-            <Sticker style={styles.stickerRight}>Repainted</Sticker>
+            <Sticker style={styles.stickerRight}>After</Sticker>
           </Animated.View>
         </Animated.View>
         <Animated.View style={[styles.divider, divider]} pointerEvents="none" testID="before-after-divider">
@@ -161,8 +161,8 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
       </View>
 
       <Text style={styles.caption}>
-        A colour preview on an example room, not a finished job of ours. Only the walls of this stock photo are recoloured on screen, in {full}. Your light and
-        finish change a shade, so the inspector brings the real shade card.
+        A colour preview on an example room, not a finished job of ours. Only the walls of this stock photo change on screen: bare on the left, in {full} on the
+        right. Your light and finish change a shade, so the inspector brings the real shade card.
       </Text>
       <Button label="Book an inspection with this shade" onPress={() => openHref(bookShadeHref(shade))} style={styles.book} />
     </View>

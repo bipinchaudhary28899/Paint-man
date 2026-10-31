@@ -26,6 +26,10 @@ export const images = {
   uniformSkimming: { src: "/photos/painter-uniform-skimming.jpg", alt: "Painter in a white Paint Saathi uniform, seen from behind, smoothing a wall with a long trowel" },
   uniformCeiling: { src: "/photos/painter-uniform-ceiling.jpg", alt: "Painter in a white Paint Saathi uniform rolling paint along a ceiling edge beside a taped window" },
   uniformSpraying: { src: "/photos/painter-uniform-spraying.jpg", alt: "Painter in a white Paint Saathi uniform spraying primer onto a bare wall in an unfinished room" },
+  // The colour previews' example room (src/config/scenes.ts): a Pexels photo of a lived-in Indian home
+  // (3990542, free licence, edits allowed) with its lilac walls taken back to a bare primer white, so a
+  // shade multiplied onto them reads true. Not our job, so its alt names no place and no finished job.
+  previewRoom: { src: "/scenes/indian-living-room.jpg", alt: "Living room of an Indian home with bare white walls, a grey panelled door, a wall-mounted TV and a plastic chair" },
   // Painting in India, for the home page collage (Finishes): painted Indian walls and doors, the
   // tools and a shade card. No painter without the uniform appears in them.
   blueHouseDoor: { src: pexels("16744860"), alt: "Blue-washed house front with a green wooden door in a red frame above worn stone steps" },

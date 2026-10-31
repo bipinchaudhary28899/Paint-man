@@ -88,7 +88,7 @@ describe("PinnedReveal", () => {
     expect(container.querySelectorAll(".pin-after .tint")).toHaveLength(1);
     const after = container.querySelector(".pin-after .tint") as HTMLElement;
     expect(after.style.background).toBe("rgb(187, 200, 178)"); // #bbc8b2, Asian Paints Pepper Leaf 8386
-    expect(after.style.maskImage).toContain("/scenes/living-moody-mask.png");
+    expect(after.style.maskImage).toContain("/scenes/indian-living-room-mask.png");
     expect(container.querySelectorAll(".pin-label")).toHaveLength(4);
     expect(container.querySelector(".pin-track")).not.toBeNull();
     expect(container.querySelector(".pin-bar")).not.toBeNull();

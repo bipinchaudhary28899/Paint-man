@@ -90,26 +90,6 @@ export function CompareSection({ heading, items, children }: { heading: ReactNod
   );
 }
 
-/** A rounded family chip (min 44pt): a dot of the family's colour, its name and count; `current` is the ink chip of the page you are on. */
-export function FamilyChip({ label, count, dot, current = false, onPress }: { label: string; count?: number; dot?: string; current?: boolean; onPress?: () => void }) {
-  const body = (
-    <>
-      {dot && <View style={[styles.chipDot, { backgroundColor: dot }]} aria-hidden />}
-      <Text style={[styles.chipText, current && styles.chipTextOn]}>{label}</Text>
-      {count !== undefined && <Text style={[styles.chipText, styles.chipCount]}>{count}</Text>}
-    </>
-  );
-  return current ? (
-    <View style={[styles.chip, styles.chipOn]} accessibilityState={{ selected: true }} accessible>
-      {body}
-    </View>
-  ) : (
-    <Pressable accessibilityRole="link" onPress={onPress} style={styles.chip}>
-      {body}
-    </Pressable>
-  );
-}
-
 /**
  * While a shade-card screen's data loads, its shape in skeletons (the intro's lines, then a card's strip
  * of colour families and a few swatches with their codes), announced as `loading`; after a failure,
@@ -161,22 +141,6 @@ const styles = StyleSheet.create({
   compareLink: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
   compareLabel: { fontFamily: fonts.sansSemiBold, fontSize: 16, lineHeight: 24, letterSpacing: -0.08, color: colors.ink },
   compareText: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20, letterSpacing: -0.07, color: colors.muted },
-  chip: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.paper,
-    paddingHorizontal: 16,
-  },
-  chipOn: { borderWidth: 0, backgroundColor: colors.ink },
-  chipDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 1, borderColor: colors.line },
-  chipText: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, letterSpacing: -0.07, color: colors.ink },
-  chipTextOn: { color: colors.onInk },
-  chipCount: { fontFamily: fonts.sans, color: colors.muted },
   load: { paddingVertical: 24 },
   skeletonSwatches: { marginTop: 16, flexDirection: "row", flexWrap: "wrap", gap: 10 },
   skeletonSwatch: { width: "30%", flexGrow: 1, gap: 6 },
