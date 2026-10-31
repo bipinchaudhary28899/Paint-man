@@ -29,8 +29,8 @@ describe("BookingSection (our booking form with its heading)", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Book a site visit online" })).toBeInTheDocument();
     expect(screen.getByText("We call you back.")).toBeInTheDocument();
     // LeadForm's booking fields, not a short call-back form
-    for (const label of ["Your name", "Mobile number", "PIN code", "Property type", "What needs painting?", "Floors to paint", "Home size"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
+    for (const label of ["Your name", "Mobile number", "City", "Area / locality"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeInTheDocument();
   });
 
   it("can hold the contact form with a prefilled message, under its own id", () => {
@@ -169,13 +169,13 @@ describe("ThankYouMessage for the waitlist", () => {
 
 describe("WorkFlow (how the work gets done)", () => {
   it("lists the steps in order from booking to handover, with a button to the form", () => {
-    render(<WorkFlow cta={{ href: "#book-visit", label: "Book a site visit" }} />);
+    render(<WorkFlow cta={{ href: "#book-visit", label: "Book a free site visit" }} />);
     expect(screen.getByRole("heading", { level: 2, name: "How the work gets done" })).toBeInTheDocument();
     const steps = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(steps).toEqual(workFlow.map((s) => s.title));
     expect(steps[0]).toBe("Book online");
     expect(steps.at(-1)).toBe("Walkthrough and handover");
-    expect(screen.getByRole("link", { name: "Book a site visit" })).toHaveAttribute("href", "#book-visit");
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "#book-visit");
     // the toolbox illustration beside the heading; the steps have none of their own yet
     expect(screen.getAllByRole("img").map((i) => i.getAttribute("alt"))).toEqual([illustrations.toolbox.alt]);
   });

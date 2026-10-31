@@ -7,7 +7,8 @@ import { vi } from "vitest";
 export const fakeContact = {
   phone: "+910000000001",
   phoneDisplay: "+91 00000 00001",
-  whatsapp: "910000000001",
+  whatsapp: "910000000002",
+  whatsappDisplay: "+91 00000 00002",
   email: "hello@example.com",
   street: "1 Test Road",
   postalCode: "000001",

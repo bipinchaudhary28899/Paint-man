@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { cityPath, liveCities, liveCityNames } from "@/config/site";
-import { AreaLinks } from "./AreaLinks";
+import { cityPath, liveCities, liveCityNames, type City } from "@/config/site";
 
-// "Painting homes across Agra, Mathura and Vrindavan": each live city's localities under the city's
-// name (a link to its page), each locality linking to its entry there. Phones and tablets show the
-// localities as chips under the heading; desktop keeps the heading beside underlined lists.
+/** "10 localities: Kamla Nagar, Dayalbagh, Sikandra and more" */
+export const areaSummary = (c: City) => `${c.areas.length} localities: ${c.areas.slice(0, 3).join(", ")}${c.areas.length > 3 ? " and more" : ""}`;
+
+// "Painting homes across Agra, Mathura and Vrindavan": one hairline row per live city (its name, how
+// many localities and the first few), the whole row linking to the localities on the city's page.
+// Every locality is still linked from the city page and the footer. Desktop keeps the heading beside the rows.
 export function AreasSection() {
   return (
     <section className="container-page relative z-[1] pb-14 tab:pb-[88px] desk:pb-40" aria-labelledby="areas-heading">
@@ -16,22 +18,22 @@ export function AreasSection() {
           <p className="mt-3 leading-[1.6] text-muted max-tab:mt-2.5 max-tab:text-[14px] max-tab:leading-[1.55] tab:max-desk:max-w-[480px] tab:max-desk:text-[15px] desk:max-w-[360px]">
             Mohalla list mein nahi hai? If you need painters outside these localities, ask. We&apos;ll tell you honestly if we can supervise your job.
           </p>
-          {/* Phones drop the repeated "Painters in" from each chip and show it once here; the links
-              still carry it for screen readers, so this label is hidden from them. */}
-          <p aria-hidden className="mt-[18px] text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-2 tab:hidden">
-            Painters in
-          </p>
         </div>
-        <div className="space-y-6 max-tab:mt-1 tab:mt-6 desk:mt-0 desk:flex-[2_1_480px] desk:space-y-8">
+        <ul className="mt-5 divide-y divide-line border-y border-line tab:mt-7 desk:mt-0 desk:flex-[2_1_480px]">
           {liveCities().map((c) => (
-            <div key={c.slug}>
-              <h3 className="text-[22px] leading-tight tab:text-2xl">
-                <Link href={cityPath(c)} className="hover:text-terracotta">{c.name}</Link>
-              </h3>
-              <AreaLinks city={c} />
-            </div>
+            <li key={c.slug}>
+              <Link href={`${cityPath(c)}#localities`} className="group flex min-h-16 items-center justify-between gap-4 py-4 desk:py-5">
+                <div>
+                  <h3 className="text-[22px] leading-tight transition-colors group-hover:text-terracotta tab:text-2xl">Painters in {c.name}</h3>
+                  <p className="mt-1 text-[14px] leading-normal text-muted tab:text-[15px]">{areaSummary(c)}</p>
+                </div>
+                <span aria-hidden className="text-lg text-terracotta transition-transform group-hover:translate-x-1 motion-reduce:transition-none">
+                  →
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

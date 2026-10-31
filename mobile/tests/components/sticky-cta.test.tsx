@@ -23,7 +23,7 @@ beforeEach(() => {
   mockPathname.mockReturnValue("/about");
 });
 
-const pill = () => screen.queryByRole("link", { name: "Book a free inspection" });
+const pill = () => screen.queryByRole("link", { name: "Book a free site visit" });
 
 /** Scrolls the page through each offset in turn, a frame apart, as a finger would (the pill reads the offset once a frame). */
 async function scroll(scrollY: SharedValue<number>, ...offsets: number[]) {
@@ -89,7 +89,7 @@ describe("the sticky booking pill", () => {
     const { scrollY } = await renderCta();
     await screen.findByTestId("sticky-cta", { includeHiddenElements: true });
     expect(pill()).toBeNull();
-    expect(screen.getByRole("link", { name: "Book a free inspection", includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getByRole("link", { name: "Book a free site visit", includeHiddenElements: true })).toBeOnTheScreen();
 
     // reading on down past the first screen: it stays away (it would cover what the visitor reads towards)
     await scroll(scrollY, 600, 1200, 1800);
@@ -151,7 +151,7 @@ describe("the sticky booking pill", () => {
   });
 
   it("has no call or WhatsApp control while site.ts has no numbers", async () => {
-    await renderCta();
+    await renderCta({ phone: "", whatsapp: "" });
     await screen.findByTestId("sticky-cta", { includeHiddenElements: true });
     expect(screen.queryByLabelText("Chat on WhatsApp", { includeHiddenElements: true })).toBeNull();
     expect(screen.queryByLabelText("Call us", { includeHiddenElements: true })).toBeNull();

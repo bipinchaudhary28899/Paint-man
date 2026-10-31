@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import type { Metadata } from "next";
 import { describe, expect, it, vi } from "vitest";
-import { AreaLinks } from "@/components/home/AreaLinks";
+import { AreasSection } from "@/components/home/AreasSection";
 import AboutPage, { metadata as aboutMeta } from "@/app/(site)/about/page";
 import CityPage, { generateMetadata as cityMetadata } from "@/app/(site)/services/house-painting/[city]/page";
 import BookPage, { metadata as bookMeta } from "@/app/(site)/book/page";
@@ -93,18 +93,14 @@ describe("/services/house-painting/agra (the city page, formerly /areas)", () =>
     expect(container.querySelectorAll("section[aria-labelledby]").length).toBeLessThan(site.areas.length);
   });
 
-  it("every home page 'Painters in {area}' link lands on an entry on the rendered city page", async () => {
-    const { container: home } = render(<AreaLinks city={homeCity} />);
+  it("every home page city row lands on the localities list of the rendered city page", async () => {
+    const { container: home } = render(<AreasSection />);
     const hrefs = [...home.querySelectorAll("a")].map((a) => a.getAttribute("href")!);
-    expect(hrefs).toHaveLength(site.areas.length);
+    const agra = hrefs.find((h) => h.startsWith("/services/house-painting/agra"))!;
     const { container: areas } = render(await agraPage());
-    const pageIds = new Set(ids(areas));
-    for (const href of hrefs) {
-      const url = new URL(href, "http://site.test");
-      expect(url.pathname, href).toBe("/services/house-painting/agra");
-      expect(pageIds.has(decodeURIComponent(url.hash.slice(1))), href).toBe(true);
-    }
+    expect(new Set(ids(areas)).has(new URL(agra, "http://site.test").hash.slice(1))).toBe(true);
   });
+
 
   it("links the services, the colour tools and booking, and has substantial copy", async () => {
     const { container } = render(await agraPage());
@@ -148,7 +144,7 @@ describe("city page metadata and coming-soon cities", () => {
 describe("/contact", () => {
   it("keeps booking and a call back prominent and shows no empty contact details", () => {
     const { container } = render(<ContactPage />);
-    expect(screen.getAllByRole("link", { name: "Book an inspection" })[0]).toHaveAttribute("href", "/book");
+    expect(screen.getAllByRole("link", { name: "Book a free site visit" })[0]).toHaveAttribute("href", "/book");
     // tel:, wa.me and mailto: links and the street address appear only when site.ts has them
     expect(Boolean(container.querySelector('a[href^="tel:"]'))).toBe(Boolean(site.phone));
     expect(Boolean(container.querySelector('a[href^="https://wa.me/"]'))).toBe(Boolean(site.whatsapp));
@@ -201,14 +197,13 @@ describe("/contact once site.ts has contact details", () => {
   it("links the phone, WhatsApp and email exactly, shows the street address, and the hero offers a call", async () => {
     const Contact = await loadContact(fakeContact);
     const { container } = render(<Contact />);
-    const { phone, phoneDisplay, whatsapp, email, street, postalCode } = fakeContact;
+    const { phone, phoneDisplay, whatsapp, whatsappDisplay, email, street, postalCode } = fakeContact;
     expect(screen.getByRole("link", { name: phoneDisplay })).toHaveAttribute("href", `tel:${phone}`);
     expect(screen.getByRole("link", { name: `Call ${phoneDisplay}` })).toHaveAttribute("href", `tel:${phone}`);
     for (const a of container.querySelectorAll('a[href^="tel:"]')) expect(a).toHaveAttribute("href", "tel:+910000000001");
-    // wa.me takes the number as digits only, with the country code
-    const chat = screen.getByRole("link", { name: "Chat on WhatsApp" });
-    expect(chat).toHaveAttribute("href", `https://wa.me/${whatsapp}`);
-    expect(chat.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/\d+$/);
+    // wa.me takes the number as digits only, with the country code, and the chat opens with a first line typed in
+    const chat = screen.getByRole("link", { name: whatsappDisplay });
+    expect(chat.getAttribute("href")).toMatch(new RegExp(`^https://wa\\.me/${whatsapp}\\?text=Hi%20`));
     expect(screen.getByRole("link", { name: email })).toHaveAttribute("href", `mailto:${email}`);
     expect(container.querySelector("address")).toHaveTextContent(`${street}, ${site.city}, ${site.region} ${postalCode}`);
     // with a phone number the hero's second button calls instead of scrolling to the form
@@ -219,11 +214,11 @@ describe("/contact once site.ts has contact details", () => {
   });
 
   it("offers WhatsApp in the hero when there is no phone number", async () => {
-    const Contact = await loadContact({ whatsapp: fakeContact.whatsapp });
+    const Contact = await loadContact({ whatsapp: fakeContact.whatsapp, whatsappDisplay: fakeContact.whatsappDisplay });
     const { container } = render(<Contact />);
-    const chats = screen.getAllByRole("link", { name: "Chat on WhatsApp" });
-    expect(chats).toHaveLength(2); // the hero button and the WhatsApp row
-    for (const a of chats) expect(a).toHaveAttribute("href", "https://wa.me/910000000001");
+    // the hero button and the WhatsApp row (which shows the number, so it can be saved)
+    const chats = [screen.getByRole("link", { name: "Chat on WhatsApp" }), screen.getByRole("link", { name: fakeContact.whatsappDisplay })];
+    for (const a of chats) expect(a.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/910000000002\?text=/);
     expect(container.querySelector('a[href^="tel:"]')).toBeNull();
     expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
     expect(container.querySelector("address")).toBeNull();
@@ -234,7 +229,7 @@ describe("/contact once site.ts has contact details", () => {
 describe("static /book", () => {
   it("/book always renders the booking form, whatever the query", () => {
     render(<BookPage />);
-    expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeInTheDocument();
   });
 
 });

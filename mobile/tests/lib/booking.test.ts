@@ -23,20 +23,18 @@ const complete = emptyBooking({
 });
 
 describe("required fields", () => {
-  it("are the website's booking fields, with the city before the locality when several cities are live", () => {
+  it("are the website's booking fields, who and where, with the city before the area when several cities are live", () => {
     expect(live.length).toBeGreaterThan(1);
-    expect(bookingRequiredFields(live)).toEqual(["name", "phone", "address", "city", "locality", "pincode"]);
-    expect(bookingRequiredFields([agra])).toEqual(["name", "phone", "address", "locality", "pincode"]);
+    expect(bookingRequiredFields(live)).toEqual(["name", "phone", "city", "locality"]);
+    expect(bookingRequiredFields([agra])).toEqual(["name", "phone", "locality"]);
   });
 
   it("use the website's own messages", () => {
     expect(validateBooking(emptyBooking(), live)).toEqual({
       name: FIELD_MESSAGES.name,
       phone: FIELD_MESSAGES.phone,
-      address: FIELD_MESSAGES.address,
       city: FIELD_MESSAGES.city,
       locality: FIELD_MESSAGES.locality,
-      pincode: FIELD_MESSAGES.pincode,
     });
     // the same answer the site's shared check gives
     expect(validateBooking(emptyBooking(), live)).toEqual(requiredFieldErrors("booking", emptyBooking(), bookingRequiredFields(live)));

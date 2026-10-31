@@ -35,7 +35,7 @@ export function ServiceHub({ service }: { service: Service }) {
         intro={service.intro}
         image={service.image}
       >
-        <Button label="Book a site visit →" onPress={() => openHref(`/book?service=${service.slug}`)} style={styles.heroButton} />
+        <Button label="Book a free site visit →" onPress={() => openHref(`/book?service=${service.slug}`)} style={styles.heroButton} />
       </PageHero>
 
       <Container style={styles.main}>
@@ -69,7 +69,7 @@ export function ServiceHub({ service }: { service: Service }) {
                   <BlockLink key={c.slug} href={servicePath(service, c)} label={serviceCityTitle(service, c)} textStyle={asideStyles.onInkLink} />
                 ))}
               </View>
-              <Button label="Book a site visit" onPress={() => scrollTo("book-inspection")} style={styles.mt24} />
+              <Button label="Book a free site visit" onPress={() => scrollTo("book-inspection")} style={styles.mt24} />
             </Card>
             <Card style={asideStyles.sideCard}>
               <H size={18} leading={1.556}>
@@ -114,7 +114,7 @@ export function ServiceHub({ service }: { service: Service }) {
           Prefer the full booking page? <TextLink href={`/book?service=${service.slug}`}>Open it here</TextLink>.
         </P>
       </BookInspection>
-      <CtaBanner
+      <CtaBanner form="book-inspection"
         heading={
           <>
             Ready for {lower}? <Em>Book a site visit.</Em>

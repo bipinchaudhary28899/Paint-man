@@ -26,8 +26,9 @@ function api(items: BrandShadeSummary[]) {
 /** The visitor arrives on this address. */
 const open = (url: string) => window.history.replaceState(null, "", url);
 
-const message = () => screen.getByLabelText(/Anything we should know/) as HTMLTextAreaElement;
-const service = () => screen.getByLabelText("What needs painting?") as HTMLSelectElement;
+// the short booking form shows the note only when the link carried one, and sends the service as a hidden field
+const message = () => ({ value: document.querySelector<HTMLTextAreaElement>('textarea[name="message"]')?.value ?? "" });
+const service = () => ({ value: document.querySelector<HTMLInputElement>('input[name="service"]')?.value ?? "" });
 
 /**
  * Renders `ui` to HTML as the static prerender does, then hydrates that HTML in the browser.
@@ -205,7 +206,7 @@ describe("BookPrefill on the static /book page", () => {
     expect(page.serverHtml).not.toMatch(/<option selected=""[^>]*>Exterior Painting/);
     expect(page.problems).toEqual([]);
     expect(page.container.querySelector("form")).not.toBe(page.before.form);
-    expect(page.container.querySelector<HTMLSelectElement>("#service")!.value).toBe("Exterior Painting");
+    expect(page.container.querySelector<HTMLInputElement>('input[name="service"]')!.value).toBe("Exterior Painting");
     expect(page.container.querySelector<HTMLTextAreaElement>("#message")!.value).toBe(
       'Interested in the "Agra stone exterior" palette (Asian Paints 8771 Cambridge, Asian Paints L146 Sonnet, Asian Paints 9937 Red Rust). Please bring the shade cards.',
     );

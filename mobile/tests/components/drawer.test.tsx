@@ -46,10 +46,10 @@ describe("the navigation drawer", () => {
     await openFromHeader();
     for (const m of navMenus()) expect(drawer().getByRole("button", { name: m.label })).not.toBeExpanded();
     for (const p of DRAWER_PAGES) expect(drawer().getByRole("link", { name: p.label })).toBeOnTheScreen();
-    expect(drawer().getByRole("link", { name: "Book a free inspection" })).toBeOnTheScreen();
-    // no numbers in site.ts yet, so no call or WhatsApp pill
+    expect(drawer().getByRole("link", { name: "Book a free site visit" })).toBeOnTheScreen();
+    // site.ts has a WhatsApp number and no phone yet: a WhatsApp pill, no call pill
     expect(screen.queryByRole("link", { name: "Call us" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "WhatsApp us" })).toBeNull();
+    expect(drawer().getByRole("link", { name: "WhatsApp us" })).toBeOnTheScreen();
     expect(screen.getByRole("button", { name: "Open menu" })).toBeExpanded();
   });
 
@@ -133,7 +133,7 @@ describe("the navigation drawer", () => {
 
   it("opens the booking page from its pill", async () => {
     await openFromHeader();
-    await fireEvent.press(drawer().getByRole("link", { name: "Book a free inspection" }));
+    await fireEvent.press(drawer().getByRole("link", { name: "Book a free site visit" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: {} });
     await closed();
   });

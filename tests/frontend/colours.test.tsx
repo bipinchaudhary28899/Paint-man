@@ -120,7 +120,7 @@ describe("ColourFinder: the brands", () => {
 
     // the preview shows the first shade, with brand booking links
     expect(screen.getByRole("heading", { name: /Shade 0/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Book an inspection with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7000");
+    expect(screen.getByRole("link", { name: "Book a free site visit with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7000");
     // the photo visualizer is retired: the room preview is the only way to see a shade
     expect(screen.queryByRole("link", { name: /Try|visualizer/i })).toBeNull();
     // the room is shown twice: the compact pinned preview for phones and the side panel for wide screens
@@ -425,11 +425,15 @@ describe("/colours page", () => {
     expect(h1).toHaveTextContent("Find a wall colour in Agra by shade code, brand or name");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /visualizer/i })).toBeNull();
-    // the other colour tools are cards in the hero; this page is marked, not linked
+    // the search comes first; the other colour tools follow the finder, without a card for this page
     const tools = screen.getByRole("navigation", { name: "Colour tools" });
+    expect(screen.getByRole("heading", { level: 2, name: "Search brand shades" }).compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(tools).getByRole("heading", { level: 2, name: "More colour tools" })).toBeInTheDocument();
     expect(within(tools).getByRole("link", { name: /Brand shade cards/ })).toHaveAttribute("href", "/shade-cards");
     expect(within(tools).getByRole("link", { name: /Colour combinations/ })).toHaveAttribute("href", "/palettes");
-    expect(within(tools).getByText("Colour finder").closest("[aria-current]")).toHaveAttribute("aria-current", "page");
+    expect(within(tools).queryByText("Colour finder")).toBeNull();
+    expect(within(tools).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(tools).getByRole("list")).toHaveClass("tab:grid-cols-3");
     expect(within(brandGrid()).getAllByRole("link")).toHaveLength(4);
     expect(document.body.textContent).not.toMatch(/PM codes|Paint Man shades/);
   });
@@ -515,7 +519,7 @@ describe("ColourFinder: the large preview on phones", () => {
     expect(swatches[0]).toHaveAttribute("aria-pressed", "true");
     await user.click(swatches[5]);
     expect(within(sheet()).getByRole("heading", { name: "Shade 5" })).toBeInTheDocument();
-    expect(within(sheet()).getByRole("link", { name: "Book an inspection with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7005");
+    expect(within(sheet()).getByRole("link", { name: "Book a free site visit with this shade" })).toHaveAttribute("href", "/book?shade=asian-paints%3A7005");
 
     // × goes Back, which closes the sheet but keeps the brand and the pick
     await user.click(within(sheet()).getByRole("button", { name: "Close the large preview" }));
@@ -567,7 +571,7 @@ describe("PreviewSheet", () => {
     const view = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2", lrv: 52, meta: "#BBC8B2 · LRV 52", bookHref: "/book" };
     render(<PreviewSheet view={view} shades={[{ id: "a:1", name: "One", code: "1", hex: "#ffffff" }]} selectedId="a:1" onSelect={vi.fn()} onClose={onClose} />);
     const close = screen.getByRole("button", { name: "Close the large preview" });
-    const last = screen.getByRole("link", { name: "Book an inspection with this shade" });
+    const last = screen.getByRole("link", { name: "Book a free site visit with this shade" });
     expect(close).toHaveFocus();
     fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
     expect(last).toHaveFocus();

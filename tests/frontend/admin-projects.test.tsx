@@ -68,6 +68,14 @@ const project = (over: Partial<AdminProject> = {}): AdminProject => ({
   currency: "INR",
   address: "12 Rose Villa, Nehru Road",
   pincode: "282005",
+  propertyType: null,
+  floors: null,
+  homeSize: null,
+  carpetArea: null,
+  preferredDate: null,
+  notes: null,
+  location: null,
+  detailsEditable: true,
   stageExplanation: "We call you during working hours to fix the visit.",
   workStartsOn: null,
   createdAt: "2026-10-30T04:30:00.000Z",
@@ -235,7 +243,23 @@ describe("ProjectCustomer", () => {
     expect(screen.getByText(/· Website$/)).toBeInTheDocument();
     rerender(<ProjectCustomer project={project({ lead: null, address: null, locality: null, city: null, pincode: null, service: null })} />);
     expect(screen.queryByText("Booked")).toBeNull();
-    expect(screen.getAllByText("—")).toHaveLength(2);
+    expect(screen.getByText(/— \(house and street not added yet/)).toBeInTheDocument();
+    expect(screen.getAllByText("—")).toHaveLength(1);
+  });
+});
+
+describe("ProjectCustomer: what the customer added in their account", () => {
+  it("shows the project's own job and map pin over the booking's, with an estimate from them", () => {
+    render(
+      <ProjectCustomer
+        project={project({ propertyType: "Villa / Kothi", floors: "2", homeSize: "4 BHK", carpetArea: 1000, preferredDate: "2026-11-20", notes: "Gate too", location: { lat: 27.1, lng: 78.2 } })}
+      />,
+    );
+    expect(screen.getByText("Villa / Kothi")).toBeInTheDocument();
+    expect(screen.getByText("2 floors · 4 BHK · 1,000 sq ft/floor")).toBeInTheDocument();
+    expect(screen.getByText("≈ 7,000 sq ft")).toBeInTheDocument();
+    expect(screen.getByText("Gate too")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open in Google Maps" })).toHaveAttribute("href", "https://maps.google.com/?q=27.1,78.2");
   });
 });
 

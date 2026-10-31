@@ -54,7 +54,7 @@ export default function LoginPage() {
       <p className="mt-10 text-[15px] text-muted">
         Not booked yet?{" "}
         <Link href="/book" className="link-arrow inline-flex text-[15px] font-semibold">
-          Book a free inspection <span aria-hidden>→</span>
+          Book a free site visit <span aria-hidden>→</span>
         </Link>
       </p>
     </div>

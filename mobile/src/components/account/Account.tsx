@@ -168,9 +168,9 @@ function ProjectList({ projects, onRetry, onRetryStart }: { projects: Projects; 
           No projects yet
         </H>
         <P color={colors.muted} style={styles.emptyText}>
-          Book a free inspection and your project shows here, from our first call to the handover. Bookings made with this number on the website show here too.
+          Book a free site visit and your project shows here, from our first call to the handover. Bookings made with this number on the website show here too.
         </P>
-        <Button label="Book a free inspection" accessibilityRole="link" onPress={() => router.push("/book")} style={styles.emptyButton} />
+        <Button label="Book a free site visit" accessibilityRole="link" onPress={() => router.push("/book")} style={styles.emptyButton} />
       </Card>
     );
   }

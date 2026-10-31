@@ -11,11 +11,12 @@ import { Hero } from "./Hero";
 import { HomeBooking } from "./HomeBooking";
 import { Journey } from "./Journey";
 import { PinnedReveal } from "./PinnedReveal";
+import { Reviews } from "./Reviews";
 import { ServicesSection } from "./ServicesSection";
 import { Trust } from "./Trust";
 
 // The home page for a phone, shortest path first: the hero, what we paint (a swipe row of service cards),
-// why us (one trust section), how the work gets done (one stepper), then the colour story (the reveal,
+// why us (one trust section), what customers say (once there are real reviews), how the work gets done (one stepper), then the colour story (the reveal,
 // the explorer, the drag-to-compare colour preview, the finishes), where we work, the booking form, the questions and the closing banner.
 // Rendered inside <Page sections={...}>; each section is a direct child of the page so the scroll-driven
 // ones re-measure when anything above them changes height. #top, #services and #colour are the anchors
@@ -35,6 +36,7 @@ export function HomeSections() {
         </Reveal>
       </Anchor>
       <Trust />
+      <Reviews />
       <Reveal>
         <Journey />
       </Reveal>
@@ -54,7 +56,7 @@ export function HomeSections() {
         <FaqSection />
       </Reveal>
       {/* on phones the FAQ's bottom padding is the only gap above the banner */}
-      <CtaBanner flushTop />
+      <CtaBanner form="book-visit" flushTop />
     </>
   );
 }

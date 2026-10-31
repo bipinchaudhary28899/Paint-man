@@ -164,7 +164,7 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
         A colour preview on an example room, not a finished job of ours. Only the walls of this stock photo change on screen: bare on the left, in {full} on the
         right. Your light and finish change a shade, so the inspector brings the real shade card.
       </Text>
-      <Button label="Book an inspection with this shade" onPress={() => openHref(bookShadeHref(shade))} style={styles.book} />
+      <Button label="Book a free site visit with this shade" onPress={() => openHref(bookShadeHref(shade))} style={styles.book} />
     </View>
   );
 }

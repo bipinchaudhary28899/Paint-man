@@ -9,9 +9,9 @@ import { HomeBooking } from "@/components/home/HomeBooking";
 import { PaintSaathiWay } from "@/components/home/PaintSaathiWay";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
 import { PinnedReveal } from "@/components/home/PinnedReveal";
-import { ProcessSection } from "@/components/home/ProcessSection";
 import { ServicesSection } from "@/components/home/ServicesSection";
 import { Promises } from "@/components/Promises";
+import { Reviews } from "@/components/Reviews";
 import { WorkFlow } from "@/components/WorkFlow";
 import { liveCityNames, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
@@ -46,16 +46,17 @@ export default function HomePage() {
         <Promises />
       </div>
 
+      {/* ---------- What customers say (only once there are real reviews) ---------- */}
+      <Reviews className="container-page relative z-[1] mt-14 tab:mt-16 md:mt-[120px]" />
+
       {/* ---------- How the work gets done ---------- */}
-      <WorkFlow className="container-page relative z-[1] mt-14 tab:mt-16 md:mt-[120px]" cta={{ href: "#book-visit", label: "Book a site visit" }} />
+      <WorkFlow className="container-page relative z-[1] mt-14 tab:mt-16 md:mt-[120px]" cta={{ href: "#book-visit", label: "Book a free site visit" }} />
 
       <Diagnose />
 
       <PaintSaathiWay />
 
       <ServicesSection />
-
-      <ProcessSection />
 
       <div className="relative z-[1]">
         <ColourExplorer />
@@ -68,7 +69,7 @@ export default function HomePage() {
       <FaqSection />
 
       <div className="relative z-[1]">
-        <CtaBanner />
+        <CtaBanner href="#book-visit" />
       </div>
     </div>
   );

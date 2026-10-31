@@ -245,7 +245,7 @@ export function NotFound() {
       </View>
       <View style={styles.notFoundButtons}>
         <Button label="Back to home" variant="secondary" onPress={() => openHref("/")} />
-        <Button label="Book an inspection" onPress={() => openHref("/book")} />
+        <Button label="Book a free site visit" onPress={() => openHref("/book")} />
       </View>
     </Container>
   );

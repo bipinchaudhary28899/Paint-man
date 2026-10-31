@@ -2,7 +2,6 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { FaqList } from "@/components/FaqList";
-import { AreaLinks } from "@/components/home/AreaLinks";
 import { AreasSection } from "@/components/home/AreasSection";
 import { FaqSection } from "@/components/home/FaqSection";
 import { collageTiles, Finishes } from "@/components/home/Finishes";
@@ -75,34 +74,23 @@ describe("Finishes (home)", () => {
   });
 });
 
-describe("AreasSection and AreaLinks (home)", () => {
-  it("lists every live city under its own heading, each locality linking to its anchor on that city's page", async () => {
+describe("AreasSection (home)", () => {
+  it("is one plain row per live city, never a wall of locality chips, each row linking to that city's localities", async () => {
     const { liveCities, cityPath } = await import("@/config/site");
-    render(<AreasSection />);
-    expect(screen.getByRole("heading", { level: 2, name: "Painting homes across Agra, Mathura and Vrindavan" })).toBeInTheDocument();
-    const lists = screen.getAllByRole("list");
-    expect(lists).toHaveLength(liveCities().length);
-    liveCities().forEach((c, i) => {
-      expect(screen.getByRole("heading", { level: 3, name: c.name })).toContainElement(screen.getByRole("link", { name: c.name }));
-      expect(screen.getByRole("link", { name: c.name })).toHaveAttribute("href", cityPath(c));
-      const links = within(lists[i]).getAllByRole("link");
-      expect(links).toHaveLength(c.areas.length);
-      c.areas.forEach((a, j) => {
-        expect(links[j]).toHaveAccessibleName(`Painters in ${a}`);
-        expect(links[j]).toHaveAttribute("href", `${cityPath(c)}#${areaSlug(a)}`);
-      });
-    });
-  });
-
-  it("shows the phone 'Painters in' label once, hidden from screen readers (the links already say it)", () => {
+    const { areaSummary } = await import("@/components/home/AreasSection");
     const { container } = render(<AreasSection />);
-    const label = [...container.querySelectorAll("p")].find((p) => p.textContent === "Painters in")!;
-    expect(label).toHaveAttribute("aria-hidden");
-  });
-
-  it("keeps a real space between 'Painters in' and the locality in the chip text", () => {
-    render(<AreaLinks city={homeCity} />);
-    expect(screen.getAllByRole("link")[0].textContent).toBe(`Painters in ${homeCity.areas[0]}`);
+    expect(screen.getByRole("heading", { level: 2, name: "Painting homes across Agra, Mathura and Vrindavan" })).toBeInTheDocument();
+    const rows = within(screen.getByRole("list")).getAllByRole("listitem");
+    expect(rows).toHaveLength(liveCities().length);
+    liveCities().forEach((c, i) => {
+      const link = within(rows[i]).getByRole("link");
+      expect(link).toHaveAttribute("href", `${cityPath(c)}#localities`);
+      expect(within(link).getByRole("heading", { level: 3 })).toHaveTextContent(`Painters in ${c.name}`);
+      expect(link).toHaveTextContent(areaSummary(c));
+    });
+    expect(container.querySelectorAll("a")).toHaveLength(liveCities().length);
+    expect(areaSummary(liveCities()[0])).toMatch(/^\d+ localities: [^,]+, [^,]+, [^,]+ and more$/);
+    expect(areaSummary({ ...liveCities()[0], areas: ["A", "B"] })).toBe("2 localities: A, B");
   });
 });
 

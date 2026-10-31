@@ -191,7 +191,8 @@ describe("service page", () => {
     expect(h1s).toHaveLength(1);
     expect(h1s[0]).toHaveTextContent(s.title);
     expectOrderedOutline(container, 1);
-    expect(screen.getByLabelText("What needs painting?")).toHaveValue(s.leadService);
+    // the booking form sends the page's service along (a hidden field)
+    expect(container.querySelector('input[name="service"]')).toHaveValue(s.leadService);
     expect(container.querySelector("#book-inspection form")).not.toBeNull();
     const links = hrefs(container);
     expect(links).toEqual(expect.arrayContaining(["/faq", "/services/house-painting/agra", "/palettes", `/book?service=${slug}`, `/services/${slug}/agra`]));
@@ -250,7 +251,8 @@ describe("service in a city (/services/<service>/agra)", () => {
     const links = hrefs(container);
     expect(links).toContain(`/services/${slug}`); // the hub: how the work is done
     expect(links).toContain(`/services/house-painting/agra#${areaSlug(site.areas[0])}`);
-    expect(screen.getByLabelText("What needs painting?")).toHaveValue(s.leadService);
+    // the booking form sends the page's service along (a hidden field)
+    expect(container.querySelector('input[name="service"]')).toHaveValue(s.leadService);
     const ld = [...container.querySelectorAll('script[type="application/ld+json"]')].map((n) => n.textContent).join("");
     for (const f of s.local.agra.faqs) expect(ld).toContain(f.q);
     expect(ld).toContain(`/services/${slug}/agra#service`);
@@ -273,9 +275,9 @@ describe("national house-painting hub (/services/house-painting)", () => {
     const links = hrefs(container);
     for (const s of services) expect(links).toContain(`/services/${s.slug}`);
     for (const c of ["agra", "delhi-ncr", "bangalore"]) expect(links).toContain(`/services/house-painting/${c}`);
-    expect(screen.getByRole("button", { name: "Book my inspection" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeInTheDocument();
     // the hero button and the work flow's both jump to the form
-    for (const link of screen.getAllByRole("link", { name: "Book a site visit" })) expect(link).toHaveAttribute("href", "#book-visit");
+    for (const link of screen.getAllByRole("link", { name: "Book a free site visit" })) expect(link).toHaveAttribute("href", "#book-visit");
     expect(screen.getByRole("heading", { level: 2, name: "How the work gets done" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Zero advance payment" })).toBeInTheDocument();
   });

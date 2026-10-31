@@ -41,6 +41,21 @@ export function AccountLink({ className = "" }: { className?: string }) {
 }
 
 /**
+ * The phone header's one button (Header): "Book a visit" for a visitor who isn't signed in, since
+ * most people here have not booked yet, and "My account" once they are. Logging in stays one tap
+ * away in the footer ("My account") and on the thank-you page. Both states keep the same width.
+ */
+export function PhoneHeaderAction({ className = "" }: { className?: string }) {
+  const signedIn = useSignedInHint();
+  if (signedIn) return <AccountLink className={`btn-secondary ${className}`} />;
+  return (
+    <Link href="/book" className={`btn-primary ${className}`}>
+      Book a visit
+    </Link>
+  );
+}
+
+/**
  * After a booking (the thank-you page): follow it in the account. Signed in, the booking is already
  * linked there; otherwise logging in with the same mobile number links it.
  */
@@ -53,8 +68,8 @@ export function TrackBookingInvite() {
       </h2>
       <p className="mt-2 text-[15px] leading-relaxed text-muted">
         {signedIn
-          ? "This booking is in your account: follow the inspection, the itemised quotation and the work there, step by step."
-          : "Log in with the same mobile number to follow this booking: the inspection, the itemised quotation and the work, step by step."}
+          ? "This booking is in your account: add your address and what needs painting there, then follow the inspection, the itemised quotation and the work, step by step."
+          : "Log in with the same mobile number to add your address and what needs painting, then follow this booking: the inspection, the itemised quotation and the work, step by step."}
       </p>
       <Link href={signedIn ? ACCOUNT_PATH : loginHref(ACCOUNT_PATH)} prefetch={false} className="btn-primary mt-4 w-full tab:w-auto">
         {signedIn ? "Go to my account" : "Log in to track it"}

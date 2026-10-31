@@ -41,6 +41,14 @@ const detail: ProjectDetail = {
   ...project,
   address: "12 Rose Villa",
   pincode: "282005",
+  propertyType: null,
+  floors: null,
+  homeSize: null,
+  carpetArea: null,
+  preferredDate: null,
+  notes: null,
+  location: null,
+  detailsEditable: false,
   stageExplanation: "We call you during working hours to fix the visit.",
   workStartsOn: null,
   stages: stageSteps("booked", [{ stage: "booked", at: project.createdAt }]),
@@ -80,7 +88,7 @@ describe("/login", () => {
     const { container } = render(<LoginPage />);
     expectOutline(container, /Log in to track your project/);
     expect(screen.getByLabelText("Mobile number")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Book a free inspection/ })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: /Book a free site visit/ })).toHaveAttribute("href", "/book");
   });
 });
 
@@ -112,7 +120,7 @@ describe("/account", () => {
     const { container } = render(await AccountPage());
     expectOutline(container, /Welcome to your account/);
     expect(screen.getByLabelText(/Your name/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Book a free inspection" })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
   });
 });
 

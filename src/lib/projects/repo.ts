@@ -3,6 +3,8 @@ import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from
 import { getCity } from "@/config/site";
 import { getDb, type Db } from "@/lib/db/client";
 import { inspections, leads, projectEvents, projects, quotationLines, quotations } from "@/lib/db/schema";
+import { detailsEditable } from "./details";
+import type { ProjectDetailsInput } from "./inputs";
 import { isForward, STAGE_LABELS, stageExplanation, stageSteps, type MainStage, type ProjectStage, type StageStep } from "./stages";
 
 // Projects, their timeline, inspection and quotations: the one data layer behind the customer API
@@ -91,6 +93,17 @@ export type ProjectSummary = {
 export type ProjectDetail = Omit<ProjectSummary, "createdAt" | "updatedAt"> & {
   address: string | null;
   pincode: string | null;
+  /** The job as the customer described it (src/lib/projects/details.ts). */
+  propertyType: string | null;
+  floors: string | null;
+  homeSize: string | null;
+  carpetArea: number | null;
+  preferredDate: string | null;
+  notes: string | null;
+  /** The address's map pin, when the customer dropped one in the app. */
+  location: { lat: number; lng: number } | null;
+  /** Whether the customer can still add or correct the address and the job (until the inspection). */
+  detailsEditable: boolean;
   stageExplanation: string;
   workStartsOn: string | null;
   createdAt: string;
@@ -216,6 +229,14 @@ function toDetail(p: ProjectRow, parts: Awaited<ReturnType<typeof projectParts>>
     ...toSummary(p, approved?.totalPaise),
     address: p.address,
     pincode: p.pincode,
+    propertyType: p.propertyType,
+    floors: p.floors,
+    homeSize: p.homeSize,
+    carpetArea: p.carpetArea,
+    preferredDate: p.preferredDate,
+    notes: p.notes,
+    location: p.locationLat !== null && p.locationLng !== null ? { lat: p.locationLat, lng: p.locationLng } : null,
+    detailsEditable: detailsEditable(p.stage),
     stageExplanation: stageExplanation(p.stage, { inspectionAt: parts.inspection?.scheduledAt, workStartsOn: p.workStartsOn }),
     workStartsOn: p.workStartsOn,
     stages: stageSteps(p.stage, parts.events.map((e) => ({ stage: e.stage, at: e.createdAt }))),
@@ -248,6 +269,28 @@ export async function getProjectForUser(userId: string, projectId: string): Prom
   const parts = await projectParts(db, p.id, VISIBLE_QUOTATION_STATUSES);
   const { quotes, ...detail } = toDetail(p, parts);
   return { ...detail, timeline: parts.events.map(toEvent), quotations: quotes };
+}
+
+/**
+ * The customer adds or corrects their project's address and job (the fields sent; null clears an
+ * optional one) until the inspection. "not_found" when it is not their project, "locked" once the
+ * inspector has visited (the team has measured on site by then).
+ */
+export async function updateProjectDetailsForUser(
+  userId: string,
+  projectId: string,
+  input: ProjectDetailsInput,
+  opts: { now?: Date } = {},
+): Promise<{ ok: true; project: ProjectDetail } | { ok: false; reason: "not_found" | "locked" }> {
+  const db = await getDb();
+  const p = await ownProject(db, userId, projectId);
+  if (!p) return { ok: false, reason: "not_found" };
+  if (!detailsEditable(p.stage)) return { ok: false, reason: "locked" };
+  const { location, ...fields } = input;
+  const changes: Partial<typeof projects.$inferInsert> = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+  if (location !== undefined) Object.assign(changes, { locationLat: location?.lat ?? null, locationLng: location?.lng ?? null });
+  if (Object.keys(changes).length > 0) await db.update(projects).set({ ...changes, updatedAt: opts.now ?? new Date() }).where(eq(projects.id, p.id));
+  return { ok: true, project: (await getProjectForUser(userId, p.id))! };
 }
 
 /** What a quotation PDF prints: the project's customer and address with one visible quotation. */

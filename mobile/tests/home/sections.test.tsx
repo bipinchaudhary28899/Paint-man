@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
+import { router } from "expo-router";
+
 import { Journey, stepPhotos } from "~/components/home/Journey";
+import { CtaBanner } from "~/components/site/Sections";
 import { checks, firstSentence, Trust } from "~/components/home/Trust";
 import { illustrations, images, promises, site, workFlow } from "~/shared";
 
@@ -90,7 +93,19 @@ describe("the journey", () => {
 
   it("ends with a button that glides to the booking card", async () => {
     await render(<Journey />);
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
     expect(mockScrollTo).toHaveBeenCalledWith("book-visit");
+  });
+});
+
+describe("CtaBanner's booking button", () => {
+  it("glides to the page's own booking form when it names one, else opens the booking page", async () => {
+    const { unmount } = await render(<CtaBanner form="book-inspection" />);
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
+    expect(mockScrollTo).toHaveBeenCalledWith("book-inspection");
+    unmount();
+    await render(<CtaBanner />);
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: {} });
   });
 });

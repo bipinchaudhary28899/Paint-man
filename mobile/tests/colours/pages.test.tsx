@@ -276,7 +276,7 @@ describe("the palettes", () => {
     pushed("/colours", { brand: "asian-paints", q: p.shades[0].code });
     expect(screen.getByText(`Inspector's tip: ${p.tip}`)).toBeOnTheScreen();
     // each palette's button says which palette it books (ten of them share the visible label)
-    await fireEvent.press(screen.getByRole("button", { name: `Book an inspection with the ${p.name} palette` }));
+    await fireEvent.press(screen.getByRole("button", { name: `Book a free site visit with the ${p.name} palette` }));
     pushed("/book", { palette: p.slug });
   });
 

@@ -11,7 +11,7 @@ const ok = (data: unknown) => ({ apiVersion: "v1" as const, kind: "booking", lab
 describe("submitBooking", () => {
   it("checks the booking first and sends nothing with a mistake in it", async () => {
     const request = jest.fn();
-    await expect(submitBooking({ ...complete, pincode: "12" }, { live, request })).resolves.toEqual({ ok: false, errors: { pincode: FIELD_MESSAGES.pincode }, message: FORM_ERROR });
+    await expect(submitBooking({ ...complete, locality: "" }, { live, request })).resolves.toEqual({ ok: false, errors: { locality: FIELD_MESSAGES.locality }, message: FORM_ERROR });
     expect(request).not.toHaveBeenCalled();
   });
 

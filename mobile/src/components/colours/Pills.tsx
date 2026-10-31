@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
 
-import { Swipe } from "~/components/ui/Bits";
+import { ListRows } from "~/components/ui/ListRows";
 import { openHref } from "~/lib/links";
 import { shadeCardBrands } from "~/shared";
 import { MAX_SCALE } from "~/components/ui/Text";
@@ -42,16 +42,16 @@ export function ChoicePill({ label, selected = false, dot, detail, onPress, role
   );
 }
 
-/** "Browse a brand's shades": a pill per brand that opens the finder on that brand's shade card. */
+/** "Browse a brand's shades": a list row per brand (two across) that opens the finder on that brand's shade card. */
 export function FinderBrandLinks({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <View style={style}>
       <Text style={styles.label}>Browse a brand&apos;s shades</Text>
-      <Swipe gap={8} accessibilityLabel="Paint brands" contentStyle={styles.row}>
-        {shadeCardBrands.map((b) => (
-          <ChoicePill key={b.slug} role="link" label={b.name} onPress={() => openHref(`/colours?brand=${b.slug}`)} />
-        ))}
-      </Swipe>
+      <ListRows
+        accessibilityLabel="Paint brands"
+        columns={2}
+        rows={shadeCardBrands.map((b) => ({ key: b.slug, label: b.name, onPress: () => openHref(`/colours?brand=${b.slug}`) }))}
+      />
     </View>
   );
 }

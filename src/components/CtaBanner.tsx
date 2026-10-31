@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { illustrations } from "@/config/images";
 import { liveCityNames, site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 
 // Closes every page: eyebrow, serif headline with an italic accent and two actions, beside the
 // Paint Saathi painter, straight on the page (no panel) and standing on the footer.
@@ -9,7 +10,11 @@ import { liveCityNames, site } from "@/config/site";
 // Tablet: the copy and buttons beside a 300px painter column. Desktop (desk:) is the original layout.
 // Below desktop the FAQ's bottom padding is the only gap above it on the home page (the banner's wrapper
 // follows #faq there), as in the design; other pages keep the banner's own top margin.
-export function CtaBanner({ heading }: { heading?: React.ReactNode }) {
+/**
+ * `href`: where "Book a free site visit" goes: the booking page, or the page's own booking form
+ * ("#book-visit"), so every button of that name on a page goes to the same place.
+ */
+export function CtaBanner({ heading, href = "/book" }: { heading?: React.ReactNode; href?: string }) {
   return (
     <section id="book" className="container-page reveal mt-16 tab:mt-24 desk:mt-40 max-tab:in-[#faq+*]:mt-0 tab:max-desk:in-[#faq+*]:mt-0">
       <div className="grid items-end tab:grid-cols-[minmax(0,1fr)_300px] tab:gap-5 desk:grid-cols-[1.1fr_1fr] desk:gap-10">
@@ -26,9 +31,9 @@ export function CtaBanner({ heading }: { heading?: React.ReactNode }) {
             Chaliye, shuru karte hain. We&apos;ll inspect, advise on colours and send an itemised quote for your home in {liveCityNames("or")}. You decide from there.
           </p>
           <div className="mt-6 flex flex-col gap-2.5 tab:mt-8 tab:flex-row tab:flex-wrap tab:gap-3 desk:mt-11 desk:gap-4">
-            <Link href="/book" className="btn-primary btn-lg max-tab:min-h-[54px] max-tab:w-full tab:max-desk:px-[30px]">Get a free estimate</Link>
+            <Link href={href} className="btn-primary btn-lg max-tab:min-h-[54px] max-tab:w-full tab:max-desk:px-[30px]">Book a free site visit</Link>
             {site.whatsapp ? (
-              <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="btn-secondary btn-lg max-tab:min-h-[54px] max-tab:w-full tab:max-desk:px-[30px]">Chat on WhatsApp</a>
+              <a href={whatsappHref()} rel="noopener" className="btn-secondary btn-lg max-tab:min-h-[54px] max-tab:w-full tab:max-desk:px-[30px]">Chat on WhatsApp</a>
             ) : (
               <Link href="/contact" className="btn-secondary btn-lg max-tab:min-h-[54px] max-tab:w-full tab:max-desk:px-[30px]">Talk to us</Link>
             )}

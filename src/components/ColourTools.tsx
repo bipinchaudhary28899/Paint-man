@@ -44,23 +44,27 @@ export const colourTools: { key: ColourTool; href: string; title: string; text: 
 
 export function ColourTools({
   current,
+  skipCurrent = false,
   heading,
   columns = 4,
   className = "",
 }: {
   /** the tool whose page this is: shown as "You are here", not linked */
   current?: ColourTool;
+  /** leave the current tool's card out altogether (below the tool itself, where "You are here" says nothing) */
+  skipCurrent?: boolean;
   /** an h2 above the cards; leave it out where the section already has a heading */
   heading?: React.ReactNode;
   /** 4 across from tablets up (a full-width row), or 2 by 2 everywhere (a narrow column) */
   columns?: 2 | 4;
   className?: string;
 }) {
+  const tools = skipCurrent ? colourTools.filter((t) => t.key !== current) : colourTools;
   return (
     <nav aria-label="Colour tools" className={className}>
       {heading && <h2 className="text-2xl tab:text-3xl">{heading}</h2>}
-      <ul className={`grid grid-cols-2 gap-3 tab:gap-4 ${columns === 4 ? "tab:grid-cols-4" : ""} ${heading ? "mt-5" : ""}`}>
-        {colourTools.map((t) => {
+      <ul className={`grid grid-cols-2 gap-3 tab:gap-4 ${columns === 4 ? (tools.length === 3 ? "tab:grid-cols-3" : "tab:grid-cols-4") : ""} ${heading ? "mt-5" : ""}`}>
+        {tools.map((t) => {
           const here = t.key === current;
           const body = (
             <>

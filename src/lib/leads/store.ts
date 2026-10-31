@@ -60,9 +60,9 @@ export function toLeadRow(lead: LeadInput, opts: Pick<SaveLeadOptions, "source" 
   return {
     ...common,
     kind: "booking",
-    address: lead.address,
+    address: blank(lead.address),
     locality: lead.locality,
-    pincode: lead.pincode,
+    pincode: blank(lead.pincode),
     city: lead.city,
     propertyType: blank(lead.propertyType),
     service: blank(lead.service),
@@ -106,8 +106,14 @@ export async function saveLead(lead: LeadInput, opts: SaveLeadOptions = {}): Pro
         service: row.service,
         city: lead.city,
         locality: lead.locality,
-        address: lead.address,
-        pincode: lead.pincode,
+        address: row.address,
+        pincode: row.pincode,
+        propertyType: row.propertyType,
+        floors: row.floors,
+        homeSize: row.homeSize,
+        carpetArea: row.carpetArea,
+        preferredDate: row.preferredDate,
+        notes: row.message,
         stage: "booked",
       })
       .returning({ id: projects.id });

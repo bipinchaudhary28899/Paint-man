@@ -29,7 +29,10 @@ describe("field checks shared by the form and the server", () => {
     expect(Object.keys(requiredFieldErrors("booking", {}))).toEqual(REQUIRED_FIELDS.booking);
     expect(Object.keys(requiredFieldErrors("contact", {}))).toEqual(["name", "phone", "message"]);
     expect(requiredFieldErrors("booking", booking)).toEqual({});
-    expect(requiredFieldErrors("booking", { ...booking, pincode: "1234" })).toEqual({ pincode: FIELD_MESSAGES.pincode });
+    expect(REQUIRED_FIELDS.booking).toEqual(["name", "phone", "locality"]);
+    expect(requiredFieldErrors("booking", { ...booking, locality: "" })).toEqual({ locality: FIELD_MESSAGES.locality });
+    // the address and PIN code are not asked at booking
+    expect(requiredFieldErrors("booking", { ...booking, pincode: "1234", address: "" })).toEqual({});
   });
 
   it("checks the city too when the form asks for it (more than one live city)", () => {

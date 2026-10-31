@@ -69,7 +69,7 @@ export default async function ServiceCityPage({ params }: Params) {
         shape={shapes[index % shapes.length]}
         tint={tints[index % tints.length]}
       >
-        <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book a site visit in {city.name} →</Link>
+        <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book a free site visit in {city.name} →</Link>
       </PageHero>
 
       <div className="container-page mt-16 grid gap-12 lg:grid-cols-[1.5fr_1fr]">
@@ -130,7 +130,7 @@ export default async function ServiceCityPage({ params }: Params) {
           <div className="card bg-ink p-7 text-on-ink">
             <h2 className="text-2xl font-normal">Get an itemised quote</h2>
             <p className="mt-2 text-on-ink/70">Book a free site visit anywhere in our {city.name} service area. We call back {site.hoursDisplay}.</p>
-            <a href="#book-inspection" className="btn-primary mt-6 w-full">Book a site visit</a>
+            <a href="#book-inspection" className="btn-primary mt-6 w-full">Book a free site visit</a>
           </div>
           {others.length > 0 && (
             <div className="card p-7">
@@ -169,7 +169,7 @@ export default async function ServiceCityPage({ params }: Params) {
           </div>
         </div>
       </section>
-      <CtaBanner heading={<>Ready for {lower} in <em className="text-terracotta">{city.name}?</em></>} />
+      <CtaBanner href="#book-inspection" heading={<>Ready for {lower} in <em className="text-terracotta">{city.name}?</em></>} />
     </>
   );
 }

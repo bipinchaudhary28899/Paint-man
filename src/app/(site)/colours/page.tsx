@@ -71,15 +71,17 @@ export default function ColoursPage() {
               className="hidden h-auto w-[260px] md:block"
             />
           </div>
-          {/* The other colour tools, as cards, so the shade cards and combinations are easy to find */}
-          <ColourTools current="finder" className="mt-8 md:mt-10" />
         </div>
       </section>
 
-      <section className="container-page mt-12" aria-labelledby="finder-heading">
+      {/* The search comes first: it is what people open this page for */}
+      <section className="container-page mt-8 md:mt-12" aria-labelledby="finder-heading">
         <h2 id="finder-heading" className="sr-only">Search brand shades</h2>
         <ColourFinderFromUrl {...finderProps} />
       </section>
+
+      {/* The other colour tools, after the finder, so the shade cards and combinations are easy to find */}
+      <ColourTools current="finder" skipCurrent heading={<>More colour <em>tools</em></>} className="container-page mt-20" />
 
       <section className="container-page mt-24 grid gap-10 lg:grid-cols-[1fr_1.6fr]" aria-labelledby="colour-faq-heading">
         <div>

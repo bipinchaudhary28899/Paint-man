@@ -38,6 +38,8 @@ type PageApi = {
   scrollToTop: () => void;
   /** calls `fn` shortly after the page's content changes height (so a block measures where it now sits); returns the unsubscribe */
   watchLayout: (fn: () => void) => () => void;
+  /** the page's own booking or contact form anchor, once it has one (the first that registered) */
+  ownForm?: string;
 };
 
 const PageCtx = createContext<PageApi>({
@@ -162,7 +164,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
   const headerHeight = insets.top + HEADER_HEIGHT;
 
   return (
-    <PageCtx.Provider value={{ register, scrollTo, contentRef, scrollY, viewport: vh, headerHeight, scrollToTop, watchLayout }}>
+    <PageCtx.Provider value={{ register, scrollTo, contentRef, scrollY, viewport: vh, headerHeight, scrollToTop, watchLayout, ownForm }}>
       <View style={styles.page} testID={testID}>
         {/* first in the tree, so screen readers reach the logo and the menu before the page; zIndex keeps it drawn on top */}
         <Header />

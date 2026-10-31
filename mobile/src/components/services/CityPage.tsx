@@ -22,7 +22,7 @@ import { CardTitle } from "./HousePainting";
 /** How the site visit runs in this city (the page's own four steps). */
 export const cityVisitSteps = (city: City) => [
   {
-    title: "Book a site visit",
+    title: "Book a free site visit",
     text: `Fill in the form with your number and locality. We call you back during working hours (${site.hoursDisplay}) to confirm the visit.`,
   },
   {
@@ -76,14 +76,14 @@ function LiveCity({ city }: { city: City }) {
           style={styles.mt32}
           rows={city.areas.map((a) => ({ key: a, label: a, onPress: () => scrollTo(areaSlug(a)) }))}
         />
-        <Button label="Book a site visit" large onPress={() => scrollTo("book-visit")} style={styles.heroButton} />
+        <Button label="Book a free site visit" large onPress={() => scrollTo("book-visit")} style={styles.heroButton} />
       </CreamHero>
 
       <BookingSection
         defaultCity={city.slug}
         heading={
           <>
-            Book a site visit in <Em>{city.name}</Em>
+            Book a free site visit in <Em>{city.name}</Em>
           </>
         }
         text={`Share a few details and we call you back during working hours (${site.hoursDisplay}) to fix the visit. The inspector measures your walls, brings shade cards and sends an itemised quotation. Nothing is booked until you approve it.`}
@@ -202,7 +202,7 @@ function LiveCity({ city }: { city: City }) {
         </View>
       </RevealContainer>
 
-      <CtaBanner
+      <CtaBanner form="book-visit"
         heading={
           <>
             Painting a home in {city.name}? <Em>Book the visit.</Em>

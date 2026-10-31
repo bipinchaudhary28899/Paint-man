@@ -46,7 +46,7 @@ export function ServiceCity({ service, city, local }: ServiceInCity) {
         intro={local.intro}
         image={service.image}
       >
-        <Button label={`Book a site visit in ${city.name} →`} onPress={() => openHref(`/book?service=${service.slug}`)} style={styles.heroButton} />
+        <Button label={`Book a free site visit in ${city.name} →`} onPress={() => openHref(`/book?service=${service.slug}`)} style={styles.heroButton} />
       </PageHero>
 
       <Container style={styles.main}>
@@ -104,7 +104,7 @@ export function ServiceCity({ service, city, local }: ServiceInCity) {
               <P color={colors.onInk} style={styles.quoteText}>
                 Book a free site visit anywhere in our {city.name} service area. We call back {site.hoursDisplay}.
               </P>
-              <Button label="Book a site visit" onPress={() => scrollTo("book-inspection")} style={styles.mt24} />
+              <Button label="Book a free site visit" onPress={() => scrollTo("book-inspection")} style={styles.mt24} />
             </Card>
             {others.length > 0 && (
               <Card style={asideStyles.sideCard}>
@@ -132,7 +132,7 @@ export function ServiceCity({ service, city, local }: ServiceInCity) {
           </>
         }
       />
-      <CtaBanner
+      <CtaBanner form="book-inspection"
         heading={
           <>
             Ready for {lower} in <Em>{city.name}?</Em>

@@ -14,7 +14,7 @@ import { ButtonRow } from "./Inline";
 // The thank-you page (src/app/(site)/thank-you/page.tsx and ThankYouMessage): the toolbox, the
 // heading and line for the form that was sent (?type=booking|visit|waitlist|contact) and, for a
 // booking, what happens next. A booking sent from the app (POST /api/v1/bookings, signed in) arrives
-// with sent=1 and its project id (?project=), and the page links to "Track this booking" in the
+// with sent=1 and its project id (?project=), and the page links to "Add your address" in the
 // account. A form the app checked but did not send (the contact form: there is no app endpoint for
 // messages yet) arrives with sent=0, and then the page says plainly that nothing was sent and points
 // to the website and the ways to reach us, never to a call back.
@@ -73,7 +73,7 @@ export function webActions(type: ThankYouType): { label: string; url: string }[]
   return type === "contact" || type === "waitlist" ? [contact, book] : [book, contact];
 }
 
-/** The whole message under the toolbox, with its buttons; `project` (a booking sent from the app) adds "Track this booking". */
+/** The whole message under the toolbox, with its buttons; `project` (a booking sent from the app) adds "Add your address". */
 export function ThankYou({ type, sent, project }: { type: ThankYouType; sent: boolean; project?: string }) {
   return (
     <Container style={styles.page}>
@@ -120,9 +120,9 @@ function Sent({ type, project }: { type: ThankYouType; project?: string }) {
       {project && type !== "waitlist" && type !== "contact" && (
         <View style={styles.track}>
           <P size={14} leading={20 / 14} color={colors.muted} style={styles.trackText}>
-            Your booking is in your account. Follow each step there, from the call to the handover.
+            Your booking is in your account. Add your address and what needs painting there, then follow each step, from the call to the handover.
           </P>
-          <Button label="Track this booking" accessibilityRole="link" onPress={() => router.push(`/account/projects/${project}` as never)} />
+          <Button label="Add your address" accessibilityRole="link" onPress={() => router.push(`/account/projects/${project}` as never)} />
         </View>
       )}
       <ButtonRow center style={styles.actions}>

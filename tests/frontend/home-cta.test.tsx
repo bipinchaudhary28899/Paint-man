@@ -6,6 +6,7 @@ import { PHONE_QUERY } from "@/components/CtaFooterNav";
 import { Footer } from "@/components/Footer";
 import { footerColumns } from "@/config/nav";
 import { site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 
 describe("closing call to action (phone, tablet and desktop share one markup)", () => {
   it("has one h2 with a single italic accent, the copy and both actions", () => {
@@ -15,9 +16,9 @@ describe("closing call to action (phone, tablet and desktop share one markup)", 
     expect(heading.querySelectorAll("em")).toHaveLength(1);
     expect(container.querySelectorAll("h1, h2, h3")).toHaveLength(1);
     expect(screen.getByText(new RegExp(`itemised quote for your home in ${site.city}`))).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Get a free estimate" })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
     const second = site.whatsapp ? screen.getByRole("link", { name: "Chat on WhatsApp" }) : screen.getByRole("link", { name: "Talk to us" });
-    expect(second).toHaveAttribute("href", site.whatsapp ? `https://wa.me/${site.whatsapp}` : "/contact");
+    expect(second).toHaveAttribute("href", site.whatsapp ? whatsappHref() : "/contact");
   });
 
   it("the painter illustration keeps its alt text and reserves its space", () => {
@@ -26,6 +27,14 @@ describe("closing call to action (phone, tablet and desktop share one markup)", 
     expect(img.getAttribute("alt")).toMatch(/painter/i);
     expect(img).toHaveAttribute("width");
     expect(img).toHaveAttribute("height");
+  });
+
+  it("goes to the page's own booking form when it has one, else the booking page", () => {
+    const { unmount } = render(<CtaBanner href="#book-visit" />);
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "#book-visit");
+    unmount();
+    render(<CtaBanner />);
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
   });
 
   it("a page can pass its own heading", () => {

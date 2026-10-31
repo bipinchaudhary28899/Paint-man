@@ -12,7 +12,7 @@ import { colors, fonts } from "~/theme";
 // The home hero, laid out for a phone's first screen (everything that matters shows under the header
 // at 393×852 without scrolling): the live cities as the eyebrow, the headline (the page's one heading)
 // with its accent word, one line of copy with the Hinglish "saal se … ab online bhi", a full-width
-// "Book a free inspection" that glides to the booking card (#book-visit), a quieter "Explore colours",
+// "Book a free site visit" that glides to the booking card (#book-visit), a quieter "Explore colours",
 // the three facts in a hairline row, and the paint-brands picture across the screen at the bottom of the
 // hero, its edges fading into the canvas (the website's CSS mask, drawn as canvas-coloured fades).
 
@@ -39,7 +39,7 @@ export function Hero() {
         <P size={15} leading={1.55} color={colors.muted} style={styles.intro}>
           Ek deewar ho ya poora ghar, just tell us what needs paint. <Strong>{site.yearsPainting} saal se gharon ko rang rahe hain, ab online bhi.</Strong>
         </P>
-        <Button label="Book a free inspection" large height={56} onPress={() => scrollTo("book-visit")} style={styles.book} />
+        <Button label="Book a free site visit" large height={56} onPress={() => scrollTo("book-visit")} style={styles.book} />
         <Button label="Explore colours" variant="secondary" accessibilityRole="link" onPress={() => openHref("/colours")} style={styles.explore} />
         <View style={styles.facts}>
           {facts.map(([k, v], i) => (

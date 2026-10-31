@@ -5,6 +5,7 @@ import type { SharedValue } from "react-native-reanimated";
 
 import { HomeSections } from "~/components/home/HomeSections";
 import { stageLabels, stages, wallShade } from "~/components/home/PinnedReveal";
+import { serviceLine } from "~/components/services/ServiceCarousel";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { Page, usePage } from "~/components/site/Page";
 import { plainText } from "~/components/ui/Text";
@@ -57,9 +58,8 @@ describe("the home page", () => {
     expect(router.push).toHaveBeenCalledWith({ pathname: "/colours", params: {} });
     for (const fact of ["Payment: Zero advance", "Estimate: Full, before work starts", "Work: Timed and documented"]) expect(screen.getByLabelText(fact)).toBeOnTheScreen();
     expect(screen.getByLabelText(/Paint tins from brands sold in India/)).toBeOnTheScreen();
-    // the hero's button and the journey's glide to the booking card on this page (tests/home/hero.test.tsx)
-    await fireEvent.press(screen.getByRole("button", { name: "Book a free inspection" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
+    // every "Book a free site visit" on the home page (the hero's, the journey's, the closing banner's) glides to the booking card here
+    for (const button of screen.getAllByRole("button", { name: "Book a free site visit" })) await fireEvent.press(button);
     expect(router.push).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: "/book" }));
   });
 
@@ -127,19 +127,19 @@ describe("the home page", () => {
     expect(headers).not.toContain("Slide to see the walls repainted.");
   });
 
-  it("shows every service as a swipe card opening its hub, then all services", async () => {
+  it("shows every service as a row opening its hub, all in view at once (no carousel), then all services", async () => {
     await renderHome();
     expect(screen.getByRole("header", { name: "Every wall in the house." })).toBeOnTheScreen();
-    expect(screen.getByLabelText("Services, swipe for more")).toBeOnTheScreen();
-    expect(screen.getByText(`1 / ${services.length}`)).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Services, swipe for more")).toBeNull();
+    expect(screen.queryByText(`1 / ${services.length}`)).toBeNull();
     for (const s of services) {
-      expect(screen.getByRole("header", { name: s.name })).toBeOnTheScreen();
-      expect(screen.getByLabelText(s.image.alt)).toBeOnTheScreen();
-      await fireEvent.press(screen.getByRole("link", { name: `View ${s.name}` }));
+      const row = screen.getByRole("link", { name: `${s.name}: ${serviceLine(s)}` });
+      await fireEvent.press(row);
       expect(router.push).toHaveBeenCalledWith({ pathname: `/services/${s.slug}`, params: {} });
     }
-    // the home cards open the service; booking is the form further down
-    expect(screen.queryByRole("button", { name: /^Book a site visit for/ })).toBeNull();
+    // the rows only open the service: no "View service" or booking pill on each one
+    expect(screen.queryByRole("link", { name: /^View / })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Book a free site visit for/ })).toBeNull();
     await fireEvent.press(screen.getByRole("link", { name: "All services" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/services", params: {} });
   });
@@ -247,7 +247,9 @@ describe("the home page", () => {
     expect(screen.getByRole("header", { name: "Good questions." })).toBeOnTheScreen();
     expect(screen.getByText(generalFaqs[0].a)).toBeOnTheScreen();
     expect(screen.getByText("Free estimate")).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("button", { name: "Get a free estimate" }));
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: {} });
+    // the banner's button glides to the booking card on this page, as the hero's does
+    const buttons = screen.getAllByRole("button", { name: "Book a free site visit" });
+    await fireEvent.press(buttons[buttons.length - 1]);
+    expect(router.push).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: "/book" }));
   });
 });

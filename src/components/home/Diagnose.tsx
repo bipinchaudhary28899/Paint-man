@@ -8,8 +8,8 @@ const diagnostics = ["Moisture reading", "Crack mapping", "Old-paint adhesion", 
 // "We diagnose first": the inspection before any paint, over a photo of a weathered wall
 // with flaking plaster round a window grill (what the inspector reads).
 // Phones: the copy sits on a pale wash over the top of the photo (washed top to bottom), the wall
-// shows below it and the four checks run in one swipe row along the bottom. Tablets and desktop: the
-// copy on the left over a sideways wash, the checks wrapping along the bottom.
+// shows below it. Tablets and desktop: the copy on the left over a sideways wash. The four checks
+// follow the photo as a hairline list: two across on phones, four across from tablets.
 export function Diagnose() {
   return (
     <section aria-label="We diagnose first" className="relative z-[1] mt-14 px-5 tab:mt-[88px] tab:px-8 desk:mt-[120px]">
@@ -35,25 +35,18 @@ export function Diagnose() {
             hold. What we find goes on your quotation as separate lines, so you pay for repairs you can see, and never for surprises.
           </p>
           <Link href="/book" className="link-arrow mt-2 min-h-11 font-semibold tab:mt-5 tab:font-medium desk:mt-7 desk:min-h-0">
-            Book a free inspection <Arrow />
+            Book a free site visit <Arrow />
           </Link>
         </div>
-        {/* Phones: one row that swipes inside the card (the page never scrolls sideways); wider screens wrap it. */}
-        <div
-          role="region"
-          aria-label="What the inspection checks"
-          tabIndex={0}
-          className="swipe absolute inset-x-0 bottom-[18px] scroll-px-4 px-4 tab:inset-x-11 tab:bottom-8 tab:block tab:overflow-visible tab:px-0 tab:snap-none desk:inset-x-16 desk:bottom-10"
-        >
-          <ul className="m-0 flex list-none gap-2 p-0 tab:flex-wrap tab:gap-2.5">
-            {diagnostics.map((d) => (
-              <li key={d} className="pill shrink-0 snap-start px-3.5 py-[9px] tab:px-4 tab:py-2.5">
-                {d}
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
+      <ul aria-label="What the inspection checks" className="mx-auto grid max-w-[1200px] grid-cols-2 border-b border-line tab:grid-cols-4">
+        {diagnostics.map((d) => (
+          <li key={d} className="flex min-h-[52px] items-center gap-2.5 border-t border-line pr-3 text-[14px] font-medium leading-snug tab:text-[15px]">
+            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-terracotta" />
+            {d}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

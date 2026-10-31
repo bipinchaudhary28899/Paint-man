@@ -127,7 +127,7 @@ describe("the colour preview slider", () => {
     expect(screen.getByRole("adjustable")).toHaveAccessibleName(new RegExp(`painted in ${second.name}, Asian Paints ${second.code}$`));
     expect(screen.getByText(new RegExp(`bare on the left, in ${second.name}, Asian Paints ${second.code} on the right`))).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole("button", { name: "Book an inspection with this shade" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit with this shade" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: { shade: second.id } });
   });
 

@@ -42,12 +42,12 @@ describe("/services", () => {
       expect(screen.getByText(s.shortName)).toBeOnTheScreen();
       expect(screen.getByRole("header", { name: s.name })).toBeOnTheScreen();
     }
-    expect(screen.getAllByRole("button", { name: /^Book a site visit for/ })).toHaveLength(services.length);
+    expect(screen.getAllByRole("button", { name: /^Book a free site visit for/ })).toHaveLength(services.length);
 
     const [first] = services;
     await fireEvent.press(screen.getByRole("link", { name: `View ${first.name}` }));
     pushed(servicePath(first));
-    await fireEvent.press(screen.getAllByRole("button", { name: /^Book a site visit for/ })[0]);
+    await fireEvent.press(screen.getAllByRole("button", { name: /^Book a free site visit for/ })[0]);
     pushed("/book", { service: first.slug });
   });
 
@@ -84,7 +84,7 @@ describe("a service hub", () => {
   it("shows the hero, includes, details, who it suits and its FAQs", async () => {
     await render(<ServiceHub service={service} />);
     expect(screen.getByRole("header", { name: service.title })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit →" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit →" }));
     pushed("/book", { service: service.slug });
     expect(screen.getByRole("header", { name: "What's included" })).toBeOnTheScreen();
     for (const inc of service.includes) expect(screen.getByText(inc)).toBeOnTheScreen();
@@ -111,13 +111,14 @@ describe("a service hub", () => {
 
   it("jumps to its booking form and closes with its own banner", async () => {
     await render(<ServiceHub service={service} />);
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
-    expect(mockScrollTo).toHaveBeenCalledWith("book-inspection");
+    // its in-page button and its closing banner's both glide to the booking form
+    for (const button of screen.getAllByRole("button", { name: "Book a free site visit" })) await fireEvent.press(button);
+    expect(mockScrollTo.mock.calls.map(([id]) => id)).toEqual(["book-inspection", "book-inspection"]);
     expect(screen.getByRole("header", { name: `Book ${lower} online` })).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole("link", { name: "Open it here" }));
     pushed("/book", { service: service.slug });
-    // the booking form opens on its first step, with the service already added
-    expect(screen.getByRole("button", { name: "Continue" })).toBeOnTheScreen();
+    // the booking form, with the service already added
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeOnTheScreen();
     expect(screen.getByText("Added to your booking")).toBeOnTheScreen();
     expect(screen.getAllByText(service.leadService).length).toBeGreaterThan(0);
     expect(screen.getByRole("header", { name: `Ready for ${lower}? Book a site visit.` })).toBeOnTheScreen();
@@ -141,7 +142,7 @@ describe("a service in a city", () => {
     await render(<ServiceCity {...found} />);
     expect(screen.getByRole("header", { name: serviceCityTitle(service, agra) })).toBeOnTheScreen();
     expect(screen.getByText(local.intro)).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("button", { name: `Book a site visit in ${agra.name} →` }));
+    await fireEvent.press(screen.getByRole("button", { name: `Book a free site visit in ${agra.name} →` }));
     pushed("/book", { service: service.slug });
     await fireEvent.press(screen.getByRole("link", { name: `how we do ${lower}` }));
     pushed(servicePath(service));
@@ -154,8 +155,9 @@ describe("a service in a city", () => {
     pushed("/book", { service: service.slug });
     expect(screen.getByRole("header", { name: `${service.name} in ${agra.name}: questions` })).toBeOnTheScreen();
     expect(screen.getByText(new RegExp(`We call back ${site.hoursDisplay}`))).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
+    for (const button of screen.getAllByRole("button", { name: "Book a free site visit" })) await fireEvent.press(button);
     expect(mockScrollTo).toHaveBeenCalledWith("book-inspection");
+    expect(mockScrollTo.mock.calls.filter(([id]) => id === "book-inspection").length).toBeGreaterThanOrEqual(2);
     for (const o of servicesIn(agra).filter((s) => s !== service)) {
       await fireEvent.press(screen.getByRole("link", { name: serviceCityTitle(o, agra) }));
       pushed(servicePath(o, agra));
@@ -184,7 +186,7 @@ describe("/services/house-painting", () => {
       await fireEvent.press(screen.getByRole("link", { name: c.name }));
       pushed(`/services/house-painting/${c.slug}`);
     }
-    await fireEvent.press(screen.getAllByRole("button", { name: "Book a site visit" })[0]);
+    await fireEvent.press(screen.getAllByRole("button", { name: "Book a free site visit" })[0]);
     expect(mockScrollTo).toHaveBeenCalledWith("book-visit");
     expect(screen.getByRole("header", { name: "Book a site visit online" })).toBeOnTheScreen();
     for (const s of services) {
@@ -195,7 +197,7 @@ describe("/services/house-painting", () => {
     expect(screen.getByRole("header", { name: "What you can count on" })).toBeOnTheScreen();
     expect(screen.getByRole("header", { name: "How the work gets done" })).toBeOnTheScreen();
     mockScrollTo.mockClear();
-    await fireEvent.press(screen.getAllByRole("button", { name: "Book a site visit" }).at(-1)!);
+    await fireEvent.press(screen.getAllByRole("button", { name: "Book a free site visit" }).at(-1)!);
     expect(mockScrollTo).toHaveBeenCalledWith("book-visit");
     for (const c of cities) {
       await fireEvent.press(screen.getByRole("link", { name: `House painting in ${c.name}` }));
@@ -214,9 +216,9 @@ describe("a city page", () => {
     expect(screen.getByLabelText(`Jump to a locality in ${agra.name}`)).toBeOnTheScreen();
     await fireEvent.press(screen.getAllByRole("link", { name: agra.areas[2] })[0]);
     expect(mockScrollTo).toHaveBeenCalledWith(areaSlug(agra.areas[2]));
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
+    for (const button of screen.getAllByRole("button", { name: "Book a free site visit" })) await fireEvent.press(button);
     expect(mockScrollTo).toHaveBeenCalledWith("book-visit");
-    expect(screen.getByRole("header", { name: `Book a site visit in ${agra.name}` })).toBeOnTheScreen();
+    expect(screen.getByRole("header", { name: `Book a free site visit in ${agra.name}` })).toBeOnTheScreen();
     for (const s of servicesIn(agra)) {
       expect(screen.getByText(s.local[agra.slug].intro)).toBeOnTheScreen();
       await fireEvent.press(screen.getByRole("link", { name: `${s.name} in ${agra.name}` }));

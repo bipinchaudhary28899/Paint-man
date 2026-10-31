@@ -12,8 +12,8 @@ import { ProseH2, ProseList, ProseP, ProsePage } from "~/components/content/Pros
 import { notSentCopy, projectParam, sentCopy, ThankYou, thankYouType, wasSent, webActions } from "~/components/content/ThankYou";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { webUrl } from "~/lib/config";
-import { contactLinks } from "~/lib/contact";
-import { bookingFaqs, bookingSteps, cityPath, galleryGroups, generalFaqs, illustrations, images, liveCities, palettes, services, site } from "~/shared";
+import { contactLinks, whatsappUrl } from "~/lib/contact";
+import { bookingFaqs, bookingSteps, cityPath, galleryGroups, generalFaqs, illustrations, images, liveCities, palettes, services, site, WHATSAPP_GREETING } from "~/shared";
 
 jest.mock("expo-router", () => ({
   router: { push: jest.fn(), navigate: jest.fn() },
@@ -116,7 +116,7 @@ describe("gallery", () => {
   it("books an inspection with the shade on the preview", async () => {
     await render(<GalleryPreview />);
     await fireEvent.press(screen.getByRole("button", { name: /^Scuba Blue/ }));
-    await fireEvent.press(screen.getByRole("button", { name: "Book an inspection with this shade" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit with this shade" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: { shade: "asian-paints:7273" } });
   });
 });
@@ -126,7 +126,7 @@ const details = { ...site, phone: "", phoneDisplay: "", whatsapp: "", email: "",
 describe("contact", () => {
   it("offers a call back on the page while the website has no numbers", async () => {
     await render(<ContactHeroActions details={details} />);
-    await fireEvent.press(screen.getByRole("link", { name: "Book an inspection" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Book a free site visit" }));
     await fireEvent.press(screen.getByRole("link", { name: "Ask for a call back" }));
     expect(pushed()).toEqual(["/book"]);
     expect(mockScrollTo).toHaveBeenCalledWith("send-message");
@@ -140,9 +140,24 @@ describe("contact", () => {
         <PreferToTalk />
       </>,
     );
-    expect(screen.getByRole("link", { name: "Ask for a call back" })).toBeOnTheScreen();
+    // the website lists a WhatsApp number (no phone yet): the hero chats, the row shows the number, the box offers it
+    expect(screen.getByRole("link", { name: "Chat on WhatsApp" })).toBeOnTheScreen();
+    expect(screen.queryByRole("link", { name: "Ask for a call back" })).toBeNull();
+    expect(screen.getByText(site.whatsappDisplay)).toBeOnTheScreen();
     expect(screen.getByText(site.hoursDisplay)).toBeOnTheScreen();
     expect(screen.getByText("Prefer to talk?")).toBeOnTheScreen();
+    expect(screen.getByText(`WhatsApp, ${site.whatsappDisplay}`)).toBeOnTheScreen();
+  });
+
+  it("asks for a call back, and offers one from the form, while the website has no numbers", async () => {
+    await render(
+      <>
+        <ContactHeroActions details={details} />
+        <PreferToTalk details={details} />
+      </>,
+    );
+    expect(screen.getByRole("link", { name: "Ask for a call back" })).toBeOnTheScreen();
+    expect(screen.getByText(/Leave your number in the form/)).toBeOnTheScreen();
   });
 
   it("offers a call, else WhatsApp, once the numbers are filled in", async () => {
@@ -151,14 +166,16 @@ describe("contact", () => {
     expect(openURL).toHaveBeenLastCalledWith("tel:+919876543210");
     await render(<ContactHeroActions details={{ ...details, whatsapp: "919876543210" }} />);
     await fireEvent.press(screen.getByRole("link", { name: "Chat on WhatsApp" }));
-    expect(openURL).toHaveBeenLastCalledWith("https://wa.me/919876543210");
+    expect(openURL).toHaveBeenLastCalledWith(whatsappUrl("919876543210", WHATSAPP_GREETING));
     await render(<ContactHeroActions details={{ ...details, phone: "+911234" }} />);
     expect(screen.getByRole("link", { name: "Call +911234" })).toBeOnTheScreen();
   });
 
-  it("shows only the details the website has: today the service area and hours", async () => {
+  it("shows only the details the website has: today WhatsApp, the service area and hours", async () => {
     expect(contactRows(details).map((r) => r.label)).toEqual(["Service area", "Hours"]);
-    expect(contactRows().map((r) => r.label)).toEqual(contactRows(details).map((r) => r.label));
+    expect(contactRows().map((r) => r.label)).toEqual(["WhatsApp", "Service area", "Hours"]);
+    expect(contactRows()[0]).toMatchObject({ value: site.whatsappDisplay, href: whatsappUrl(site.whatsapp, WHATSAPP_GREETING) });
+    expect(contactRows({ ...details, whatsapp: "911", whatsappDisplay: "" })[0].value).toBe("Chat on WhatsApp");
     const full = contactRows({ ...details, phone: "+911", whatsapp: "911", email: "a@b.in", address: { street: "1 MG Road", postalCode: "282001" } });
     expect(full.map((r) => r.label)).toEqual(["Phone", "WhatsApp", "Email", "Address", "Service area", "Hours"]);
     expect(full[0].value).toBe("+911");
@@ -186,7 +203,7 @@ describe("contact", () => {
     expect(screen.getByRole("button", { name: "Send message" })).toBeOnTheScreen();
     expect(screen.getByRole("header", { name: "From first call to an itemised quote" })).toBeOnTheScreen();
     expect(screen.getByText(new RegExp(`During working hours \\(${site.hoursDisplay}\\)`))).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("link", { name: "Book an inspection" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Book a free site visit" }));
     await fireEvent.press(screen.getByRole("link", { name: `Areas we serve in ${live[0].name}` }));
     await fireEvent.press(screen.getByRole("link", { name: services[1].name }));
     expect(pushed()).toEqual(["/book", `${cityPath(live[0])}#localities`, `/services/${services[1].slug}`]);
@@ -202,23 +219,13 @@ describe("book", () => {
     globalThis.fetch = fetchMock;
   });
 
-  // the booking form's first step; Continue opens the second, where the note and service are filled in
-  const toWhereToPaint = async () => {
-    await fireEvent.changeText(screen.getByLabelText("Your name"), "Asha Verma");
-    await fireEvent.changeText(screen.getByLabelText("Mobile number"), "9876543210");
-    await fireEvent.press(screen.getByRole("radio", { name: liveCities()[0].name }));
-    await fireEvent.press(screen.getByRole("button", { name: "Continue" }));
-  };
 
-  it("starts the form with the palette's shades in the note, shown on the first step", async () => {
+  it("starts the form with the palette's shades in the note, shown with the service under “Added to your booking”", async () => {
     const palette = palettes[0];
     await render(<BookForm query={{ palette: palette.slug, service: "interior-painting" }} />);
     expect(screen.getByText("Added to your booking")).toBeOnTheScreen();
     expect(screen.getByText("Interior Painting")).toBeOnTheScreen();
     expect(screen.getByText(new RegExp(`"${palette.name}" palette`))).toBeOnTheScreen();
-    await toWhereToPaint();
-    expect(screen.getByLabelText("Anything we should know?").props.value).toContain(`"${palette.name}" palette`);
-    expect(screen.getByLabelText("What needs painting?")).toHaveAccessibilityValue({ text: "Interior Painting" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -228,8 +235,6 @@ describe("book", () => {
     await render(<BookForm query={{ shade: "asian-paints:8386" }} />);
     await waitFor(() => expect(screen.getByText(note)).toBeOnTheScreen());
     expect(fetchMock.mock.calls[0][0]).toContain("/api/v1/colours/paint?q=8386&brand=asian-paints&perPage=5");
-    await toWhereToPaint();
-    expect(screen.getByLabelText("Anything we should know?").props.value).toBe(note);
   });
 
   it("holds the shade's place in a skeleton while it is looked up", async () => {
@@ -250,7 +255,7 @@ describe("book", () => {
     expect(screen.getByLabelText("Adding the shade you picked")).toBeOnTheScreen();
     await act(async () => fail(new Error("offline")));
     await waitFor(() => expect(screen.queryByText("Added to your booking")).toBeNull());
-    expect(screen.getByRole("button", { name: "Continue" })).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeOnTheScreen();
   });
 
   it("looks nothing up for an id that cannot be a shade", async () => {
@@ -259,13 +264,12 @@ describe("book", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("is the plain two-step form without a query", async () => {
+  it("is the plain short form without a query", async () => {
     await render(<BookForm query={{}} />);
-    expect(screen.getByRole("progressbar")).toHaveAccessibilityValue({ now: 1, max: 2 });
+    expect(screen.queryByRole("progressbar")).toBeNull();
     expect(screen.queryByText("Added to your booking")).toBeNull();
-    await toWhereToPaint();
-    expect(screen.getByRole("button", { name: "Book my inspection" })).toBeOnTheScreen();
-    expect(screen.queryByLabelText("Anything we should know?")).toBeNull();
+    expect(screen.getByLabelText("Area / locality")).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeOnTheScreen();
   });
 
   it("says what happens next and how to talk to us", async () => {
@@ -277,7 +281,7 @@ describe("book", () => {
     );
     expect(screen.getByRole("header", { name: "What happens next" })).toBeOnTheScreen();
     expect(screen.getByText(/Nothing is booked until you approve it/)).toBeOnTheScreen();
-    expect(screen.getByText(`Leave your number in the form and we'll call you back, ${site.hoursDisplay.toLowerCase()}.`)).toBeOnTheScreen();
+    expect(screen.getByText(`Leave your number in the form and we'll call you back, ${site.hoursDisplay}.`)).toBeOnTheScreen();
   });
 
   it("gives the number to call once the website has one", async () => {
@@ -320,7 +324,7 @@ describe("thank you", () => {
 
   it("thanks a sent booking in the website's words, with what happens next", async () => {
     await render(<ThankYou type="booking" sent />);
-    expect(screen.queryByRole("link", { name: "Track this booking" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Add your address" })).toBeNull();
     expect(screen.getByLabelText(illustrations.toolbox.alt)).toBeOnTheScreen();
     expect(screen.getByRole("header", { name: "Your inspection request is in" })).toBeOnTheScreen();
     expect(screen.getByText(`Shukriya! Our team will call you shortly to confirm a time for the site visit. Hours: ${site.hoursDisplay}.`)).toBeOnTheScreen();
@@ -335,7 +339,7 @@ describe("thank you", () => {
   it("links a booking sent from the app to its tracker", async () => {
     await render(<ThankYou type="booking" sent project="3f0c-1" />);
     expect(screen.getByRole("header", { name: "Your inspection request is in" })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("link", { name: "Track this booking" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Add your address" }));
     expect(router.push).toHaveBeenCalledWith("/account/projects/3f0c-1");
     expect(projectParam("3f0c-1")).toBe("3f0c-1");
     expect(projectParam(["p-2", "p-3"])).toBe("p-2");
@@ -352,7 +356,7 @@ describe("thank you", () => {
     expect(screen.getByRole("header", { name: "You're on the waitlist" })).toBeOnTheScreen();
   });
 
-  it("says plainly when nothing was sent, promises no call, and points to the website", async () => {
+  it("says plainly when nothing was sent, promises no call, and points to the website and WhatsApp", async () => {
     await render(<ThankYou type="booking" sent={false} />);
     expect(screen.getByRole("header", { name: "Your request was not sent" })).toBeOnTheScreen();
     expect(screen.getByText(/Nothing was sent, so no one will call you about this request/)).toBeOnTheScreen();
@@ -363,7 +367,10 @@ describe("thank you", () => {
     expect(openURL.mock.calls.map(([u]) => u)).toEqual([webUrl("/book"), webUrl("/contact")]);
     await fireEvent.press(screen.getByRole("link", { name: "Back to home" }));
     expect(router.navigate).toHaveBeenCalledWith("/");
-    expect(screen.queryByText(/We answer/)).toBeNull();
+    // the website lists a WhatsApp number, so the screen offers it with the hours it is answered
+    await fireEvent.press(screen.getByRole("link", { name: "WhatsApp us" }));
+    expect(openURL.mock.calls.at(-1)?.[0]).toBe(whatsappUrl(site.whatsapp, WHATSAPP_GREETING));
+    expect(screen.getByText(`We answer ${site.hoursDisplay}.`)).toBeOnTheScreen();
   });
 
   it("puts the contact page first for an unsent message or waitlist note", () => {
@@ -407,7 +414,7 @@ describe("not found and errors", () => {
   it("offers four pages, home and booking", async () => {
     await render(<NotFoundContent />);
     expect(screen.getByRole("header", { name: "Page not found." })).toBeOnTheScreen();
-    for (const name of ["Painting services", "Colour finder", "Questions and answers", "Contact us", "Book an inspection"]) await fireEvent.press(screen.getByRole("link", { name }));
+    for (const name of ["Painting services", "Colour finder", "Questions and answers", "Contact us", "Book a free site visit"]) await fireEvent.press(screen.getByRole("link", { name }));
     expect(pushed()).toEqual(["/services", "/colours", "/faq", "/contact", "/book"]);
     await fireEvent.press(screen.getByRole("link", { name: "Back to home" }));
     expect(router.navigate).toHaveBeenCalledWith("/");
@@ -430,7 +437,7 @@ describe("not found and errors", () => {
   it("leads home or to booking from the error notice", async () => {
     await render(<ErrorNotice retry={jest.fn()} />);
     await fireEvent.press(screen.getByRole("link", { name: "Go to the home page" }));
-    await fireEvent.press(screen.getByRole("link", { name: "Book a site visit" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Book a free site visit" }));
     expect(router.navigate).toHaveBeenCalledWith("/");
     expect(pushed()).toEqual(["/book"]);
   });

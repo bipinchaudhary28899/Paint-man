@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     default: `House Painting Services in ${site.city}${TITLE_SUFFIX}`,
     template: `%s${TITLE_SUFFIX}`,
   },
-  description: `Managed house painting in ${site.city}: site inspection, itemised quotation, genuine branded paint and supervised painters. Book an inspection online.`,
+  description: `Managed house painting in ${site.city}: site inspection, itemised quotation, genuine branded paint and supervised painters. Book a free site visit online.`,
   applicationName: site.name,
   authors: [{ name: site.name }],
   creator: site.name,

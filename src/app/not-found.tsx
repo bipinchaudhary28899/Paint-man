@@ -44,7 +44,7 @@ export default function NotFound() {
           </ul>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/" className="btn-secondary">Back to home</Link>
-            <Link href="/book" className="btn-primary">Book an inspection</Link>
+            <Link href="/book" className="btn-primary">Book a free site visit</Link>
           </div>
         </div>
       </main>

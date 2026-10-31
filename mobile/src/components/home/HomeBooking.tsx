@@ -5,8 +5,8 @@ import { Em } from "~/components/ui/Text";
 import { promises, site } from "~/shared";
 
 // The booking form on the home page, after the areas we work in: the website's own LeadForm in the phone
-// booking card, with the zero-advance note under the button. The hero's "Book a free inspection", the
-// journey's "Book a site visit" and the sticky booking pill glide here (#book-visit).
+// booking card, with the zero-advance note under the button. The hero's "Book a free site visit", the
+// journey's "Book a free site visit" and the sticky booking pill glide here (#book-visit).
 export function HomeBooking() {
   return (
     <BookingSection

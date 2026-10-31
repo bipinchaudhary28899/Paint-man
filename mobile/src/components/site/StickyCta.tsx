@@ -13,7 +13,7 @@ import { openHref } from "~/lib/links";
 import { site } from "~/shared";
 import { navReach } from "./BottomNav";
 
-// The floating "Book a free inspection" pill: past the first screen of a page it rises just above the
+// The floating "Book a free site visit" pill: past the first screen of a page it rises just above the
 // bottom nav whenever the visitor scrolls back up, and slides away while they scroll down (so it never
 // sits over the buttons and shades they are reading towards) and again near the top. It stays off the
 // pages that are themselves the booking or contact form (/book, /thank-you, /contact, /login) and steps aside
@@ -134,7 +134,7 @@ export function StickyCta({ scrollY, viewport, headerHeight, forms, details = si
       importantForAccessibility={shown ? "auto" : "no-hide-descendants"}
       style={[styles.bar, { bottom: navReach(insets.bottom) + CTA_GAP }, style]}
     >
-      <Button label="Book a free inspection" maxFontSizeMultiplier={MAX_SCALE.fixed} accessibilityRole="link" onPress={() => (toForm ? toForm() : openHref("/book"))} style={[styles.pill, styles.lift]} />
+      <Button label="Book a free site visit" maxFontSizeMultiplier={MAX_SCALE.fixed} accessibilityRole="link" onPress={() => (toForm ? toForm() : openHref("/book"))} style={[styles.pill, styles.lift]} />
       {chat?.kind === "whatsapp" && (
         <Pressable
           accessibilityRole="link"

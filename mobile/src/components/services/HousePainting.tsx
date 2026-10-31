@@ -48,7 +48,7 @@ export function HousePaintingHub() {
           ))}{" "}
           today, with {soon.join(" and ")} next.
         </P>
-        <Button label="Book a site visit" large onPress={() => scrollTo("book-visit")} style={styles.heroButton} />
+        <Button label="Book a free site visit" large onPress={() => scrollTo("book-visit")} style={styles.heroButton} />
       </CreamHero>
 
       <BookingSection
@@ -84,7 +84,7 @@ export function HousePaintingHub() {
       </Container>
 
       <Container style={styles.mt96}>
-        <WorkFlow cta={{ label: "Book a site visit", onPress: () => scrollTo("book-visit") }} />
+        <WorkFlow cta={{ label: "Book a free site visit", onPress: () => scrollTo("book-visit") }} />
       </Container>
 
       <RevealContainer style={styles.mt96}>
@@ -106,7 +106,7 @@ export function HousePaintingHub() {
         </View>
       </RevealContainer>
 
-      <CtaBanner
+      <CtaBanner form="book-visit"
         heading={
           <>
             Ready to repaint? <Em>Book a site visit.</Em>

@@ -68,8 +68,8 @@ const ServiceCard = memo(function ServiceCard({ service, width, book }: { servic
             <Button
               small
               variant="secondary"
-              label="Book site visit"
-              accessibilityLabel={`Book a site visit for ${service.name.toLowerCase()}`}
+              label="Book a free site visit"
+              accessibilityLabel={`Book a free site visit for ${service.name.toLowerCase()}`}
               onPress={() => openHref(`/book?service=${service.slug}`)}
             />
           )}
@@ -79,7 +79,7 @@ const ServiceCard = memo(function ServiceCard({ service, width, book }: { servic
   );
 });
 
-/** Every service as a snapping swipe row with dots and a counter. `book` adds a "Book site visit" pill to each card. */
+/** Every service as a snapping swipe row with dots and a counter. `book` adds a "Book a free site visit" pill to each card. */
 export function ServiceCarousel({ book = false, style }: { book?: boolean; style?: StyleProp<ViewStyle> }) {
   const { width } = useWindowDimensions();
   const card = Math.min(MAX_CARD, width - 2 * gutter - PEEK);

@@ -9,10 +9,11 @@ import { Reveal } from "~/components/ui/Reveal";
 import { Art, Photo } from "~/components/ui/Media";
 import { Em, Eyebrow, H, P } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
-import { illustrations, liveCityNames, promises, site, workFlow, type FaqItem } from "~/shared";
+import { whatsappUrl } from "~/lib/contact";
+import { illustrations, liveCityNames, promises, site, WHATSAPP_GREETING, workFlow, type FaqItem } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 import { LeadForm } from "./LeadForm";
-import { Anchor, Container } from "./Page";
+import { Anchor, Container, usePage } from "./Page";
 
 // The sections the website repeats across pages, at their phone sizes: breadcrumbs, the inner-page
 // hero, the FAQ accordion, the promises swipe row, "How the work gets done", the closing banner and
@@ -204,7 +205,18 @@ export function WorkFlow({ steps = workFlow, cta, style }: { steps?: readonly St
 }
 
 /** The closing banner on every page: "Let's give your home a fresh coat.", two full-width buttons, the painter standing on the footer. */
-export function CtaBanner({ heading, flushTop = false }: { heading?: ReactNode; flushTop?: boolean }) {
+/** The booking forms a page can hold (BookingSection on the home page and the city pages, the services' booking block). */
+const BOOKING_ANCHORS = ["book-visit", "book-inspection"];
+
+/**
+ * The closing banner. `form`: the page's own booking form anchor; its "Book a free site visit" then
+ * glides there, as the page's other buttons of that name do (else to the form the page registered, or
+ * the booking page).
+ */
+export function CtaBanner({ heading, flushTop = false, form }: { heading?: ReactNode; flushTop?: boolean; form?: string }) {
+  const { ownForm, scrollTo } = usePage();
+  const target = form ?? (ownForm && BOOKING_ANCHORS.includes(ownForm) ? ownForm : undefined);
+  const book = () => (target ? scrollTo(target) : openHref("/book"));
   return (
     <Anchor id="book">
       <Reveal style={flushTop ? undefined : styles.ctaTop}>
@@ -222,9 +234,9 @@ export function CtaBanner({ heading, flushTop = false }: { heading?: ReactNode; 
               Chaliye, shuru karte hain. We&apos;ll inspect, advise on colours and send an itemised quote for your home in {liveCityNames("or")}. You decide from there.
             </P>
             <View style={styles.ctaButtons}>
-              <Button label="Get a free estimate" large height={54} onPress={() => openHref("/book")} />
+              <Button label="Book a free site visit" large height={54} onPress={book} />
               {site.whatsapp ? (
-                <Button label="Chat on WhatsApp" variant="secondary" large height={54} onPress={() => openHref(`https://wa.me/${site.whatsapp}`)} />
+                <Button label="Chat on WhatsApp" variant="secondary" large height={54} onPress={() => openHref(whatsappUrl(site.whatsapp, WHATSAPP_GREETING))} />
               ) : (
                 <Button label="Talk to us" variant="secondary" large height={54} onPress={() => openHref("/contact")} />
               )}

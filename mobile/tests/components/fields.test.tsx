@@ -30,8 +30,8 @@ describe("type and buttons", () => {
 
   it("presses, and while busy or disabled ignores presses", async () => {
     const onPress = jest.fn();
-    const { rerender } = await render(<Button label="Book a site visit" onPress={onPress} large />);
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
+    const { rerender } = await render(<Button label="Book a free site visit" onPress={onPress} large />);
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
     expect(onPress).toHaveBeenCalledTimes(1);
     await rerender(<Button label="Book" busyLabel="Sending…" busy onPress={onPress} variant="dark" />);
     expect(screen.getByRole("button", { name: "Sending…" })).toBeBusy();

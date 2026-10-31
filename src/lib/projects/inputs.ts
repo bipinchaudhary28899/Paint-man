@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { isCalendarDate } from "@/lib/leads/dates";
+import { bookingDateRange, isCalendarDate } from "@/lib/leads/dates";
+import { FIELD_MESSAGES } from "@/lib/leads/field-checks";
+import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
+import { addressField, pincodeField } from "@/lib/leads/schema";
 import { PROJECT_STAGES } from "./stages";
 
 // Bounded input for the /admin project actions (route handlers or server actions validate with
@@ -47,6 +50,58 @@ export const quotationSaveSchema = z.object({
 /** What /admin can do to a quotation's status: send a draft, or record the customer's answer to a sent one. */
 export const QUOTATION_ACTIONS = ["sent", "approved", "declined"] as const;
 export const quotationStatusSchema = z.object({ status: z.enum(QUOTATION_ACTIONS, { message: "Choose sent, approved or declined" }) });
+
+/** A choice from a fixed list; blank clears it. */
+const choice = <T extends readonly [string, ...string[]]>(values: T, message: string) => z.preprocess(blankToNull, z.enum(values, { message }).nullable().optional());
+const carpetMessage = `Enter the carpet area in sq ft (${CARPET_AREA_MIN}–${CARPET_AREA_MAX.toLocaleString("en-IN")}), or leave it blank`;
+
+/**
+ * What the customer adds to their project in their account (src/lib/projects/details.ts): any of
+ * the address and job fields; each one sent replaces what was there, blank clears an optional one.
+ * The address and PIN code use the booking form's own checks and messages; the area cannot be cleared.
+ * `location` is the address's map pin from the app's map picker.
+ */
+export const projectDetailsSchema = z
+  .object({
+    address: addressField.transform((v) => v ?? null),
+    pincode: pincodeField.transform((v) => v ?? null),
+    locality: z.string().trim().min(2, FIELD_MESSAGES.locality).max(80, "Use 80 characters or fewer").optional(),
+    service: choice(serviceTypes, "Choose what needs painting"),
+    propertyType: choice(propertyTypes, "Choose a property type"),
+    floors: choice(floorOptions, "Choose how many floors"),
+    homeSize: choice(homeSizes, "Choose the size of the home"),
+    carpetArea: z.preprocess(
+      (v) => (v === "" || v === null ? null : typeof v === "string" ? Number(v.replace(/[,\s]/g, "")) : v),
+      z.number({ message: carpetMessage }).int("Enter a whole number of sq ft").min(CARPET_AREA_MIN, carpetMessage).max(CARPET_AREA_MAX, carpetMessage).nullable().optional(),
+    ),
+    preferredDate: z.preprocess(
+      blankToNull,
+      z
+        .string()
+        .superRefine((value, ctx) => {
+          const { min, max } = bookingDateRange();
+          if (!isCalendarDate(value)) ctx.addIssue({ code: "custom", message: "Choose a date from the calendar" });
+          else if (value < min) ctx.addIssue({ code: "custom", message: "Choose today or a later date" });
+          else if (value > max) ctx.addIssue({ code: "custom", message: "Choose a date within the next year" });
+        })
+        .nullable()
+        .optional(),
+    ),
+    notes: optionalText(1000),
+    /** The map pin for the address (the app's map picker); null removes it. */
+    location: z
+      .object({
+        lat: z.number({ message: "lat must be a number" }).min(-90).max(90),
+        lng: z.number({ message: "lng must be a number" }).min(-180).max(180),
+      })
+      .strict()
+      .nullable()
+      .optional(),
+  })
+  .partial()
+  .strict();
+
+export type ProjectDetailsInput = z.infer<typeof projectDetailsSchema>;
 
 export type StageChangeInput = z.infer<typeof stageChangeSchema>;
 export type QuotationSaveInput = z.infer<typeof quotationSaveSchema>;

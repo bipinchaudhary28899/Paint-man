@@ -1,6 +1,6 @@
 import { router, usePathname } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { Easing, ReduceMotion, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Mask, Path, RadialGradient, Rect, Stop } from "react-native-svg";
@@ -13,22 +13,23 @@ import { useNavState } from "./nav-state";
 // way: a charcoal pill, 64px tall, 16px in from the sides, with a disc cut out of its top edge (the dip)
 // over the active tab; the active tab's colour sits in that dip as a 56px dab carrying its icon, half
 // above the bar. The other tabs are cream labels in faint pill outlines; the active label drops under
-// its dab. On a change the dab glides to the new tab while hopping in an arc. On the home page the
-// active tab follows the section in view and a tap glides the page there; elsewhere it follows the route.
+// its dab. On a change the dab glides to the new tab while hopping in an arc. The active tab is the
+// screen you are on (Home all the way down the home page, where Home glides back to the top); every
+// other tab opens its screen. While the keyboard is up the bar steps aside, so it never covers a field.
 // In the app the bar has depth: the charcoal lightens towards its top, a fine highlight runs along the
 // top edge and a darker edge along the bottom (a bevel), and a deeper soft shadow lifts it off the page;
 // the dab is a glossy raised disc in the dip, and the labels sit in faintly sunken pills.
 // The bar keeps its height at any text size: its labels grow with the phone's text size up to 1.3×
 // (MAX_SCALE.fixed) and stay on one line, shrinking a little to fit a narrow tab rather than wrapping.
 
-type Item = { label: string; hue: string; on: string; href: string; section?: string; match: (p: string) => boolean };
+type Item = { label: string; hue: string; on: string; href: string; match: (p: string) => boolean };
 
 export const items: Item[] = [
-  { label: "Home", hue: colors.sage, on: colors.onInk, href: "/", section: "top", match: (p) => p === "/" },
-  { label: "Services", hue: colors.golden, on: colors.ink, href: "/services", section: "services", match: (p) => p.startsWith("/services") },
-  { label: "Colours", hue: colors.terracottaLight, on: colors.onInk, href: "/colours", section: "colour", match: (p) => p.startsWith("/colours") || p.startsWith("/palettes") || p.startsWith("/shade-cards") },
-  // cream on the charcoal bar (a charcoal dot would vanish into it); Estimate always opens the booking page
-  { label: "Estimate", hue: colors.canvas, on: colors.ink, href: "/book", match: (p) => p.startsWith("/book") || p.startsWith("/contact") },
+  { label: "Home", hue: colors.sage, on: colors.onInk, href: "/", match: (p) => p === "/" },
+  { label: "Services", hue: colors.golden, on: colors.ink, href: "/services", match: (p) => p.startsWith("/services") },
+  { label: "Colours", hue: colors.terracottaLight, on: colors.onInk, href: "/colours", match: (p) => p.startsWith("/colours") || p.startsWith("/palettes") || p.startsWith("/shade-cards") },
+  // cream on the charcoal bar (a charcoal dot would vanish into it); Book always opens the booking page
+  { label: "Book", hue: colors.canvas, on: colors.ink, href: "/book", match: (p) => p.startsWith("/book") || p.startsWith("/contact") },
 ];
 
 /** The bar's charcoal, from its lit top to its deep bottom, each drawn at 96–97% over the page. */
@@ -73,7 +74,7 @@ const icons: Record<string, React.ReactNode> = {
       <Circle cx="16" cy="10" r="1" />
     </>
   ),
-  Estimate: (
+  Book: (
     <>
       <Rect x="4" y="5" width="16" height="15" rx="2" />
       <Path d="M4 10h16M8 3v4M16 3v4" />
@@ -81,10 +82,24 @@ const icons: Record<string, React.ReactNode> = {
   ),
 };
 
-/** The active tab for a path: on the home page the section in view, elsewhere the route (Home when none matches). */
-export function activeTab(pathname: string, homeSection: number): number {
-  if (pathname === "/") return homeSection;
+/** The active tab for a path: the tab whose screen it is (Home when none matches). */
+export function activeTab(pathname: string): number {
   return Math.max(0, items.findIndex((i) => i.match(pathname)));
+}
+
+/** Whether the keyboard is up (iOS says so as it starts to rise, Android once it has). */
+export function useKeyboardUp(): boolean {
+  const [up, setUp] = useState(false);
+  useEffect(() => {
+    const ios = Platform.OS === "ios";
+    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", () => setUp(true));
+    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setUp(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return up;
 }
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -94,9 +109,10 @@ const hopEase = Easing.bezier(0.35, 0, 0.65, 1);
 export function BottomNav() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { homeSection, scrollHome } = useNavState();
+  const { scrollHome } = useNavState();
+  const keyboardUp = useKeyboardUp();
   const [width, setWidth] = useState(0);
-  const active = activeTab(pathname, homeSection);
+  const active = activeTab(pathname);
   const look = items[active];
 
   // the dab's and the dip's centre, as a share of the bar (MobileCtaBar's slotCentre)
@@ -138,13 +154,15 @@ export function BottomNav() {
 
   const press = (index: number) => {
     const item = items[index];
-    if (pathname === "/" && item.section && scrollHome) {
-      scrollHome(item.section);
+    // on the home page Home glides back to the top; every other tab opens its screen
+    if (pathname === "/" && index === 0 && scrollHome) {
+      scrollHome("top");
       return;
     }
     if (index !== active || pathname !== item.href) router.navigate(item.href as never);
   };
 
+  if (keyboardUp) return null;
   return (
     <Animated.View
       testID="bottom-nav"
@@ -163,7 +181,7 @@ export function BottomNav() {
               <Rect x={0} y={0} width={width} height={BAR} fill="#fff" />
               <AnimatedCircle animatedProps={dipProps} cy={0} r={DIP - 1} fill="#000" />
             </Mask>
-            {/* the bar's own pill, so over Home and Estimate the rim never runs past its rounded ends */}
+            {/* the bar's own pill, so over Home and Book the rim never runs past its rounded ends */}
             <ClipPath id="lower">
               <Rect x={0} y={0} width={width} height={BAR} rx={BAR / 2} />
             </ClipPath>

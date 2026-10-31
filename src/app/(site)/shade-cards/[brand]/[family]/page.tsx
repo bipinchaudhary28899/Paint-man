@@ -122,7 +122,7 @@ export default async function ShadeCardFamilyPage({ params }: Params) {
         text={<p>Add the codes you like under “Add more details”. The inspector brings the {card.name} shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
       />
 
-      <CtaBanner heading={<>Narrowed it down? <em>See it on your wall.</em></>} />
+      <CtaBanner href="#book-visit" heading={<>Narrowed it down? <em>See it on your wall.</em></>} />
     </>
   );
 }

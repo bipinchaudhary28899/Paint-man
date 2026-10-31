@@ -111,10 +111,24 @@ describe("the project tracker", () => {
     ]);
   });
 
-  it("offers the contact page for help while the website lists no numbers", async () => {
+  it("offers WhatsApp for help, about the project, as the website lists a WhatsApp number", async () => {
+    const spy = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     await show({ data: detail() });
-    await fireEvent.press(await screen.findByRole("link", { name: "Contact us" }));
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/contact", params: {} });
+    await fireEvent.press(await screen.findByRole("link", { name: "WhatsApp us" }));
+    expect(decodeURIComponent(spy.mock.calls.at(-1)?.[0] ?? "")).toContain("about my painting project");
+  });
+
+  it("offers the contact page for help while the website lists no numbers", async () => {
+    const site = jest.requireActual("~/shared").site as { phone: string; whatsapp: string };
+    const before = { phone: site.phone, whatsapp: site.whatsapp };
+    Object.assign(site, { phone: "", whatsapp: "" });
+    try {
+      await show({ data: detail() });
+      await fireEvent.press(await screen.findByRole("link", { name: "Contact us" }));
+      expect(router.push).toHaveBeenCalledWith({ pathname: "/contact", params: {} });
+    } finally {
+      Object.assign(site, before);
+    }
   });
 
   it("says what is still to come for a fresh booking: no inspection, no quotation, no updates", async () => {

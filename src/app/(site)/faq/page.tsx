@@ -24,7 +24,7 @@ export default function FaqPage() {
         title={<>House painting <span className="text-gradient">questions</span> in {site.city}, answered</>}
         intro={
           <>
-            Can&apos;t find your answer? <Link href="/book" className={linkClass}>Book an inspection</Link> or{" "}
+            Can&apos;t find your answer? <Link href="/book" className={linkClass}>Book a free site visit</Link> or{" "}
             <Link href="/contact" className={linkClass}>contact us</Link>.
           </>
         }

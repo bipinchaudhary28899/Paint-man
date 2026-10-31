@@ -3,10 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { liveCities } from "@/config/site";
-import { bookingDateRange } from "@/lib/leads/dates";
-import { estimatePaintArea, formatSqft } from "@/lib/leads/estimate";
 import { fieldProblem, isRequiredField, REQUIRED_FIELDS, requiredFieldErrors } from "@/lib/leads/field-checks";
-import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
+import type { serviceTypes } from "@/lib/leads/options";
 import { readTracking } from "./UtmCapture";
 
 type Props = {
@@ -17,8 +15,10 @@ type Props = {
   footnote?: React.ReactNode;
 };
 
-// Three layouts: phones get a compact single column (name and mobile stacked, locality and PIN side by
-// side), tablets two columns, desktops the roomier spacing. Fields are 48px tall on phones, 50px on
+// A booking asks only who and where: name, mobile, the city (when we paint in more than one) and the
+// area. The address and the job are added afterwards in the customer's account (ProjectSteps) or on
+// the call. Three layouts: phones get a compact single column, tablets two columns, desktops the
+// roomier spacing. Fields are 48px tall on phones, 50px on
 // tablets and the .field default (54px) on desktops.
 const FIELD = "field max-tab:px-3 max-tab:py-[11px] tab:max-desk:px-3.5 tab:max-desk:py-3";
 /** two fields side by side from tablets up, stacked on phones */
@@ -50,22 +50,11 @@ function Field({
   );
 }
 
-/** Fields under "Add more details": an error in one of them opens the section. */
-const DETAIL_FIELDS = ["service", "propertyType", "floors", "homeSize", "carpetArea", "preferredDate", "message"];
-
 export function LeadForm({ type, defaultService, defaultMessage, footnote }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  // The date picker's range (today in India to a year ahead) is set after mount: the pages with
-  // this form are prerendered, so a date worked out while rendering would be the build's date.
-  const [dateRange, setDateRange] = useState<{ min: string; max: string }>();
-  useEffect(() => setDateRange(bookingDateRange()), []);
-  // live rough size of the job, recomputed as floors, service or carpet area change
-  const [job, setJob] = useState<{ area: number | null; measuredOnSite: boolean; hasCarpet: boolean }>({ area: null, measuredOnSite: false, hasCarpet: false });
-  // "Add more details" starts open only when the page prefilled the note, so the visitor sees it
-  const [moreOpen, setMoreOpen] = useState(Boolean(defaultMessage));
   const live = liveCities();
   // with more than one live city the visitor picks it first, and the locality suggestions follow it
   const askCity = live.length > 1;
@@ -87,17 +76,6 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
     if (!isRequiredField(name) || !requiredFields.includes(name) || value.trim() === "") return;
     const problem = fieldProblem(name, value);
     if (problem && errors[name] !== problem) setErrors((prev) => ({ ...prev, [name]: problem }));
-  }
-  function onJobChange(e: React.FormEvent<HTMLFormElement>) {
-    clearFixed(e.target);
-    if (type !== "booking") return;
-    const f = e.currentTarget;
-    const get = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | HTMLSelectElement | null)?.value ?? "";
-    const carpet = Number(get("carpetArea").replace(/[,\s]/g, ""));
-    const service = get("service");
-    const ok = Number.isInteger(carpet) && carpet >= CARPET_AREA_MIN && carpet <= CARPET_AREA_MAX;
-    const area = ok ? estimatePaintArea(carpet, get("floors") || "1", service) : null;
-    setJob({ area, measuredOnSite: ok && area === null, hasCarpet: ok });
   }
   // The thank-you page is static: load it while the visitor fills the form, so it appears
   // the instant the lead is saved.
@@ -133,7 +111,6 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
       }
       const fieldErrors: Record<string, string> = json.fieldErrors ?? {};
       setErrors(fieldErrors);
-      if (Object.keys(fieldErrors).some((k) => DETAIL_FIELDS.includes(k))) setMoreOpen(true);
       setFormError(json.error ?? "Something went wrong. Please try again.");
       requestAnimationFrame(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
     } catch {
@@ -146,7 +123,7 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
     errors[name] ? { "aria-invalid": true as const, "aria-describedby": `${name}-error` } : {};
 
   return (
-    <form onSubmit={onSubmit} onChange={onJobChange} onBlur={onBlurCheck} noValidate aria-busy={submitting} className="space-y-3.5 tab:space-y-4 desk:space-y-5">
+    <form onSubmit={onSubmit} onChange={(e) => clearFixed(e.target)} onBlur={onBlurCheck} noValidate aria-busy={submitting} className="space-y-3.5 tab:space-y-4 desk:space-y-5">
       <div className={PAIR}>
         <Field id="name" label="Your name" error={errors.name}>
           <input id="name" name="name" autoComplete="name" required maxLength={80} className={FIELD} {...aria("name")} />
@@ -175,30 +152,18 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
 
       {type === "booking" && (
         <>
-          <Field id="address" label="House / flat no., building and street" error={errors.address}>
-            <input
-              id="address"
-              name="address"
-              autoComplete="street-address"
-              required
-              maxLength={200}
-              placeholder="e.g. 12, Rose Villa, Nehru Road"
-              className={FIELD}
-              {...aria("address")}
-            />
-          </Field>
-          {askCity && (
-            <Field id="city" label="City" error={errors.city}>
-              <select id="city" name="city" required value={cityPick} onChange={(e) => setCityPick(e.target.value)} className={FIELD} {...aria("city")}>
-                <option value="" disabled>Select your city</option>
-                {live.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.name}</option>
-                ))}
-              </select>
-            </Field>
-          )}
-          <div className="grid grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] gap-2.5 tab:grid-cols-2 tab:gap-4 desk:gap-5">
-            <Field id="locality" label={askCity ? "Locality" : `Locality in ${live[0].name}`} error={errors.locality}>
+          <div className={askCity ? PAIR : undefined}>
+            {askCity && (
+              <Field id="city" label="City" error={errors.city}>
+                <select id="city" name="city" required value={cityPick} onChange={(e) => setCityPick(e.target.value)} className={FIELD} {...aria("city")}>
+                  <option value="" disabled>Select your city</option>
+                  {live.map((c) => (
+                    <option key={c.slug} value={c.slug}>{c.name}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
+            <Field id="locality" label={askCity ? "Area / locality" : `Area / locality in ${live[0].name}`} error={errors.locality}>
               <input
                 id="locality"
                 name="locality"
@@ -216,113 +181,17 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
                 ))}
               </datalist>
             </Field>
-            <Field id="pincode" label="PIN code" error={errors.pincode}>
-              <input
-                id="pincode"
-                name="pincode"
-                inputMode="numeric"
-                autoComplete="postal-code"
-                required
-                maxLength={7}
-                placeholder="6 digits"
-                className={FIELD}
-                {...aria("pincode")}
-              />
-            </Field>
           </div>
-
-          {/* Everything about the job is optional: a single wall or a door books as fast as a house.
-              A closed <details> still submits its fields, and it works without JavaScript. */}
-          <details
-            open={moreOpen}
-            onToggle={(e) => setMoreOpen(e.currentTarget.open)}
-            className="group rounded-pm-md border border-dashed border-line-strong bg-cream-wash desk:rounded-2xl desk:border-solid desk:border-line desk:bg-cream-wash/60"
-          >
-            <summary className="flex min-h-[50px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2 tab:min-h-[52px] tab:px-4 desk:min-h-11 desk:px-5 desk:py-3">
-              <span className="text-[15px] desk:text-base">
-                <span className="font-bold">Add more details</span> <span className="text-[13px] text-muted tab:text-sm">(optional)</span>
-                <span className="hidden text-xs text-muted desk:block">What needs painting, the property and its size, a date, a note</span>
-              </span>
-              <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[22px] transition group-open:rotate-45 desk:border desk:border-line desk:text-lg">+</span>
-            </summary>
-            <div className="space-y-3.5 border-t border-line px-3.5 pb-4 pt-3.5 tab:space-y-4 tab:px-4 desk:space-y-5 desk:px-5 desk:pb-5 desk:pt-4">
-              <div className={PAIR}>
-                <Field id="service" label="What needs painting?" error={errors.service}>
-                  <select id="service" name="service" defaultValue={defaultService ?? ""} className={FIELD} {...aria("service")}>
-                    <option value="">Select</option>
-                    {serviceTypes.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field id="propertyType" label="Property type" error={errors.propertyType}>
-                  <select id="propertyType" name="propertyType" defaultValue="" className={FIELD} {...aria("propertyType")}>
-                    <option value="">Select</option>
-                    {propertyTypes.map((p) => (
-                      <option key={p}>{p}</option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <div className={PAIR}>
-                <Field id="floors" label="Floors to paint" error={errors.floors}>
-                  <select id="floors" name="floors" defaultValue="" className={FIELD} {...aria("floors")}>
-                    <option value="">Select</option>
-                    {floorOptions.map((f) => (
-                      <option key={f} value={f}>{f === "1" ? "1 floor" : `${f} floors`}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field id="homeSize" label="Home size" error={errors.homeSize}>
-                  <select id="homeSize" name="homeSize" defaultValue="" className={FIELD} {...aria("homeSize")}>
-                    <option value="">Select</option>
-                    {homeSizes.map((h) => (
-                      <option key={h}>{h}</option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <div className={PAIR}>
-                <div>
-                  <Field id="carpetArea" label="Carpet area per floor (sq ft)" error={errors.carpetArea}>
-                    <input
-                      id="carpetArea"
-                      name="carpetArea"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9, ]*"
-                      maxLength={7}
-                      placeholder="e.g. 1200"
-                      className={FIELD}
-                      {...aria("carpetArea")}
-                    />
-                  </Field>
-                  <p className="mt-1.5 text-xs text-muted" aria-live="polite">
-                    {job.area !== null
-                      ? <>About <strong className="text-ink">{formatSqft(job.area)}</strong> of walls and ceilings to paint, all floors together.</>
-                      : job.hasCarpet && job.measuredOnSite
-                        ? "Measured on site for this job."
-                        : "It's on your sale deed or society papers. Not sure? Leave it blank."}
-                  </p>
-                </div>
-                <Field id="preferredDate" label="Preferred inspection date" error={errors.preferredDate}>
-                  <input id="preferredDate" name="preferredDate" type="date" min={dateRange?.min} max={dateRange?.max} className={FIELD} {...aria("preferredDate")} />
-                </Field>
-              </div>
-              <Field id="message" label="Anything we should know?" error={errors.message}>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={3}
-                  maxLength={1000}
-                  defaultValue={defaultMessage}
-                  placeholder="A single wall, two doors, the balcony grills, a full flat… and any damp or cracks"
-                  className={FIELD}
-                  {...aria("message")}
-                />
-              </Field>
-            </div>
-          </details>
+          {/* a service page or a palette/shade link knows part of the job already: it goes along with the booking */}
+          {defaultService && <input type="hidden" name="service" value={defaultService} />}
+          {defaultMessage && (
+            <Field id="message" label="Your note (optional)" error={errors.message}>
+              <textarea id="message" name="message" rows={2} maxLength={1000} defaultValue={defaultMessage} className={FIELD} {...aria("message")} />
+            </Field>
+          )}
+          <p className="text-[13px] leading-normal text-muted">
+            That&apos;s all we need to call you. Add the address and what needs painting later in your account, or tell us on the call.
+          </p>
         </>
       )}
 
@@ -355,7 +224,7 @@ export function LeadForm({ type, defaultService, defaultMessage, footnote }: Pro
 
       <button type="submit" disabled={submitting} className="btn-primary w-full max-desk:min-h-[54px] max-desk:text-base desk:w-auto">
         {submitting && <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />}
-        {submitting ? "Sending…" : type === "booking" ? "Book my inspection" : "Send message"}
+        {submitting ? "Sending…" : type === "booking" ? "Book my site visit" : "Send message"}
       </button>
       {footnote}
       <p className="text-xs text-muted max-desk:text-center">

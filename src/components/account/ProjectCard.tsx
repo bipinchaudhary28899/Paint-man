@@ -72,10 +72,10 @@ export function ProjectsEmpty() {
       <div>
         <p className="font-display text-2xl">No projects yet</p>
         <p className="mt-2 text-[15px] leading-relaxed text-muted">
-          Book an inspection with this mobile number and it shows up here: the call, the site visit, your itemised quotation and the work, step by step.
+          Book a free site visit with this mobile number and it shows up here: the call, the site visit, your itemised quotation and the work, step by step.
         </p>
         <Link href="/book" className="btn-primary mt-5">
-          Book a free inspection
+          Book a free site visit
         </Link>
         <p className="mt-4 text-sm leading-relaxed text-muted">Booked with another number? Log out and log in with that number to see it.</p>
       </div>

@@ -6,7 +6,7 @@ export const FIELD_MESSAGES = {
   name: "Enter your name",
   phone: "Enter a valid 10-digit mobile number",
   address: "Enter your house or flat number and street",
-  locality: "Enter your locality",
+  locality: "Enter your area or locality",
   pincode: "Enter your 6-digit PIN code",
   message: "Tell us a little about what you need",
   city: "Choose your city",
@@ -35,11 +35,12 @@ const valid: Record<RequiredField, (v: string) => boolean> = {
 };
 
 /**
- * The fields each form requires, in the order they appear. The booking form also asks for the city
- * when we paint in more than one (LeadForm passes its own list then).
+ * The fields each form requires, in the order they appear. A booking asks only who and where: name,
+ * mobile and the area (plus the city when we paint in more than one; LeadForm passes its own list
+ * then). The address and the job's details are added later in the customer's account.
  */
 export const REQUIRED_FIELDS: Record<"booking" | "contact", RequiredField[]> = {
-  booking: ["name", "phone", "address", "locality", "pincode"],
+  booking: ["name", "phone", "locality"],
   contact: ["name", "phone", "message"],
 };
 

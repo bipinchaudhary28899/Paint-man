@@ -62,7 +62,7 @@ describe("AccountLink (header)", () => {
     const login = screen.getByRole("link", { name: "Log in" });
     expect(login).toHaveAttribute("aria-current", "page");
     expect(login.className).toContain("w-[7.25rem]"); // one width for both labels: no shift when it changes
-    expect(screen.getByRole("link", { name: "Book site visit" })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
   });
 });
 
@@ -210,7 +210,7 @@ describe("ProjectCard and the empty state", () => {
   it("an empty account offers the booking form", () => {
     render(<ProjectsEmpty />);
     expect(screen.getByText("No projects yet")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Book a free inspection" })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
     for (const img of screen.queryAllByRole("img", { hidden: true })) expect(img).toHaveAttribute("alt", "");
   });
 });
@@ -245,6 +245,14 @@ const detail = (over: Partial<ProjectDetail> = {}): ProjectDetail => {
     ...summary(),
     address: "12 Rose Villa, Nehru Road",
     pincode: "282005",
+    propertyType: null,
+    floors: null,
+    homeSize: null,
+    carpetArea: null,
+    preferredDate: null,
+    notes: null,
+    location: null,
+    detailsEditable: false,
     stageExplanation: "Your itemised quotation is ready to review.",
     workStartsOn: null,
     stages: stageSteps("quotation_shared", timeline),
@@ -274,7 +282,7 @@ describe("ProjectTracker", () => {
 
   it("offers a new booking on a cancelled project", () => {
     render(<ProjectStatus project={detail({ stage: "cancelled", stageLabel: "Cancelled", stageExplanation: "This project was cancelled." })} />);
-    expect(screen.getByRole("link", { name: "Book a new inspection" })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: "Book a new site visit" })).toHaveAttribute("href", "/book");
   });
 
   it("the stepper marks done, current and upcoming stages, with the dates reached", () => {
@@ -369,7 +377,9 @@ describe("ProjectTracker", () => {
     const Filled = await withFilledSite(fakeContact, async () => (await import("@/components/account/ProjectTracker")).ProjectHelp);
     const { unmount: u2 } = render(<Filled />);
     expect(screen.getByRole("link", { name: `Call ${fakeContact.phoneDisplay}` })).toHaveAttribute("href", `tel:${fakeContact.phone}`);
-    expect(screen.getByRole("link", { name: "Chat on WhatsApp" })).toHaveAttribute("href", `https://wa.me/${fakeContact.whatsapp}`);
+    const chat = screen.getByRole("link", { name: "Chat on WhatsApp" }).getAttribute("href")!;
+    expect(chat.startsWith(`https://wa.me/${fakeContact.whatsapp}?text=`)).toBe(true);
+    expect(decodeURIComponent(chat)).toContain("about my painting project");
     u2();
     const Bare = await withFilledSite({ phone: fakeContact.phone }, async () => (await import("@/components/account/ProjectTracker")).ProjectHelp);
     render(<Bare />);

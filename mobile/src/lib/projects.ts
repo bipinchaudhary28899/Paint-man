@@ -49,6 +49,8 @@ export type ProjectSummary = {
   id: string;
   service: string | null;
   city: string | null;
+  /** The city's slug (src/config/site.ts `cities`), when the project has one. */
+  citySlug?: string | null;
   locality: string | null;
   stage: ProjectStage;
   stageLabel: string;
@@ -61,6 +63,16 @@ export type ProjectSummary = {
 export type ProjectDetail = ProjectSummary & {
   address: string | null;
   pincode: string | null;
+  /** The job as the customer described it, and the address's map pin (the website's src/lib/projects/details.ts). */
+  propertyType: string | null;
+  floors: string | null;
+  homeSize: string | null;
+  carpetArea: number | null;
+  preferredDate: string | null;
+  notes: string | null;
+  location: { lat: number; lng: number } | null;
+  /** The address and job can be added or corrected until the inspection. */
+  detailsEditable: boolean;
   stageExplanation: string;
   workStartsOn: string | null;
   stages: StageStep[];

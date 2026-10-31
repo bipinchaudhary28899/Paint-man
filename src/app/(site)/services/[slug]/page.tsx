@@ -53,7 +53,7 @@ export default async function ServiceHubPage({ params }: Params) {
         shape={shapes[index % shapes.length]}
         tint={tints[index % tints.length]}
       >
-        <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book a site visit →</Link>
+        <Link href={`/book?service=${service.slug}`} className="btn-primary mt-8">Book a free site visit →</Link>
       </PageHero>
 
       <div className="container-page mt-16 grid gap-12 lg:grid-cols-[1.5fr_1fr]">
@@ -94,7 +94,7 @@ export default async function ServiceHubPage({ params }: Params) {
                 </li>
               ))}
             </ul>
-            <a href="#book-inspection" className="btn-primary mt-6 w-full">Book a site visit</a>
+            <a href="#book-inspection" className="btn-primary mt-6 w-full">Book a free site visit</a>
           </div>
           <div className="card p-7">
             <h2 className="text-lg font-normal">Other services</h2>
@@ -143,7 +143,7 @@ export default async function ServiceHubPage({ params }: Params) {
           </div>
         </div>
       </section>
-      <CtaBanner heading={<>Ready for {lower}? <em className="text-terracotta">Book a site visit.</em></>} />
+      <CtaBanner href="#book-inspection" heading={<>Ready for {lower}? <em className="text-terracotta">Book a site visit.</em></>} />
     </>
   );
 }

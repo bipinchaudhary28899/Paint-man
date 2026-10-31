@@ -493,7 +493,7 @@ export function ColourFinder({
           </div>
           <p className="mt-4 text-base text-ink">{view.note}</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link href={view.bookHref} className="btn-primary">Book an inspection with this shade</Link>
+            <Link href={view.bookHref} className="btn-primary">Book a free site visit with this shade</Link>
           </div>
           <p className="mt-4 text-xs text-muted">
             Screen colours are a guide. Paint shifts with daylight, bulbs and sheen, so our inspector brings physical shade cards

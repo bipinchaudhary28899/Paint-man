@@ -188,7 +188,7 @@ export function PreviewSheet({
 
           {/* close the sheet first: it is a modal over the page, and the booking page would open behind it */}
           <Button
-            label="Book an inspection with this shade"
+            label="Book a free site visit with this shade"
             onPress={() => {
               onClose();
               openHref(view.bookHref);

@@ -1,4 +1,4 @@
-import { site } from "~/shared";
+import { site, WHATSAPP_GREETING } from "~/shared";
 
 // Call and WhatsApp, from the business details in the website's src/config/site.ts. A channel with
 // no number there is not offered at all, as on the website (empty values are hidden).
@@ -17,7 +17,7 @@ export function whatsappUrl(number: string, text?: string): string {
 }
 
 /** The ways to reach us that have a number filled in, call first. */
-export function contactLinks(details: Details = site, text = `Hi ${site.name}, I'd like to get my home painted.`): ContactLink[] {
+export function contactLinks(details: Details = site, text = WHATSAPP_GREETING): ContactLink[] {
   const links: ContactLink[] = [];
   if (details.phone.trim()) links.push({ kind: "call", label: "Call us", url: telUrl(details.phone) });
   if (details.whatsapp.replace(/\D/g, "")) links.push({ kind: "whatsapp", label: "WhatsApp us", url: whatsappUrl(details.whatsapp, text) });

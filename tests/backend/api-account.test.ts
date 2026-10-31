@@ -6,7 +6,7 @@ import { signInUser } from "@/lib/auth/users";
 import { setDb } from "@/lib/db/client";
 import { leads, projects, users } from "@/lib/db/schema";
 import { saveLead } from "@/lib/leads/store";
-import { approveQuotation, createQuotation, saveQuotation, sendQuotation } from "@/lib/projects/repo";
+import { approveQuotation, createQuotation, markInspectionVisited, saveQuotation, sendQuotation } from "@/lib/projects/repo";
 import { postJson } from "../support/request";
 import { resetTestDb, useTestDb } from "../support/db";
 
@@ -52,6 +52,7 @@ const me = async () => import("@/app/api/v1/me/route");
 const projectsRoute = async () => (await import("@/app/api/v1/projects/route")).GET;
 const projectRoute = async () => (await import("@/app/api/v1/projects/[id]/route")).GET;
 const bookings = async () => (await import("@/app/api/v1/bookings/route")).POST;
+const patchProject = async () => (await import("@/app/api/v1/projects/[id]/route")).PATCH;
 
 const booking = { type: "booking" as const, name: "Asha", phone: PHONE, address: "12 Rose Villa, Nehru Road", locality: "Kamla Nagar", pincode: "282005", city: "agra" };
 
@@ -236,6 +237,89 @@ describe("GET /api/v1/projects and /api/v1/projects/{id}", () => {
   });
 });
 
+describe("PATCH /api/v1/projects/{id}", () => {
+  /** A booking with only who and where, as the website and app send it now. */
+  const short = { type: "booking" as const, name: "Asha", phone: PHONE, locality: "Kamla Nagar", city: "agra" };
+  const patch = async (id: string, body: unknown, headers: Record<string, string>) =>
+    (await patchProject())(request(`/api/v1/projects/${id}`, { method: "PATCH", headers, body }), { params: Promise.resolve({ id }) });
+
+  it("adds the address, then the job, step by step, and answers with the project as GET does", async () => {
+    const { user, bearer } = await signedIn();
+    const { projectId } = await saveLead(short, { userId: user.id });
+    const id = projectId!;
+    const before = await (await (await projectRoute())(request(`/api/v1/projects/${id}`, { headers: bearer }), { params: Promise.resolve({ id }) })).json();
+    expect(before.data).toMatchObject({ address: null, pincode: null, service: null, detailsEditable: true, location: null });
+    expect(before.meta.detailSteps).toEqual({ done: 0, total: 2 });
+
+    const res = await patch(id, { address: " 12 Rose Villa, Nehru Road ", locality: "Kamla Nagar", pincode: "282 005", location: { lat: 27.2152, lng: 78.0081 } }, bearer);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    const body = await res.json();
+    expect(body).toMatchObject({ kind: "project", data: { address: "12 Rose Villa, Nehru Road", pincode: "282005", locality: "Kamla Nagar", location: { lat: 27.2152, lng: 78.0081 } }, meta: { detailSteps: { done: 1, total: 2 } } });
+
+    const job = await (await patch(id, { service: "Interior Painting", propertyType: "Apartment / Flat", floors: "2", homeSize: "3 BHK", carpetArea: "1,200", preferredDate: "", notes: "Damp near the balcony." }, bearer)).json();
+    expect(job.data).toMatchObject({ service: "Interior Painting", propertyType: "Apartment / Flat", floors: "2", homeSize: "3 BHK", carpetArea: 1200, preferredDate: null, notes: "Damp near the balcony.", address: "12 Rose Villa, Nehru Road" });
+    expect(job.meta.detailSteps).toEqual({ done: 2, total: 2 });
+    expect(job.label).toBe("Interior Painting project in Kamla Nagar, Agra: Booking received.");
+
+    // blank clears an optional field; null removes the pin; an empty body changes nothing
+    const cleared = await (await patch(id, { notes: "", propertyType: null, location: null }, bearer)).json();
+    expect(cleared.data).toMatchObject({ notes: null, propertyType: null, location: null, service: "Interior Painting" });
+    expect((await (await patch(id, {}, bearer)).json()).data.service).toBe("Interior Painting");
+    const [row] = await testDb.db.select().from(projects).where(eq(projects.id, id));
+    expect(row).toMatchObject({ address: "12 Rose Villa, Nehru Road", floors: "2", carpetArea: 1200, locationLat: null });
+  });
+
+  it("400 with the form's own messages, for unknown fields and for a body that is not an object", async () => {
+    const { user, bearer } = await signedIn();
+    const { projectId } = await saveLead(short, { userId: user.id });
+    const id = projectId!;
+    const bad = await expectError(await patch(id, { address: "12", pincode: "2820", locality: "", service: "Car wrap", carpetArea: 5, preferredDate: "2020-01-01", location: { lat: 200, lng: 0 } }, bearer), 400, "invalid_request");
+    expect(bad.error.details).toMatchObject({
+      address: "Enter your house or flat number and street",
+      pincode: "Enter your 6-digit PIN code",
+      locality: "Enter your area or locality",
+      service: "Choose what needs painting",
+      carpetArea: expect.stringMatching(/carpet area/),
+      preferredDate: "Choose today or a later date",
+      location: expect.any(String),
+    });
+    expect((await expectError(await patch(id, { stage: "completed" }, bearer), 400, "invalid_request")).error.details).toHaveProperty("body");
+    await expectError(await patch(id, ["address"], bearer), 400, "invalid_request");
+  });
+
+  it("401 signed out, 403 for a cross-site cookie, 404 for another customer's project, 409 once the inspector has visited, 429 when hurried", async () => {
+    const { user, bearer, cookie } = await signedIn("web");
+    const { projectId } = await saveLead(short, { userId: user.id });
+    const id = projectId!;
+    await expectError(await patch(id, { notes: "x" }, {}), 401, "unauthenticated");
+    await expectError(await patch(id, { notes: "hi" }, { cookie, origin: "https://evil.example" }), 403, "forbidden");
+    expect((await patch(id, { notes: "From the website" }, { cookie, origin: BASE })).status).toBe(200);
+    const other = await signedIn("app", "9123456789");
+    await expectError(await patch(id, { notes: "x" }, other.bearer), 404, "not_found");
+    await expectError(await patch("not-a-uuid", { notes: "x" }, bearer), 404, "not_found");
+
+    const statuses = [];
+    for (let i = 0; i < 20; i++) statuses.push((await patch(id, { notes: `Note ${i}` }, bearer)).status);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(2); // two valid requests were already counted above
+
+    const fresh = await signedIn("app", "9000000003");
+    const later = (await saveLead({ ...short, phone: "9000000003" }, { userId: fresh.user.id })).projectId!;
+    await markInspectionVisited(later, { findings: "Measured." });
+    const locked = await expectError(await patch(later, { address: "12 Rose Villa, Nehru Road" }, fresh.bearer), 409, "details_locked");
+    expect(locked.error.message).toMatch(/inspector has visited/);
+    const after = await (await (await projectRoute())(request(`/api/v1/projects/${later}`, { headers: fresh.bearer }), { params: Promise.resolve({ id: later }) })).json();
+    expect(after.data.detailsEditable).toBe(false);
+  });
+
+  it("copies what an older booking sent about the job onto its project", async () => {
+    const { user } = await signedIn();
+    const { projectId } = await saveLead({ ...booking, service: "Interior Painting", propertyType: "Villa / Kothi", floors: "3", homeSize: "4 BHK", carpetArea: 1500, preferredDate: undefined, message: "Gate too" }, { userId: user.id });
+    const [row] = await testDb.db.select().from(projects).where(eq(projects.id, projectId!));
+    expect(row).toMatchObject({ address: "12 Rose Villa, Nehru Road", pincode: "282005", propertyType: "Villa / Kothi", floors: "3", homeSize: "4 BHK", carpetArea: 1500, notes: "Gate too" });
+  });
+});
+
 describe("POST /api/v1/bookings", () => {
   const post = (body: unknown, headers: Record<string, string> = {}) => postJson(`${BASE}/api/v1/bookings`, { body, headers, origin: null });
 
@@ -272,10 +356,13 @@ describe("POST /api/v1/bookings", () => {
     expect(res.error.details).toMatchObject({
       name: "Enter your name", // a new account has no name to fall back on
       address: "Enter your house or flat number and street",
-      locality: "Enter your locality",
+      locality: "Enter your area or locality",
       pincode: "Enter your 6-digit PIN code",
       location: expect.any(String),
     });
+    // with only who and where, a booking needs no address or PIN code
+    const bare = await expectError(await POST(post({ name: "Asha" }, bearer)), 400, "invalid_request");
+    expect(Object.keys(bare.error.details)).toEqual(["locality", "city"].filter((k) => k in bare.error.details));
     await expectError(await POST(post([booking], bearer)), 400, "invalid_request");
     await expectError(await POST(postJson(`${BASE}/api/v1/bookings`, { raw: "{bad", headers: bearer })), 400, "invalid_request");
   });

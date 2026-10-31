@@ -103,7 +103,8 @@ export const leads = pgTable(
   (t) => [index("leads_created_at_idx").on(t.createdAt), index("leads_phone_idx").on(t.phone), index("leads_user_id_idx").on(t.userId)],
 ).enableRLS();
 
-/** A painting job, from booking to handover. Every booking lead creates one in stage `booked`. */
+/** A painting job, from booking to handover. Every booking lead creates one in stage `booked`; the
+ * customer adds the address and the job's details in their account (src/lib/projects/details.ts). */
 export const projects = pgTable(
   "projects",
   {
@@ -118,6 +119,16 @@ export const projects = pgTable(
     locality: text("locality"),
     address: text("address"),
     pincode: text("pincode"),
+    /** The job, as the customer describes it in their account before the inspection (or from the booking). */
+    propertyType: text("property_type"),
+    floors: text("floors"),
+    homeSize: text("home_size"),
+    carpetArea: integer("carpet_area"),
+    preferredDate: date("preferred_date", { mode: "string" }),
+    notes: text("notes"),
+    /** The map pin for the address, when the customer dropped one (the app). */
+    locationLat: numeric("location_lat", { precision: 9, scale: 6, mode: "number" }),
+    locationLng: numeric("location_lng", { precision: 9, scale: 6, mode: "number" }),
     stage: projectStage("stage").notNull().default("booked"),
     /** The crew's start date, named in the `work_scheduled` explanation. */
     workStartsOn: date("work_starts_on", { mode: "string" }),

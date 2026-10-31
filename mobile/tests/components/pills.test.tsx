@@ -63,7 +63,7 @@ describe("the bottom nav's depth", () => {
     await fireEvent(screen.getByTestId("bottom-nav"), "layout", { nativeEvent: { layout: { x: 16, y: 700, width: 361, height: 64 } } });
     expect(screen.getByTestId("bottom-nav-bevel", { includeHiddenElements: true })).toBeOnTheScreen();
     expect(screen.getByTestId("bottom-nav-gloss", { includeHiddenElements: true })).toBeOnTheScreen();
-    for (const label of ["Home", "Services", "Colours", "Estimate"]) expect(screen.getByRole("tab", { name: label })).toBeOnTheScreen();
+    for (const label of ["Home", "Services", "Colours", "Book"]) expect(screen.getByRole("tab", { name: label })).toBeOnTheScreen();
     // the active label leaves its sunken pill for the place under the dab
     expect(screen.getByText("Home").parent).toHaveStyle({ backgroundColor: "transparent" });
     expect(screen.getByText("Services").parent).toHaveStyle({ backgroundColor: "rgba(0, 0, 0, 0.16)" });

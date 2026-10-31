@@ -130,7 +130,7 @@ describe("small layouts", () => {
     expect(router.push).toHaveBeenCalledWith({ pathname: "/services", params: {} });
     await fireEvent.press(screen.getByRole("button", { name: "Back to home" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/", params: {} });
-    await fireEvent.press(screen.getByRole("button", { name: "Book an inspection" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: {} });
     expect(Linking.openURL).not.toHaveBeenCalledWith(webUrl("/book"));
   });

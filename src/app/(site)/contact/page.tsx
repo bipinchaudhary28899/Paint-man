@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LeadForm } from "@/components/LeadForm";
 import { PageHero } from "@/components/PageHero";
 import { cityPath, liveCities, liveCityNames, servicePath, services, site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -20,7 +21,7 @@ export default function ContactPage() {
   // Phone, WhatsApp, email and street address appear only once they are filled in src/config/site.ts.
   const rows = [
     site.phone && { label: "Phone", tint: "bg-sunshine", node: <a href={`tel:${site.phone}`} className="hover:text-tangerine">{site.phoneDisplay || site.phone}</a> },
-    site.whatsapp && { label: "WhatsApp", tint: "bg-sky-wash", node: <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="hover:text-tangerine">Chat on WhatsApp</a> },
+    site.whatsapp && { label: "WhatsApp", tint: "bg-sky-wash", node: <a href={whatsappHref()} rel="noopener" className="hover:text-tangerine">{site.whatsappDisplay}</a> },
     site.email && { label: "Email", tint: "bg-rose-wash", node: <a href={`mailto:${site.email}`} className="hover:text-tangerine">{site.email}</a> },
     site.address.street && {
       label: "Address",
@@ -55,11 +56,11 @@ export default function ContactPage() {
         tint="bg-rose-wash"
       >
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/book" className="btn-primary">Book an inspection</Link>
+          <Link href="/book" className="btn-primary">Book a free site visit</Link>
           {site.phone ? (
             <a href={`tel:${site.phone}`} className="btn-secondary">Call {site.phoneDisplay || site.phone}</a>
           ) : site.whatsapp ? (
-            <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="btn-secondary">Chat on WhatsApp</a>
+            <a href={whatsappHref()} rel="noopener" className="btn-secondary">Chat on WhatsApp</a>
           ) : (
             <a href="#send-message" className="btn-secondary">Ask for a call back</a>
           )}
@@ -82,7 +83,7 @@ export default function ContactPage() {
           <h2 className="text-2xl font-normal">Send us a message</h2>
           <p className="mt-1 text-sm text-muted">
             Leave your mobile number and we call you back. Want a quote?{" "}
-            <Link href="/book" className="font-bold text-tangerine-text underline">Book an inspection</Link> instead.
+            <Link href="/book" className="font-bold text-tangerine-text underline">Book a free site visit</Link> instead.
           </p>
           <div className="mt-6"><LeadForm type="contact" /></div>
         </div>

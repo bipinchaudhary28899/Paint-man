@@ -63,20 +63,29 @@ const optionalChoice = <T extends readonly [string, ...string[]]>(values: T, mes
 /** Cities a booking can be for: the live ones. */
 export const liveCitySlugs = liveCities().map((c) => c.slug) as [string, ...string[]];
 
+/** Optional text: blank or missing is "not given"; given, it must pass `check`. */
+const optionalGiven = (schema: z.ZodType<string>) => z.preprocess((v) => (typeof v === "string" ? v.trim() || undefined : v), schema.optional());
+
+/** A house or flat number and street, when given. */
+export const addressField = optionalGiven(trimmed(200).min(5, FIELD_MESSAGES.address));
+/** A 6-digit PIN code, when given (spaces dropped). */
+export const pincodeField = z.preprocess(
+  (v) => (typeof v === "string" ? v.replace(/\s/g, "") || undefined : v),
+  z.string({ message: FIELD_MESSAGES.pincode }).regex(PINCODE_PATTERN, FIELD_MESSAGES.pincode).optional(),
+);
+
 /**
- * The booking form: name, mobile and the full address are required; everything about the job
- * (what to paint, the property, its size, a date, a note) sits under "Add more details" and is
- * optional, so a single wall or a door is as quick to book as a whole house.
+ * A booking: who and where, nothing more. Name, mobile and the area (locality) are required, with
+ * the city when we paint in more than one. The address and the job (what to paint, the property,
+ * its size, a date, a note) are added later in the customer's account (src/lib/projects/details.ts);
+ * they are still accepted here, optional, from older app builds.
  */
 export const bookingSchema = z.object({
   type: z.literal("booking"),
   ...common,
-  address: trimmed(200).min(5, FIELD_MESSAGES.address),
+  address: addressField,
   locality: trimmed(80).min(2, FIELD_MESSAGES.locality),
-  pincode: z.preprocess(
-    (v) => (typeof v === "string" ? v.replace(/\s/g, "") : v),
-    z.string({ message: FIELD_MESSAGES.pincode }).regex(PINCODE_PATTERN, FIELD_MESSAGES.pincode),
-  ),
+  pincode: pincodeField,
   // with one live city the form sends none and the booking is for that city; with several, the
   // visitor must choose (a blank city is never quietly filed under the home city)
   city: z.preprocess(
@@ -111,7 +120,7 @@ export const contactSchema = z.object({
 export const citySlugs = cities.map((c) => c.slug) as [string, ...string[]];
 
 /**
- * The quick "Book site visit" form (home page hero, city pages): name, mobile and city, plus an
+ * The quick "Book a free site visit" form (home page hero, city pages): name, mobile and city, plus an
  * optional locality. The team takes the job details on the call. For a city that is not live yet
  * the same request is a waitlist entry.
  */

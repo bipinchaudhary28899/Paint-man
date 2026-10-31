@@ -48,14 +48,14 @@ describe("links", () => {
   it("open their website href, in the linkClass or a plain underline", async () => {
     await render(
       <Text>
-        <InlineLink href="/book">Book an inspection</InlineLink> <InlineLink href="/contact" plain>
+        <InlineLink href="/book">Book a free site visit</InlineLink> <InlineLink href="/contact" plain>
           contact page
         </InlineLink>
       </Text>,
     );
-    expect(screen.getByRole("link", { name: "Book an inspection" })).toHaveStyle({ textDecorationColor: colors.terracotta });
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveStyle({ textDecorationColor: colors.terracotta });
     expect(screen.getByRole("link", { name: "contact page" })).not.toHaveStyle({ textDecorationColor: colors.terracotta });
-    await fireEvent.press(screen.getByRole("link", { name: "Book an inspection" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Book a free site visit" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: {} });
   });
 

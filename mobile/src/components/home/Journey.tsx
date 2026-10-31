@@ -14,7 +14,7 @@ import { colors, fonts, radii } from "~/theme";
 // (workFlow in site.ts) as a vertical stepper. Each step shows its number, title and one line; tapping it
 // opens the whole step, with a photo where one shows that stage (the shade cards at your home, the
 // skimming, the coats). One step is open at a time, the first to begin with: the step slides open as
-// the one before slides shut, its one-line preview folding away. "Book a site visit" at the end glides
+// the one before slides shut, its one-line preview folding away. "Book a free site visit" at the end glides
 // to the booking card (#book-visit).
 
 type Step = (typeof workFlow)[number];
@@ -110,7 +110,7 @@ export function Journey({ steps = workFlow }: { steps?: readonly Step[] }) {
           );
         })}
       </View>
-      <Button label="Book a site visit" large height={54} onPress={() => scrollTo("book-visit")} style={styles.mt8} />
+      <Button label="Book a free site visit" large height={54} onPress={() => scrollTo("book-visit")} style={styles.mt8} />
     </Container>
   );
 }

@@ -11,7 +11,7 @@ import { LiveCityLinks, TextLink } from "./bits";
 import { ServiceCarousel } from "./ServiceCarousel";
 
 // /services on a phone (src/app/(site)/services/page.tsx): the hero, every service as a swipe row of
-// cards (photo with its sticker, name, one line, "View service" and "Book site visit"), each live city
+// cards (photo with its sticker, name, one line, "View service" and "Book a free site visit"), each live city
 // with its service pages as a list, then three short notes on colours, price and where we work, and the
 // closing banner.
 

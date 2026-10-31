@@ -23,7 +23,7 @@ export function Arrow({ size = 18, color = colors.ink }: { size?: number; color?
   );
 }
 
-/** .link-arrow: "Book a free inspection →", 16px medium ink, 44px tall tap target. */
+/** .link-arrow: "Book a free site visit →", 16px medium ink, 44px tall tap target. */
 export function LinkArrow({ label, onPress, style, textStyle, color = colors.ink }: { label: string; onPress: () => void; style?: StyleProp<ViewStyle>; textStyle?: StyleProp<TextStyle>; color?: string }) {
   return (
     <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={onPress} hitSlop={6} style={[styles.linkArrow, style]}>

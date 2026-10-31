@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
-import { Linking, ScrollView, Text, View } from "react-native";
+import { Keyboard, Linking, Platform, ScrollView, Text, View } from "react-native";
 
 import { activeTab, BottomNav, items } from "~/components/site/BottomNav";
 import { Footer } from "~/components/site/Footer";
@@ -8,7 +8,8 @@ import { NavStateProvider, useNavState } from "~/components/site/nav-state";
 import { Anchor, Container, Page, sectionInView, usePage } from "~/components/site/Page";
 import { BookingSection, Breadcrumbs, CtaBanner, FaqList, PageHero, Promises, WorkFlow } from "~/components/site/Sections";
 import { webUrl } from "~/lib/config";
-import { footerColumns, generalFaqs, images, liveCities, promises, workFlow } from "~/shared";
+import { footerColumns, generalFaqs, images, liveCities, promises, site, WHATSAPP_GREETING, workFlow } from "~/shared";
+import { whatsappUrl } from "~/lib/contact";
 
 jest.mock("expo-router", () => ({
   router: { push: jest.fn(), navigate: jest.fn() },
@@ -87,22 +88,26 @@ describe("WorkFlow", () => {
   it("numbers the steps and runs its button", async () => {
     const onPress = jest.fn();
     const steps = [...workFlow.slice(0, 2), { ...workFlow[2], image: { src: images.uniformCeiling.src, alt: images.uniformCeiling.alt } }];
-    await render(<WorkFlow steps={steps} cta={{ label: "Book a site visit", onPress }} />);
+    await render(<WorkFlow steps={steps} cta={{ label: "Book a free site visit", onPress }} />);
     expect(screen.getByRole("header", { name: "How the work gets done" })).toBeOnTheScreen();
     for (const s of steps) expect(screen.getByText(s.title)).toBeOnTheScreen();
     expect(screen.getByLabelText(images.uniformCeiling.alt)).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("button", { name: "Book a site visit" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
     expect(onPress).toHaveBeenCalled();
   });
 });
 
 describe("CtaBanner and BookingSection", () => {
-  it("closes the page with the estimate and contact buttons", async () => {
+  it("closes the page with the estimate button and a WhatsApp chat (the website lists a WhatsApp number)", async () => {
+    const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     await render(<CtaBanner />);
     expect(screen.getByRole("header", { name: "Let's give your home a fresh coat." })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("button", { name: "Get a free estimate" }));
-    await fireEvent.press(screen.getByRole("button", { name: "Talk to us" }));
-    expect((router.push as jest.Mock).mock.calls.map(([r]) => r.pathname)).toEqual(["/book", "/contact"]);
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
+    expect((router.push as jest.Mock).mock.calls.map(([r]) => r.pathname)).toEqual(["/book"]);
+    expect(site.whatsapp).not.toBe("");
+    await fireEvent.press(screen.getByRole("button", { name: "Chat on WhatsApp" }));
+    expect(open).toHaveBeenLastCalledWith(whatsappUrl(site.whatsapp, WHATSAPP_GREETING));
+    expect(screen.queryByRole("button", { name: "Talk to us" })).toBeNull();
   });
 
   it("takes a custom heading and sits flush after the FAQ", async () => {
@@ -111,13 +116,13 @@ describe("CtaBanner and BookingSection", () => {
   });
 
   it("holds the booking form with its heading, text and note", async () => {
-    await render(<BookingSection heading="Book a free inspection" text="We call back." note="Zero advance payment." />);
-    expect(screen.getByRole("header", { name: "Book a free inspection" })).toBeOnTheScreen();
+    await render(<BookingSection heading="Book a free site visit" text="We call back." note="Zero advance payment." />);
+    expect(screen.getByRole("header", { name: "Book a free site visit" })).toBeOnTheScreen();
     expect(screen.getByText("We call back.")).toBeOnTheScreen();
     expect(screen.getByText("Zero advance payment.")).toBeOnTheScreen();
-    // the booking form opens on its first step (tests/components/lead-form.test.tsx)
-    expect(screen.getByRole("progressbar")).toHaveAccessibilityValue({ now: 1, max: 2 });
-    expect(screen.getByRole("button", { name: "Continue" })).toBeOnTheScreen();
+    // the short booking form (tests/components/lead-form.test.tsx)
+    expect(screen.getByLabelText("Area / locality")).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Book my site visit" })).toBeOnTheScreen();
   });
 
   it("takes rich text and the contact form", async () => {
@@ -281,14 +286,14 @@ describe("Footer", () => {
 });
 
 describe("BottomNav", () => {
-  it("picks the tab for a path, and the section in view on the home page", () => {
-    expect(activeTab("/", 2)).toBe(2);
-    expect(activeTab("/services/interior-painting/agra", 0)).toBe(1);
-    expect(activeTab("/shade-cards/berger", 0)).toBe(2);
-    expect(activeTab("/palettes", 0)).toBe(2);
-    expect(activeTab("/contact", 0)).toBe(3);
-    expect(activeTab("/about", 3)).toBe(0);
-    expect(items.map((i) => i.label)).toEqual(["Home", "Services", "Colours", "Estimate"]);
+  it("picks the tab for the screen: Home on the home page, whatever is in view", () => {
+    expect(activeTab("/")).toBe(0);
+    expect(activeTab("/services/interior-painting/agra")).toBe(1);
+    expect(activeTab("/shade-cards/berger")).toBe(2);
+    expect(activeTab("/palettes")).toBe(2);
+    expect(activeTab("/contact")).toBe(3);
+    expect(activeTab("/about")).toBe(0);
+    expect(items.map((i) => i.label)).toEqual(["Home", "Services", "Colours", "Book"]);
   });
 
   it("shows four tabs and opens a tab's page from another page", async () => {
@@ -307,7 +312,7 @@ describe("BottomNav", () => {
     expect(router.navigate).toHaveBeenLastCalledWith("/");
   });
 
-  it("on the home page glides to the tab's section, and Estimate opens the booking page", async () => {
+  it("on the home page keeps Home selected, glides Home back to the top, and opens the other tabs' screens", async () => {
     const scrollHome = jest.fn();
     function Register() {
       const { setScrollHome, setHomeSection } = useNavState();
@@ -320,11 +325,35 @@ describe("BottomNav", () => {
       </NavStateProvider>,
     );
     await fireEvent.press(screen.getByText("register"));
-    expect(screen.getByRole("tab", { name: "Services" })).toBeSelected();
+    // the services section is in view, but this is still the home screen
+    expect(screen.getByRole("tab", { name: "Home" })).toBeSelected();
+    await fireEvent.press(screen.getByRole("tab", { name: "Home" }));
+    expect(scrollHome).toHaveBeenCalledWith("top");
     await fireEvent.press(screen.getByRole("tab", { name: "Colours" }));
-    expect(scrollHome).toHaveBeenCalledWith("colour");
-    await fireEvent.press(screen.getByRole("tab", { name: "Estimate" }));
+    expect(router.navigate).toHaveBeenCalledWith("/colours");
+    await fireEvent.press(screen.getByRole("tab", { name: "Book" }));
     expect(router.navigate).toHaveBeenCalledWith("/book");
+    expect(scrollHome).toHaveBeenCalledTimes(1);
+  });
+
+  it("steps aside while the keyboard is up, and comes back after", async () => {
+    const listeners: Record<string, () => void> = {};
+    const add = jest.spyOn(Keyboard, "addListener").mockImplementation(((event: string, fn: () => void) => {
+      listeners[event] = fn;
+      return { remove: jest.fn() };
+    }) as never);
+    await render(
+      <NavStateProvider>
+        <BottomNav />
+      </NavStateProvider>,
+    );
+    expect(screen.getByTestId("bottom-nav")).toBeOnTheScreen();
+    const [showEvent, hideEvent] = Platform.OS === "ios" ? ["keyboardWillShow", "keyboardWillHide"] : ["keyboardDidShow", "keyboardDidHide"];
+    await act(() => listeners[showEvent]());
+    expect(screen.queryByTestId("bottom-nav")).toBeNull();
+    await act(() => listeners[hideEvent]());
+    expect(screen.getByTestId("bottom-nav")).toBeOnTheScreen();
+    add.mockRestore();
   });
 
   it("does nothing for the tab of the page already open", async () => {

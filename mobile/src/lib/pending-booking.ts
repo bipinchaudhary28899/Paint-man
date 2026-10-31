@@ -1,7 +1,7 @@
 import type { BookingValues } from "./booking";
 import type { LatLng } from "./location";
 
-// A booking waiting for its visitor to sign in. "Book my inspection" while signed out keeps the form's
+// A booking waiting for its visitor to sign in. "Book my site visit" while signed out keeps the form's
 // answers here and opens the login screen; once signed in, the form on that page (still open under
 // the login screen, or opened again) takes them back and sends the booking, so nothing typed is lost.
 // It lives in memory only (never written to the phone's storage), the login screen lets it go when

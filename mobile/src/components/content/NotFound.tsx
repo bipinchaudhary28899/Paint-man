@@ -38,7 +38,7 @@ export function NotFoundContent() {
       </View>
       <ButtonRow center style={styles.mt32}>
         <Button label="Back to home" variant="secondary" accessibilityRole="link" onPress={() => router.navigate("/")} />
-        <Button label="Book an inspection" accessibilityRole="link" onPress={() => openHref("/book")} />
+        <Button label="Book a free site visit" accessibilityRole="link" onPress={() => openHref("/book")} />
       </ButtonRow>
     </Container>
   );
@@ -57,7 +57,7 @@ export function ErrorNotice({ retry }: { retry: () => void }) {
       <ButtonRow center style={styles.mt32}>
         <Button label="Try again" onPress={() => retry()} />
         <Button label="Go to the home page" variant="secondary" accessibilityRole="link" onPress={() => router.navigate("/")} />
-        <Button label="Book a site visit" variant="secondary" accessibilityRole="link" onPress={() => openHref("/book")} />
+        <Button label="Book a free site visit" variant="secondary" accessibilityRole="link" onPress={() => openHref("/book")} />
       </ButtonRow>
     </Container>
   );

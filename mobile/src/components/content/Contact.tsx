@@ -6,8 +6,9 @@ import { Button } from "~/components/ui/Button";
 import { Card, LinkArrow } from "~/components/ui/Bits";
 import { RevealContainer } from "~/components/ui/Reveal";
 import { Em, Eyebrow, H, P } from "~/components/ui/Text";
+import { whatsappUrl } from "~/lib/contact";
 import { openHref } from "~/lib/links";
-import { cityPath, liveCities, liveCityNames, servicePath, services, site } from "~/shared";
+import { cityPath, liveCities, liveCityNames, servicePath, services, site, WHATSAPP_GREETING } from "~/shared";
 import { colors, fonts } from "~/theme";
 import { ButtonRow, InlineLink } from "./Inline";
 
@@ -16,18 +17,18 @@ import { ButtonRow, InlineLink } from "./Inline";
 // you get in touch, and the cards of localities and services.
 
 /** The business details the page shows (src/config/site.ts); empty ones are left out, as on the website. */
-type Details = { phone: string; phoneDisplay: string; whatsapp: string; email: string; city: string; region: string; hoursDisplay: string; address: { street: string; postalCode: string } };
+type Details = { phone: string; phoneDisplay: string; whatsapp: string; whatsappDisplay?: string; email: string; city: string; region: string; hoursDisplay: string; address: { street: string; postalCode: string } };
 
 /** The hero's buttons: book, then call, WhatsApp or (with neither number set) a jump to the message form. */
 export function ContactHeroActions({ details = site }: { details?: Details }) {
   const { scrollTo } = usePage();
   return (
     <ButtonRow style={styles.mt32}>
-      <Button label="Book an inspection" accessibilityRole="link" onPress={() => openHref("/book")} />
+      <Button label="Book a free site visit" accessibilityRole="link" onPress={() => openHref("/book")} />
       {details.phone ? (
         <Button label={`Call ${details.phoneDisplay || details.phone}`} variant="secondary" accessibilityRole="link" onPress={() => openHref(`tel:${details.phone}`)} />
       ) : details.whatsapp ? (
-        <Button label="Chat on WhatsApp" variant="secondary" accessibilityRole="link" onPress={() => openHref(`https://wa.me/${details.whatsapp}`)} />
+        <Button label="Chat on WhatsApp" variant="secondary" accessibilityRole="link" onPress={() => openHref(whatsappUrl(details.whatsapp, WHATSAPP_GREETING))} />
       ) : (
         <Button label="Ask for a call back" variant="secondary" accessibilityRole="link" onPress={() => scrollTo("send-message")} />
       )}
@@ -42,7 +43,7 @@ export type ContactRow = { label: string; tint: string; value: string; href?: st
 export function contactRows(details: Details = site): ContactRow[] {
   const rows: (ContactRow | false)[] = [
     !!details.phone && { label: "Phone", tint: colors.golden, value: details.phoneDisplay || details.phone, href: `tel:${details.phone}` },
-    !!details.whatsapp && { label: "WhatsApp", tint: colors.sageWash, value: "Chat on WhatsApp", href: `https://wa.me/${details.whatsapp}` },
+    !!details.whatsapp && { label: "WhatsApp", tint: colors.sageWash, value: details.whatsappDisplay || "Chat on WhatsApp", href: whatsappUrl(details.whatsapp, WHATSAPP_GREETING) },
     !!details.email && { label: "Email", tint: colors.roseWash, value: details.email, href: `mailto:${details.email}` },
     !!details.address.street && { label: "Address", tint: colors.peachWash, value: `${details.address.street}, ${details.city}, ${details.region} ${details.address.postalCode}` },
     { label: "Service area", tint: colors.creamWash, value: `${details.city}, ${details.region}`, href: "/services/house-painting/agra#localities", tall: true },
@@ -83,7 +84,7 @@ export function SendMessage() {
         <P size={14} leading={20 / 14} color={colors.muted} style={styles.mt4}>
           Leave your mobile number and we call you back. Want a quote?{" "}
           <InlineLink href="/book" style={styles.boldTerracotta}>
-            Book an inspection
+            Book a free site visit
           </InlineLink>{" "}
           instead.
         </P>

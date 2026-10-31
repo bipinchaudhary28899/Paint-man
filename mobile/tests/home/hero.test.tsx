@@ -17,7 +17,7 @@ beforeEach(() => jest.clearAllMocks());
 describe("the home hero", () => {
   it("puts the booking button first: it glides to the booking card on the page", async () => {
     await render(<Hero />);
-    await fireEvent.press(screen.getByRole("button", { name: "Book a free inspection" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Book a free site visit" }));
     expect(mockScrollTo).toHaveBeenCalledWith("book-visit");
     expect(router.push).not.toHaveBeenCalled();
   });

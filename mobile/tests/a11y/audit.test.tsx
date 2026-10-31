@@ -168,7 +168,7 @@ describe("text sizes", () => {
         <BottomNav />
       </NavStateProvider>,
     );
-    for (const label of ["Home", "Services", "Colours", "Estimate"]) {
+    for (const label of ["Home", "Services", "Colours", "Book"]) {
       const text = screen.getByText(label);
       expect(text).toHaveProp("maxFontSizeMultiplier", MAX_SCALE.fixed);
       expect(text).toHaveProp("numberOfLines", 1);

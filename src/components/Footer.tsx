@@ -3,6 +3,7 @@ import { footerColumns } from "@/config/nav";
 import { CtaFooterNav } from "./CtaFooterNav";
 import { StackedLogo } from "./Logo";
 import { liveCities, promises, site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 
 // The footer is the site's link hub (as on the big painting sites): every service hub, every page
 // for each live city, the cities, the colour tools and the company pages, from src/config/nav.ts.
@@ -24,9 +25,14 @@ export function Footer() {
             starts.
           </p>
           <address className="mt-5 text-sm not-italic leading-[1.9] desk:mt-6 desk:text-[15px]">
-            <span className="mb-0.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-golden desk:mb-1 desk:text-xs">Visit &amp; call</span>
+            <span className="mb-0.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-golden desk:mb-1 desk:text-xs">Get in touch</span>
             {site.address.street ? <span className="block">{site.address.street}, {site.city} {site.address.postalCode}</span> : <span className="block">{site.city}, {site.region}</span>}
             {site.phone && <a href={`tel:${site.phone}`} className="block hover:text-on-ink">{site.phoneDisplay || site.phone}</a>}
+            {site.whatsapp && (
+              <a href={whatsappHref()} rel="noopener" className="block hover:text-on-ink">
+                WhatsApp {site.whatsappDisplay}
+              </a>
+            )}
             {site.email && <a href={`mailto:${site.email}`} className="block hover:text-on-ink">{site.email}</a>}
             <span className="block">{site.hoursDisplay}</span>
           </address>

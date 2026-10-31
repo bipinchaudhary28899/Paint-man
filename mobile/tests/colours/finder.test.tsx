@@ -163,7 +163,7 @@ describe("inside a brand", () => {
     expect(sheet.getByRole("header", { name: "Shade 1" })).toBeOnTheScreen();
     expect(sheet.getByLabelText("A cosy living room, repainted in Shade 1")).toBeOnTheScreen();
     expect(screen.getByTestId("tile-asian-paints:1001")).toBeSelected();
-    await fireEvent.press(sheet.getByRole("button", { name: "Book an inspection with this shade" }));
+    await fireEvent.press(sheet.getByRole("button", { name: "Book a free site visit with this shade" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: { shade: "asian-paints:1001" } });
     expect(screen.queryByTestId("preview-sheet")).toBeNull();
   });

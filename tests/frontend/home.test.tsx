@@ -1,7 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { AreaLinks } from "@/components/home/AreaLinks";
 import { ColourExplorer, swatchIndices, wheelAngle, wheelShades } from "@/components/home/ColourExplorer";
 import { HeroImage, heroPreloadMedia, heroSideBySide, heroSizes } from "@/components/home/HeroImage";
 import { ParallaxChips } from "@/components/home/ParallaxChips";
@@ -49,17 +48,7 @@ describe("HeroImage", () => {
   });
 });
 
-describe("AreaLinks", () => {
-  it("links every locality to its own entry on the Agra page, using the shared slug from site.ts", () => {
-    render(<AreaLinks city={homeCity} />);
-    const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(site.areas.length);
-    for (const a of site.areas) {
-      expect(screen.getByRole("link", { name: `Painters in ${a}` })).toHaveAttribute("href", `/services/house-painting/agra#${areaSlug(a)}`);
-    }
-    expect(screen.getByRole("link", { name: "Painters in Fatehabad Road" })).toHaveAttribute("href", "/services/house-painting/agra#fatehabad-road");
-  });
-});
+
 
 describe("ParallaxChips", () => {
   it("draws seven decorative chips, hidden from assistive tech, each with its own drift", () => {

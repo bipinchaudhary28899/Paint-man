@@ -136,7 +136,7 @@ export function PreviewSheet({
       </ul>
 
       <div className="mt-3 flex shrink-0 items-center gap-3">
-        <Link href={view.bookHref} className="btn-primary min-h-11 flex-1 justify-center whitespace-nowrap text-sm">Book an inspection with this shade</Link>
+        <Link href={view.bookHref} className="btn-primary min-h-11 flex-1 justify-center whitespace-nowrap text-sm">Book a free site visit with this shade</Link>
       </div>
     </div>
   );

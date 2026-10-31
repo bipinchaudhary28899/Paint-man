@@ -19,7 +19,7 @@ import { WHATSAPP_GREEN, WhatsAppLogo } from "./StickyCta";
 // The phone menu: a hairline three-bar button in the sticky header opens a drawer that slides in from
 // the right over the dimmed page. It holds the website's own menus (nav.ts: Services, Cities as region ›
 // city › localities, Colours), then FAQ, About and Contact, then "My account" (signed in) or "Log in",
-// and at the bottom "Book a free inspection"
+// and at the bottom "Book a free site visit"
 // with call and WhatsApp when site.ts has numbers for them. Sections slide open and shut in place (their
 // chevrons turning), the page
 // being viewed is marked, and every link opens its screen through openHref and closes the drawer. The
@@ -161,7 +161,7 @@ export function NavDrawer({ open, onClose, scrollTo = () => undefined, details =
           </ScrollView>
 
           <View style={[styles.foot, { paddingBottom: Math.max(16, insets.bottom) }]}>
-            <Button label="Book a free inspection" accessibilityRole="link" onPress={() => go("/book")} />
+            <Button label="Book a free site visit" accessibilityRole="link" onPress={() => go("/book")} />
             {contact.length > 0 && (
               <View style={styles.contact}>
                 {contact.map((c) => (

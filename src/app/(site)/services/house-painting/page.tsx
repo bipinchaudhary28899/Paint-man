@@ -40,7 +40,7 @@ export default function HousePaintingHubPage() {
               ))}{" "}
               today, with {cities.filter((c) => c.status === "soon").map((c) => c.name).join(" and ")} next.
             </p>
-            <a href="#book-visit" className="btn-primary btn-lg mt-8">Book a site visit</a>
+            <a href="#book-visit" className="btn-primary btn-lg mt-8">Book a free site visit</a>
           </div>
         </div>
       </section>
@@ -77,7 +77,7 @@ export default function HousePaintingHubPage() {
         <Promises />
       </div>
 
-      <WorkFlow className="container-page mt-24" cta={{ href: "#book-visit", label: "Book a site visit" }} />
+      <WorkFlow className="container-page mt-24" cta={{ href: "#book-visit", label: "Book a free site visit" }} />
 
       <section className="container-page mt-24" aria-labelledby="hub-cities">
         <p className="eyebrow">Cities</p>
@@ -99,7 +99,7 @@ export default function HousePaintingHubPage() {
         </ul>
       </section>
 
-      <CtaBanner heading={<>Ready to repaint? <em>Book a site visit.</em></>} />
+      <CtaBanner href="#book-visit" heading={<>Ready to repaint? <em>Book a site visit.</em></>} />
     </>
   );
 }

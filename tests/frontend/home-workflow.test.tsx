@@ -8,7 +8,7 @@ import { workFlow } from "@/config/site";
 // desktop columns) from one markup; these check what every layout shares: one heading, one ordered
 // list holding only the steps, one button, and decoration kept out of the accessible text.
 
-const cta = { href: "#book-visit", label: "Book a site visit" };
+const cta = { href: "#book-visit", label: "Book a free site visit" };
 
 describe("WorkFlow responsive markup", () => {
   it("keeps the steps as one ordered list, in order, with nothing else inside it", () => {
@@ -49,7 +49,7 @@ describe("WorkFlow responsive markup", () => {
 
   it("renders the button once, after the list, with the tablet tile's line beside it", () => {
     render(<WorkFlow cta={cta} />);
-    const links = screen.getAllByRole("link", { name: "Book a site visit" });
+    const links = screen.getAllByRole("link", { name: "Book a free site visit" });
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute("href", "#book-visit");
     const tile = links[0].parentElement!;

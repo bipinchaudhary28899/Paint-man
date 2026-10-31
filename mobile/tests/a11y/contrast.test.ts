@@ -66,7 +66,7 @@ const rows: Row[] = [
   ["field edge on white", FIELD_BORDER, colors.paper, LARGE],
   ["field edge against the canvas", FIELD_BORDER, colors.canvas, LARGE],
   ...items.map((i): Row => [`bottom nav ${i.label} dab icon on its colour`, i.on, i.hue, LARGE]),
-  ["bottom nav dab (cream, Estimate) against the bar", colors.canvas, barTop, LARGE],
+  ["bottom nav dab (cream, Book) against the bar", colors.canvas, barTop, LARGE],
 ];
 
 /** Pairs the theme offers that read under their minimum: never use them for text. */

@@ -20,7 +20,7 @@ export default function FaqScreen() {
         }
         intro={
           <>
-            Can&apos;t find your answer? <InlineLink href="/book">Book an inspection</InlineLink> or <InlineLink href="/contact">contact us</InlineLink>.
+            Can&apos;t find your answer? <InlineLink href="/book">Book a free site visit</InlineLink> or <InlineLink href="/contact">contact us</InlineLink>.
           </>
         }
       />

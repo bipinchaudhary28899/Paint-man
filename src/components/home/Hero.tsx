@@ -82,7 +82,7 @@ export function Hero() {
 function HeroActions({ className, buttonClassName = "" }: { className: string; buttonClassName?: string }) {
   return (
     <div className={className}>
-      <a href="#book-visit" className={`btn-primary btn-lg ${buttonClassName}`}>Book a site visit</a>
+      <a href="#book-visit" className={`btn-primary btn-lg ${buttonClassName}`}>Book a free site visit</a>
       <Link href="/colours" className={`btn-secondary btn-lg ${buttonClassName}`}>Explore colours</Link>
     </div>
   );

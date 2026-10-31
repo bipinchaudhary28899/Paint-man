@@ -7,7 +7,8 @@ import { Card } from "~/components/ui/Bits";
 import { Reveal } from "~/components/ui/Reveal";
 import { Em, Eyebrow, H, P } from "~/components/ui/Text";
 import { bookPrefill, brandShadeQuery, fetchBrandShade, shadeToLookUp, type BookQuery, type BrandShadeSummary } from "~/lib/prefill";
-import { bookingFaqs, bookingSteps, site } from "~/shared";
+import { whatsappUrl } from "~/lib/contact";
+import { bookingFaqs, bookingSteps, site, WHATSAPP_GREETING } from "~/shared";
 import { colors, fonts } from "~/theme";
 import { boldInk, CityLinks, InlineLink } from "./Inline";
 
@@ -80,11 +81,12 @@ export function NextSteps({ style }: { style?: StyleProp<ViewStyle> }) {
   );
 }
 
-type Phone = { phone: string; phoneDisplay: string; hoursDisplay: string };
+type Phone = { phone: string; phoneDisplay: string; whatsapp?: string; whatsappDisplay?: string; hoursDisplay: string };
 
-/** "Prefer to talk?": the dashed box; the number once the website has one, else a call back from the form. */
+/** "Prefer to talk?": the dashed box; the phone or WhatsApp number once the website has one, else a call back from the form. */
 export function PreferToTalk({ details = site, style }: { details?: Phone; style?: StyleProp<ViewStyle> }) {
-  const hours = details.hoursDisplay.toLowerCase();
+  // the days keep their capitals ("Monday to Saturday, 9 am to 7 pm")
+  const hours = details.hoursDisplay;
   return (
     <Reveal style={style}>
       <View style={styles.talk}>
@@ -96,6 +98,14 @@ export function PreferToTalk({ details = site, style }: { details?: Phone; style
               {details.phoneDisplay || details.phone}
             </InlineLink>
             , {hours}.
+          </P>
+        ) : details.whatsapp ? (
+          <P size={14} leading={20 / 14} color={colors.muted} style={styles.mt8}>
+            Message us on{" "}
+            <InlineLink href={whatsappUrl(details.whatsapp, WHATSAPP_GREETING)} style={styles.phoneLink}>
+              WhatsApp, {details.whatsappDisplay || details.whatsapp}
+            </InlineLink>
+            . We reply {hours}.
           </P>
         ) : (
           <P size={14} leading={20 / 14} color={colors.muted} style={styles.mt8}>

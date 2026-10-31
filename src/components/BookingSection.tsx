@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { illustrations } from "@/config/images";
+import { site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 import { LeadForm } from "./LeadForm";
 
 // Paint Saathi's own booking form (LeadForm) with a heading and a short note, as on the service pages.
@@ -34,6 +36,14 @@ export function BookingSection({ id = "book-visit", heading, text, note, type = 
           </h2>
           <div className="mt-3 max-w-md text-sm leading-[1.6] text-muted tab:mt-4 tab:text-[15px] desk:text-base desk:leading-relaxed">
             {text}
+            {site.whatsapp && (
+              <p className="mt-3 desk:mt-4">
+                Prefer to chat first?{" "}
+                <a href={whatsappHref()} rel="noopener" className="font-semibold text-terracotta underline underline-offset-4">
+                  Message us on WhatsApp
+                </a>
+              </p>
+            )}
             {note && <p className="mt-3 max-tab:hidden desk:mt-4">{note}</p>}
           </div>
           <Image

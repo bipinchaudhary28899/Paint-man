@@ -97,5 +97,5 @@ export const NEXT_STEPS: Record<ProjectStage, string> = {
   in_progress: "A supervisor checks each stage. At the end you walk through every item against the quotation.",
   completed: "The job is closed. If anything needs attention, tell us.",
   on_hold: "We pick up again when you are ready. Tell us when.",
-  cancelled: "Want to start again? Book a new inspection.",
+  cancelled: "Want to start again? Book a new site visit.",
 };

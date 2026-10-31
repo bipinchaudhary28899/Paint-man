@@ -125,7 +125,7 @@ export default async function ShadeCardPage({ params }: Params) {
         text={<p>Add the codes you like under “Add more details”. The inspector brings the {card.name} shade card to your site visit, so you see each shade in your own light. Zero advance payment.</p>}
       />
 
-      <CtaBanner heading={<>Picked a few {card.shortName} codes? <em>Book the visit.</em></>} />
+      <CtaBanner href="#book-visit" heading={<>Picked a few {card.shortName} codes? <em>Book the visit.</em></>} />
     </>
   );
 }

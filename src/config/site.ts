@@ -24,7 +24,8 @@ export const site = {
 
   phone: "", // TODO: e.g. "+919XXXXXXXXX" (E.164, no spaces)
   phoneDisplay: "", // TODO: e.g. "+91 9XXXX XXXXX"
-  whatsapp: "", // TODO: digits only with country code, e.g. "919XXXXXXXXX"
+  whatsapp: "918787230009", // digits only, with the country code
+  whatsappDisplay: "+91 87872 30009",
   email: "", // TODO
   address: {
     street: "", // TODO
@@ -53,6 +54,11 @@ export const site = {
 
   social: [] as string[], // TODO: Google Business Profile, Instagram, Facebook URLs
 } as const;
+
+/** How else people can reach us besides the form, as a phrase ("message us on WhatsApp or call us"), or "". */
+export function contactChannels(details: { whatsapp: string; phone: string } = site): string {
+  return [details.whatsapp && "message us on WhatsApp", details.phone && "call us"].filter(Boolean).join(" or ");
+}
 
 /**
  * The anchor id of a locality on /areas: the name lower-cased with every run of other characters
@@ -1077,7 +1083,7 @@ export const promises: { title: string; text: string }[] = [
  * hub. Each step can take an illustration (`image`, a PNG of people painting) when the owner sends one.
  */
 export const workFlow: { title: string; text: string; image?: { src: string; alt: string } }[] = [
-  { title: "Book online", text: "Name, mobile number and address. Add what needs painting if you like: one wall, a door, the window grills or the whole house." },
+  { title: "Book online", text: "Just your name, mobile number and area. Add the address and what needs painting later in your account: one wall, a door, the window grills or the whole house." },
   { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
   { title: "Site inspection", text: "The inspector measures, checks walls for damp and cracks, wood for rot and metal for rust, and brings shade cards so you choose colours in your own light." },
   { title: "Full estimate, in writing", text: "An itemised quote: each wall, door or grill, the preparation, the paint and its coats, and how long it takes. Nothing starts until you approve it, and there is no advance payment." },
@@ -1091,7 +1097,7 @@ export const workFlow: { title: string; text: string; image?: { src: string; alt
  * the form's fields, the call-back hours, the free estimate and approval before any work.
  */
 export const bookingSteps: { title: string; text: string }[] = [
-  { title: "Fill in the form", text: "Your name, mobile number and address. Add what needs painting if you like, from one wall or a door to the whole house. It takes about a minute." },
+  { title: "Fill in the form", text: "Just your name, mobile number and area: it takes under a minute. Add the address and what needs painting later in your account, or tell us on the call." },
   { title: "We call you back", text: `During working hours (${site.hoursDisplay}) to understand the job and fix a time for the site visit.` },
   { title: "Inspection and itemised quote", text: "Our inspector measures the walls, checks for damp and cracks, and you get a line-by-line quotation." },
   { title: "Approve, then we paint", text: "Nothing is scheduled until you approve the quote, and there is no advance payment. A supervised crew then paints to the stated timeline." },
@@ -1100,7 +1106,7 @@ export const bookingSteps: { title: string; text: string }[] = [
 export const bookingFaqs: FaqItem[] = [
   {
     q: `Can I book painters online in ${site.city}?`,
-    a: `Yes. Fill in the booking form on this page with your name, mobile number and address, and add what needs painting if you like. It takes about a minute, and we call you back during working hours (${site.hoursDisplay}) to fix a time for the site inspection.`,
+    a: `Yes. Fill in the booking form on this page with your name, mobile number and area. It takes under a minute, and we call you back during working hours (${site.hoursDisplay}) to fix a time for the site inspection.`,
   },
   {
     q: "Is the estimate free?",
@@ -1112,19 +1118,19 @@ export const bookingFaqs: FaqItem[] = [
   },
   {
     q: "What details do I need to book painters online?",
-    a: "Your name, a 10-digit mobile number and your address: house or flat number and street, locality and PIN code. Everything else is optional, under Add more details: what needs painting, the property type, floors, home size, carpet area, a preferred date and a note.",
+    a: "Your name, a 10-digit mobile number and your area or locality (and the city). That's all. Log in with the same number afterwards to add your address and what needs painting, the property, its size, a good day for the visit and a note, or tell us on the call.",
   },
   {
     q: "Can I choose the inspection date?",
-    a: "Yes. Open Add more details in the form and pick a preferred date, any day from today up to a year ahead, and we confirm the exact time when we call.",
+    a: "Yes. After booking, log in with the same mobile number, open your project and pick a good day for the visit, any day from today up to a year ahead, or tell us on the call. We confirm the exact time when we call.",
   },
 ];
 
 export const generalFaqs: FaqItem[] = [
   {
     q: "How does booking work?",
-    a: "Book painters online with the booking form, or by phone. We visit your property, measure the walls and note their condition, then send an itemised quotation. Work is scheduled only after you approve the quote.",
-    link: { href: "/book", label: "Book an inspection" },
+    a: `Book painters online with the booking form${contactChannels() ? `, or ${contactChannels()}` : ""}. We visit your property, measure the walls and note their condition, then send an itemised quotation. Work is scheduled only after you approve the quote.`,
+    link: { href: "/book", label: "Book a free site visit" },
   },
   {
     q: `Do you have painters near me in ${site.city}?`,

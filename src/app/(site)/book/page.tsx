@@ -9,6 +9,7 @@ import { Promises } from "@/components/Promises";
 import { JsonLd } from "@/components/JsonLd";
 import { LiveCityLinks } from "@/components/LiveCityLinks";
 import { bookingFaqs, bookingSteps, services, site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -55,6 +56,8 @@ export default function BookPage() {
                 width={illustrations.paintCan.width}
                 height={illustrations.paintCan.height}
                 sizes="380px"
+                // with the short booking form the paint can sits in the first screen (it is the LCP), so it loads at once
+                loading="eager"
                 className="h-auto w-full"
               />
             </div>
@@ -72,9 +75,13 @@ export default function BookPage() {
             <div className="rounded-[1.75rem] border border-dashed border-line-strong p-6 text-sm">
               <p className="font-display text-lg font-bold">Prefer to talk?</p>
               {site.phone ? (
-                <p className="mt-2 text-muted">Call <a className="font-bold text-tangerine-text" href={`tel:${site.phone}`}>{site.phoneDisplay || site.phone}</a>, {site.hoursDisplay.toLowerCase()}.</p>
+                <p className="mt-2 text-muted">Call <a className="font-bold text-tangerine-text" href={`tel:${site.phone}`}>{site.phoneDisplay || site.phone}</a>, {site.hoursDisplay}.</p>
+              ) : site.whatsapp ? (
+                <p className="mt-2 text-muted">
+                  Message us on <a className="font-bold text-tangerine-text" href={whatsappHref()} rel="noopener">WhatsApp, {site.whatsappDisplay}</a>. We reply {site.hoursDisplay}.
+                </p>
               ) : (
-                <p className="mt-2 text-muted">Leave your number in the form and we&apos;ll call you back, {site.hoursDisplay.toLowerCase()}.</p>
+                <p className="mt-2 text-muted">Leave your number in the form and we&apos;ll call you back, {site.hoursDisplay}.</p>
               )}
             </div>
           </aside>

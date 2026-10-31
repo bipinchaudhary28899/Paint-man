@@ -45,7 +45,7 @@ export default function ServicesPage() {
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link href={`/book?service=${s.slug}`} className="btn-primary">Book site visit</Link>
+                <Link href={`/book?service=${s.slug}`} className="btn-primary">Book a free site visit</Link>
                 <Link href={servicePath(s)} className="btn-secondary">Details</Link>
               </div>
               <p className="mt-5 text-sm text-muted">

@@ -12,7 +12,7 @@ import { colors, fonts } from "~/theme";
 // "Find a shade that feels like you" on phones (src/components/home/ColourExplorer.tsx): the selected
 // shade as a big colour block with its label card on top, twelve featured shades as a 6 × 2 grid of
 // circles (the website's scroll-turned wheel is tablet and desktop only), the illustrative-colour note
-// with the PaintDB credit, the finder's brand pills (each opens the finder on that brand's shade card),
+// with the PaintDB credit, the finder's brands as list rows (each opens the finder on that brand's shade card),
 // then every colour tool as cards.
 
 /** The wheel's 36 illustrative shades: name, hex, family (word for word from the website). */

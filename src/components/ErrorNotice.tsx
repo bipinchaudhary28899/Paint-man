@@ -22,7 +22,7 @@ export function ErrorNotice({ retry }: { retry: () => void }) {
           Go to the home page
         </Link>
         <Link href="/book" className="btn-secondary">
-          Book a site visit
+          Book a free site visit
         </Link>
       </div>
     </div>

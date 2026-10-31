@@ -128,7 +128,7 @@ export default function PalettesPage() {
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-3 md:mt-8">
-                    <Link href={`/book?palette=${p.slug}`} className="btn-primary w-full sm:w-auto">Book an inspection with this palette</Link>
+                    <Link href={`/book?palette=${p.slug}`} className="btn-primary w-full sm:w-auto">Book a free site visit with this palette</Link>
                   </div>
                 </div>
                 {/* phones: the room preview comes first, so the palette is seen before it is read */}

@@ -50,7 +50,7 @@ describe("ServiceCarousel", () => {
     }
     await fireEvent.press(screen.getByRole("link", { name: `View ${services[1].name}` }));
     expect(router.push).toHaveBeenCalledWith({ pathname: servicePath(services[1]), params: {} });
-    expect(screen.queryByRole("button", { name: /^Book a site visit for/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Book a free site visit for/ })).toBeNull();
   });
 
   it("counts the card in view as the row is swiped", async () => {
@@ -68,9 +68,9 @@ describe("ServiceCarousel", () => {
 
   it("adds a booking pill per card where it is asked for", async () => {
     await render(<ServiceCarousel book />);
-    const pills = screen.getAllByRole("button", { name: /^Book a site visit for/ });
+    const pills = screen.getAllByRole("button", { name: /^Book a free site visit for/ });
     expect(pills).toHaveLength(services.length);
-    await fireEvent.press(screen.getByRole("button", { name: `Book a site visit for ${services[0].name.toLowerCase()}` }));
+    await fireEvent.press(screen.getByRole("button", { name: `Book a free site visit for ${services[0].name.toLowerCase()}` }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/book", params: { service: services[0].slug } });
   });
 });

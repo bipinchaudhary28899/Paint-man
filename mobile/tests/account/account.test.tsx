@@ -59,7 +59,7 @@ describe("the account screen", () => {
     await show();
     expect(await screen.findByRole("header", { name: "Your account" })).toBeOnTheScreen();
     expect(await screen.findByRole("header", { name: "No projects yet" })).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole("link", { name: "Book a free inspection" }));
+    await fireEvent.press(screen.getByRole("link", { name: "Book a free site visit" }));
     expect(router.push).toHaveBeenCalledWith("/book");
   });
 

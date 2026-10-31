@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Diagnose } from "@/components/home/Diagnose";
 import { PaintSaathiWay } from "@/components/home/PaintSaathiWay";
@@ -33,7 +32,7 @@ describe("Diagnose", () => {
 
   it("links to the booking page", () => {
     render(<Diagnose />);
-    expect(screen.getByRole("link", { name: "Book a free inspection" })).toHaveAttribute("href", "/book");
+    expect(screen.getByRole("link", { name: "Book a free site visit" })).toHaveAttribute("href", "/book");
   });
 
   it("shows the photo with its descriptive alt and keeps the wash out of the accessibility tree", () => {
@@ -45,20 +44,16 @@ describe("Diagnose", () => {
     expect(container.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0);
   });
 
-  it("lists the four checks in one labelled, keyboard-scrollable row", async () => {
-    render(<Diagnose />);
-    const row = screen.getByRole("region", { name: "What the inspection checks" });
-    expect(row).toHaveAttribute("tabindex", "0");
-    const items = within(within(row).getByRole("list")).getAllByRole("listitem");
-    expect(items.map((li) => li.textContent)).toEqual(["Moisture reading", "Crack mapping", "Old-paint adhesion", "Wall measurement"]);
-
-    // keyboard users reach the link, then the row (so arrow keys can scroll it on phones)
-    const user = userEvent.setup();
-    await user.tab();
-    expect(screen.getByRole("link", { name: "Book a free inspection" })).toHaveFocus();
-    await user.tab();
-    expect(row).toHaveFocus();
+  it("lists the four checks as a plain labelled list under the photo, never as chips or a sideways row", () => {
+    const { container } = render(<Diagnose />);
+    const list = screen.getByRole("list", { name: "What the inspection checks" });
+    expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Moisture reading", "Crack mapping", "Old-paint adhesion", "Wall measurement"]);
+    expect(list).toHaveClass("grid-cols-2", "tab:grid-cols-4");
+    expect(container.querySelector(".pill, .swipe")).toBeNull();
+    // the list follows the photo card, not over it
+    expect(list.previousElementSibling?.querySelector("img")).not.toBeNull();
   });
+
 });
 
 describe("PaintSaathiWay", () => {

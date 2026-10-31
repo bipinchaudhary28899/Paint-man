@@ -67,22 +67,23 @@ describe("lead schema: bookings", () => {
     expect(r.type === "booking" && r.locality).toBe("Sikandra");
   });
 
-  it("requires name, mobile and the full address, and nothing about the job", () => {
+  it("requires only who and where: name, mobile, the city and the area, and nothing about the address or the job", () => {
     const fields = errorFields({ type: "booking" });
     // we paint in more than one city, so the city is required too
-    expect(fields.sort()).toEqual(["address", "city", "locality", "name", "phone", "pincode"]);
-    // a single wall or a door books with just the contact details and the address
-    const minimal = { type: "booking", name: "Asha", phone: "9876543210", address: "12 Nehru Road", locality: "Raman Reti", pincode: "281121", city: "vrindavan" };
+    expect(fields.sort()).toEqual(["city", "locality", "name", "phone"]);
+    // the address and the job are added later in the customer's account
+    const minimal = { type: "booking", name: "Asha", phone: "9876543210", locality: "Raman Reti", city: "vrindavan" };
     const r = leadSchema.parse(minimal) as Record<string, unknown>;
     expect(r.city).toBe("vrindavan");
-    for (const k of ["service", "propertyType", "floors", "homeSize"]) expect(r[k], k).toBeUndefined();
+    for (const k of ["address", "pincode", "service", "propertyType", "floors", "homeSize"]) expect(r[k], k).toBeUndefined();
+    expect(leadSchema.parse({ ...minimal, address: "  ", pincode: "" })).toMatchObject({ address: undefined, pincode: undefined });
     const blanks = leadSchema.parse({ ...minimal, service: "", propertyType: "" }) as Record<string, unknown>;
     expect([blanks.service, blanks.propertyType]).toEqual([undefined, undefined]);
   });
 
-  it("checks the PIN code (six digits, spaces allowed) and the city", () => {
+  it("checks a PIN code and address when an older app build sends them (six digits, spaces allowed), and the city", () => {
     expect(leadSchema.parse({ ...booking, pincode: " 282 005 " })).toMatchObject({ pincode: "282005" });
-    for (const pincode of ["28200", "2820055", "082005", "28200a", ""]) expect(errorFields({ ...booking, pincode }), pincode).toEqual(["pincode"]);
+    for (const pincode of ["28200", "2820055", "082005", "28200a"]) expect(errorFields({ ...booking, pincode }), pincode).toEqual(["pincode"]);
     expect(errorFields({ ...booking, pincode: 282005 })).toEqual(["pincode"]);
     expect(errorFields({ ...booking, address: "12" })).toEqual(["address"]);
     expect(leadSchema.parse({ ...booking, city: "agra" })).toMatchObject({ city: "agra" });

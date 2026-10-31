@@ -39,7 +39,7 @@ describe("Hero", () => {
 
   it("offers both actions in each layout, one copy of each pair shown per breakpoint", () => {
     render(<Hero />);
-    const book = screen.getAllByRole("link", { name: "Book a site visit" });
+    const book = screen.getAllByRole("link", { name: "Book a free site visit" });
     const colours = screen.getAllByRole("link", { name: "Explore colours" });
     expect(book).toHaveLength(2);
     expect(colours).toHaveLength(2);

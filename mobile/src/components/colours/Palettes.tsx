@@ -121,7 +121,7 @@ export function PaletteCard({ palette: p, facts, loading = false }: { palette: P
             <P size={13} leading={1.625} style={styles.tip}>
               <Strong>Inspector&apos;s tip:</Strong> {p.tip}
             </P>
-            <Button label="Book an inspection with this palette" accessibilityLabel={`Book an inspection with the ${p.name} palette`} onPress={() => openHref(`/book?palette=${p.slug}`)} style={styles.mt20} />
+            <Button label="Book a free site visit with this palette" accessibilityLabel={`Book a free site visit with the ${p.name} palette`} onPress={() => openHref(`/book?palette=${p.slug}`)} style={styles.mt20} />
           </View>
         </Card>
       </Reveal>

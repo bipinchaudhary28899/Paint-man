@@ -33,10 +33,11 @@ import {
 import { site, type StageStep } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 import { Loading, useRequireSignIn } from "./Account";
+import { ProjectSteps } from "./ProjectSteps";
 
 // The project tracker (the website's /account/projects/[id]): where the project stands and what
 // happens next, the stages as a vertical stepper (done, now, to come, with the day each was reached),
-// the inspection, the quotations newest first (status, itemised lines, totals in rupees, notes,
+// the steps to complete (the address and the job, until the inspection), the inspection, the quotations newest first (status, itemised lines, totals in rupees, notes,
 // payment terms, valid until, Download PDF), the agreed price once a quotation is approved, every
 // update, and how to reach us. Signed out, it opens the login screen, which comes back here.
 
@@ -107,10 +108,10 @@ export function ProjectTracker({ id }: { id: string }) {
       </Container>
     );
   }
-  return <TrackerBody project={load.project} />;
+  return <TrackerBody project={load.project} onSaved={(project) => setLoad({ status: "ready", project })} />;
 }
 
-function TrackerBody({ project }: { project: ProjectDetail }) {
+function TrackerBody({ project, onSaved }: { project: ProjectDetail; onSaved: (project: ProjectDetail) => void }) {
   const { what, where } = projectTitle(project);
   const next = nextStep(project.stages);
   const approved = project.quotations.find((q) => q.status === "approved");
@@ -160,6 +161,8 @@ function TrackerBody({ project }: { project: ProjectDetail }) {
           </View>
         )}
       </Card>
+
+      {project.detailsEditable && <ProjectSteps project={project} onSaved={onSaved} />}
 
       <H size={28} leading={1.2} style={styles.section}>
         Every step

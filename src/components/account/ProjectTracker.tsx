@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { site } from "@/config/site";
+import { whatsappHref } from "@/config/contact";
 import { formatDate, formatDateTime, NEXT_STEPS, QUOTATION_STATUS_LABELS, quotationFilename } from "@/lib/account";
 import { formatPaise } from "@/lib/money";
 import type { Inspection, ProjectDetail, Quotation, TimelineEvent } from "@/lib/projects/repo";
 import { formatVisit, type StageStep } from "@/lib/projects/stages";
+import { ProjectSteps } from "./ProjectSteps";
 
 // The project tracker (/account/projects/[id]): where the project stands and what happens next, the
 // stage stepper, the inspection, the quotations (itemised, with the PDF), the final price once
@@ -28,7 +30,7 @@ export function ProjectStatus({ project }: { project: ProjectDetail }) {
         </p>
         {project.stage === "cancelled" && (
           <Link href="/book" className="btn-primary mt-4">
-            Book a new inspection
+            Book a new site visit
           </Link>
         )}
       </section>
@@ -315,7 +317,7 @@ export function ProjectHelp() {
           </a>
         )}
         {site.whatsapp && (
-          <a href={`https://wa.me/${site.whatsapp}`} rel="noopener" className="btn-secondary">
+          <a href={whatsappHref(`Hi ${site.name}, I have a question about my painting project.`)} rel="noopener" className="btn-secondary">
             Chat on WhatsApp
           </a>
         )}
@@ -327,11 +329,26 @@ export function ProjectHelp() {
   );
 }
 
-/** The whole tracker below the page heading. */
+/** The address and job fields the customer can add (ProjectSteps), from the project. */
+const detailsOf = (p: ProjectDetail) => ({
+  address: p.address,
+  locality: p.locality,
+  pincode: p.pincode,
+  service: p.service,
+  propertyType: p.propertyType,
+  floors: p.floors,
+  homeSize: p.homeSize,
+  carpetArea: p.carpetArea,
+  preferredDate: p.preferredDate,
+  notes: p.notes,
+});
+
+/** The whole tracker below the page heading: the steps to complete come first while there are any to do. */
 export function ProjectTracker({ project }: { project: ProjectDetail }) {
   return (
     <div className="mt-6 space-y-6 tab:mt-8">
       <ProjectStatus project={project} />
+      {project.detailsEditable && <ProjectSteps projectId={project.id} details={detailsOf(project)} />}
       <div className="grid gap-6 desk:grid-cols-[360px_minmax(0,1fr)] desk:items-start desk:gap-8">
         <div className="space-y-6">
           <StageStepper steps={project.stages} />

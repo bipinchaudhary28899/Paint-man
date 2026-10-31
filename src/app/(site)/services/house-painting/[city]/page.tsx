@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Params) {
 
 const steps = (city: City) => [
   {
-    title: "Book a site visit",
+    title: "Book a free site visit",
     text: `Fill in the form with your number and locality. We call you back during working hours (${site.hoursDisplay}) to confirm the visit.`,
   },
   {
@@ -80,13 +80,13 @@ export default async function CityPage({ params }: Params) {
                 </a>
               ))}
             </nav>
-            <a href="#book-visit" className="btn-primary btn-lg mt-8">Book a site visit</a>
+            <a href="#book-visit" className="btn-primary btn-lg mt-8">Book a free site visit</a>
           </div>
         </div>
       </section>
 
       <BookingSection
-        heading={<>Book a site visit in <em>{city.name}</em></>}
+        heading={<>Book a free site visit in <em>{city.name}</em></>}
         text={
           <p>
             Share a few details and we call you back during working hours ({site.hoursDisplay}) to fix the visit. The inspector
@@ -212,7 +212,7 @@ export default async function CityPage({ params }: Params) {
         </ul>
       </section>
 
-      <CtaBanner heading={<>Painting a home in {city.name}? <em>Book the visit.</em></>} />
+      <CtaBanner href="#book-visit" heading={<>Painting a home in {city.name}? <em>Book the visit.</em></>} />
     </>
   );
 }
