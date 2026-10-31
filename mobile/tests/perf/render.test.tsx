@@ -1,11 +1,15 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
+import { useEffect } from "react";
+import type { SharedValue } from "react-native-reanimated";
 import type { TestInstance } from "test-renderer";
 
 import { ColourFinder } from "~/components/colours/ColourFinder";
 import { FamilyShades } from "~/components/colours/ShadeCards";
 import { AHEAD_PX, estimatedRowHeight, FIRST_ROWS, MORE_ROWS, nextRows, ShadeSwatches } from "~/components/colours/ShadeSwatches";
 import { ServiceCarousel } from "~/components/services/ServiceCarousel";
+import { NavStateProvider } from "~/components/site/nav-state";
+import { Page, usePage } from "~/components/site/Page";
 import { clearColourCache, FALLBACK_CREDIT, type PaintShade, type ShadeFamily, type Swatch } from "~/lib/colours";
 import { services } from "~/shared";
 
@@ -21,12 +25,35 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(() => ({})),
   useIsFocused: jest.fn(() => true),
 }));
-// where the grid is on screen, measured on the UI thread each frame (Jest has no layout of its own)
-const mockMeasure = jest.fn();
-jest.mock("react-native-reanimated", () => {
-  const actual = jest.requireActual("react-native-reanimated");
-  return { __esModule: true, ...actual, default: actual.default, measure: (...args: unknown[]) => mockMeasure(...args) };
-});
+// The grid draws more rows from the page's scroll and where it sits in the page; Jest has no layout,
+// so a test puts it on a page, says where it is (measureLayout, the preset's shared mock) and scrolls.
+const measureLayout: jest.Mock = jest.requireActual("@react-native/jest-preset/jest/MockNativeMethods").default.measureLayout;
+let page: { scrollY: SharedValue<number>; headerHeight: number } | undefined;
+/** Hands the page's API to the test once rendered. */
+function Probe({ onPage }: { onPage: (api: ReturnType<typeof usePage>) => void }) {
+  const api = usePage();
+  useEffect(() => {
+    onPage(api);
+  });
+  return null;
+}
+const inPage = (ui: React.ReactElement) =>
+  render(
+    <NavStateProvider>
+      <Page footer={false}>
+        {ui}
+        <Probe onPage={(api) => (page = api)} />
+      </Page>
+    </NavStateProvider>,
+  );
+/** Scrolls the page so the grid's top is `top` points down the screen (negative: scrolled past it), laid out `height` tall. */
+async function place(top: number, height: number) {
+  measureLayout.mockImplementation((_page, onSuccess: (x: number, y: number) => void) => onSuccess(0, 0));
+  await act(() => {
+    page!.scrollY.value = page!.headerHeight - top;
+  });
+  await fireEvent(screen.getByTestId("swatch-grid"), "layout", { nativeEvent: { layout: { x: 0, y: 0, width: 393, height } } });
+}
 
 const SCREEN = 1334; // React Native's Jest window height
 const swatch = (n: number): Swatch => ({ id: `asian-paints:${n}`, brand: "asian-paints", code: String(n), query: String(n), name: `White ${n}`, hex: "#f4f1ea", lrv: 90 - (n % 60) });
@@ -60,8 +87,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   screenReader = false;
   jest.spyOn(AccessibilityInfo, "isScreenReaderEnabled").mockImplementation(async () => screenReader);
-  // far below the screen: nothing near
-  mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 2000, pageX: 0, pageY: 5000 });
+  // not laid out yet: nothing near
+  measureLayout.mockImplementation(() => undefined);
 });
 
 describe("a shade-card family page with 524 shades", () => {
@@ -78,14 +105,15 @@ describe("a shade-card family page with 524 shades", () => {
   });
 
   it("draws more rows as the drawn ones near the screen's bottom, and stops once they reach past it", async () => {
-    // the visitor has scrolled the grid's top 2000pt above the screen; each drawn row is ~100pt tall
-    let rows = FIRST_ROWS;
-    mockMeasure.mockImplementation(() => {
-      rows = screen.queryAllByTestId("swatch").length / 3;
-      return { x: 0, y: 0, width: 393, height: rows * 100, pageX: 0, pageY: -2000 };
-    });
-    await render(<ShadeSwatches shades={family(524).shades} label="Asian Paints white shades" />);
-    await frames(40);
+    // the visitor has scrolled the grid's top 2000pt above the screen; each drawn row is ~100pt tall,
+    // and the grid is laid out again each time it grows
+    await inPage(<ShadeSwatches shades={family(524).shades} label="Asian Paints white shades" />);
+    let rows = 0;
+    for (let i = 0; i < 60 && rows !== drawn() / 3; i++) {
+      rows = drawn() / 3;
+      await place(-2000, rows * 100);
+      await frames(2);
+    }
     // rows are added MORE_ROWS at a time until the drawn grid ends AHEAD_PX below the screen
     let expected = FIRST_ROWS;
     while (-2000 + expected * 100 - SCREEN < AHEAD_PX) expected = nextRows(expected, 524);
@@ -93,14 +121,19 @@ describe("a shade-card family page with 524 shades", () => {
     expect(rows).toBe(expected);
     expect(drawn()).toBeLessThan(524);
     expect((expected - FIRST_ROWS) % MORE_ROWS).toBe(0);
-    // the watcher has nothing more to ask for: the frames after it leave the grid as it is
-    mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 2000, pageX: 0, pageY: 5000 });
+    // scrolling about without the grid growing asks for nothing more
+    await place(-2100, rows * 100);
+    await frames(5);
+    expect(drawn()).toBe(expected * 3);
   });
 
   it("draws every row when it is near the end of the card, and then stops watching", async () => {
-    mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 500, pageX: 0, pageY: 0 });
-    await render(<ShadeSwatches shades={family(524).shades} label="Asian Paints white shades" />);
-    await frames(60);
+    // a short grid at the top of the screen: each time it grows it is still near its end
+    await inPage(<ShadeSwatches shades={family(524).shades} label="Asian Paints white shades" />);
+    for (let i = 0; i < 60 && drawn() < 524; i++) {
+      await place(0, 400 + i);
+      await frames(2);
+    }
     expect(drawn()).toBe(524);
     expect(screen.queryByTestId("swatches-to-come")).toBeNull();
   });
@@ -113,12 +146,14 @@ describe("a shade-card family page with 524 shades", () => {
   });
 
   it("never redraws the swatches already drawn when more rows come", async () => {
-    mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 500, pageX: 0, pageY: 0 });
-    await render(<ShadeSwatches shades={family(90).shades} label="Asian Paints white shades" />);
+    await inPage(<ShadeSwatches shades={family(90).shades} label="Asian Paints white shades" />);
     const key = (el: TestInstance) => el.props.accessibilityLabel as string;
     const first = screen.getAllByTestId("swatch");
     const before = snapshot(first, key);
-    await frames(40);
+    for (let i = 0; i < 20 && drawn() < 90; i++) {
+      await place(0, 400 + i);
+      await frames(2);
+    }
     expect(drawn()).toBe(90);
     expect(rerendered(before, screen.getAllByTestId("swatch").slice(0, first.length), key)).toEqual([]);
   });

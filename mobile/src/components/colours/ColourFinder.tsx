@@ -1,5 +1,4 @@
 import { BlurView } from "expo-blur";
-import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import Animated from "react-native-reanimated";
@@ -24,7 +23,7 @@ import {
 } from "~/lib/colours";
 import { openHref } from "~/lib/links";
 import { shadeDisplayName, site } from "~/shared";
-import { colors, fonts, gutter, HEADER_HEIGHT, radii } from "~/theme";
+import { colors, fonts, gutter, radii } from "~/theme";
 import { ChoicePill } from "./Pills";
 import { PreviewSheet } from "./PreviewSheet";
 import { BrandTile, swatchHeight, TILE_GAP } from "./ShadeTiles";
@@ -101,8 +100,7 @@ export function ColourFinder({ initialQuery = "", initialBrand, initialFamily, i
   const [selected, setSelected] = useState<PaintShade | null>(null);
   const [expanded, setExpanded] = useState(false);
   const showBrandGrid = !brand && !q.trim();
-  const { width, height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const brandRow = useRef<ComponentRef<typeof ScrollView>>(null);
 
   // A brand is a filter: the pills switch it in place and the search stays. All brands drops the family.
@@ -172,17 +170,12 @@ export function ColourFinder({ initialQuery = "", initialBrand, initialFamily, i
   const active = selected && items.some((s) => s.id === selected.id) ? selected : null;
   const view = active ? brandView(active) : null;
 
-  const focused = useIsFocused();
-  const { container, item, pinnedStyle } = useStickyScroll({
+  const { container, onContainerLayout, onItemLayout, pinnedStyle } = useStickyScroll({
     pinned: true,
-    focused,
-    stickTop: insets.top + HEADER_HEIGHT,
-    screenHeight: height,
     gapBelow: BAR_GAP,
     watchEnd: !showBrandGrid && page < autoLoadPages && page < pages && state === "idle",
     nearEndPx: 800,
     onNearEnd: () => void loadMore(),
-    listKey: items.length,
   });
 
   const tile = tileWidth(width);
@@ -190,9 +183,9 @@ export function ColourFinder({ initialQuery = "", initialBrand, initialFamily, i
   const searchLabel = brandInfo ? `Search ${brandInfo.name} by code, name or hex` : "Search all brands by code, name or hex";
 
   return (
-    <Animated.View ref={container} collapsable={false}>
+    <Animated.View ref={container} onLayout={onContainerLayout} collapsable={false} testID="finder">
       {/* the bar: brands and search, pinned under the header while the finder is on screen */}
-      <Animated.View ref={item} collapsable={false} style={[styles.bar, pinnedStyle]} testID="finder-bar">
+      <Animated.View onLayout={onItemLayout} style={[styles.bar, pinnedStyle]} testID="finder-bar">
         <BlurView intensity={24} tint="light" style={StyleSheet.absoluteFill} />
         <View style={[StyleSheet.absoluteFill, styles.barWash]} />
         <ScrollView

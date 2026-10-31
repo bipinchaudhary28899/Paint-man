@@ -1,14 +1,21 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { View } from "react-native";
-import { measure, useAnimatedRef, useAnimatedStyle, useFrameCallback, useSharedValue } from "react-native-reanimated";
+import type { LayoutChangeEvent } from "react-native";
+import { useAnimatedReaction, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// The finder's two scroll effects, without access to the page's scroll view: on each frame (on the UI
-// thread) it measures where the finder is on screen, then
+import { screenTop } from "~/components/home/motion";
+import { useContentY } from "~/components/home/useContentY";
+import { usePage } from "~/components/site/Page";
+
+// The finder's two scroll effects, driven by the page's own scroll position (usePage().scrollY, set
+// on the UI thread as the page scrolls) and where the finder sits in the page content:
 // - pins the finder's bar (brands and search) under the header, as a CSS `position: sticky` would: the
 //   bar moves down with the page until the finder's end pushes it back up;
 // - asks for more shades when the end of the list comes within `nearEndPx` of the screen's bottom,
 //   as the website's IntersectionObserver (rootMargin 800px) does.
+// It used to measure the finder on screen every frame; on Android that measurement trails the scroll
+// by a frame, so the pinned bar shook as the page scrolled. Computed from the scroll position, the
+// bar moves in the same frame as the page (the home reveal works the same way).
 
 /** How far to move the pinned item down: enough to keep it at `stickTop`, never past its container's end (less `gapBelow`). */
 export function stickyOffset(containerTop: number, containerHeight: number, itemHeight: number, stickTop: number, gapBelow: number): number {
@@ -24,44 +31,37 @@ export function nearEnd(containerTop: number, containerHeight: number, screenHei
 }
 
 type Options = {
-  /** whether the item to pin is rendered (it is measured only then) */
+  /** whether the item to pin is rendered */
   pinned: boolean;
-  /** whether the screen is in front: a screen under another one stops watching */
-  focused: boolean;
-  /** the header's bottom edge on screen */
-  stickTop: number;
-  screenHeight: number;
   /** the space kept under the pinned item at the container's end (its bottom margin) */
   gapBelow: number;
   /** whether to watch for the list's end (more pages to load automatically) */
   watchEnd: boolean;
   nearEndPx: number;
   onNearEnd: () => void;
-  /** changes when the list grows, so a list still short of the screen asks again */
-  listKey: number;
 };
 
-export function useStickyScroll({ pinned, focused, stickTop, screenHeight, gapBelow, watchEnd, nearEndPx, onNearEnd, listKey }: Options) {
-  const container = useAnimatedRef<View>();
-  const item = useAnimatedRef<View>();
-  const offset = useSharedValue(0);
-  const near = useSharedValue(false);
+export function useStickyScroll({ pinned, gapBelow, watchEnd, nearEndPx, onNearEnd }: Options) {
+  const { scrollY, viewport, headerHeight, contentRef, watchLayout } = usePage();
+  const { ref: container, onLayout: onContainerLayout, y, height } = useContentY();
+  const itemHeight = useSharedValue(0);
   const watching = useSharedValue(watchEnd);
   const pinning = useSharedValue(pinned);
-  const top = useSharedValue(stickTop);
-  const screen = useSharedValue(screenHeight);
 
   useEffect(() => {
     watching.value = watchEnd;
     pinning.value = pinned;
-    top.value = stickTop;
-    screen.value = screenHeight;
-  }, [watchEnd, pinned, stickTop, screenHeight, watching, pinning, top, screen]);
+  }, [watchEnd, pinned, watching, pinning]);
 
-  // a grown list may still end on screen: let the next frame ask again
-  useEffect(() => {
-    near.value = false;
-  }, [listKey, near]);
+  // content above the finder that changes height moves it without a layout event of its own
+  useEffect(
+    () =>
+      watchLayout(() => {
+        const page = contentRef.current;
+        if (page) container.current?.measureLayout(page, (_x: number, top: number) => y.set(top), () => undefined);
+      }),
+    [watchLayout, contentRef, container, y],
+  );
 
   const latest = useRef(onNearEnd);
   useEffect(() => {
@@ -69,23 +69,27 @@ export function useStickyScroll({ pinned, focused, stickTop, screenHeight, gapBe
   }, [onNearEnd]);
   const callNearEnd = useCallback(() => latest.current(), []);
 
-  const frame = useCallback(() => {
-    "worklet";
-    const box = measure(container);
-    if (!box) return;
-    const pin = pinning.value ? measure(item) : null;
-    offset.set(pin ? stickyOffset(box.pageY, box.height, pin.height, top.value, gapBelow) : 0);
-    const isNear = watching.value && nearEnd(box.pageY, box.height, screen.value, nearEndPx);
-    if (isNear && !near.value) scheduleOnRN(callNearEnd);
-    near.set(isNear);
-  }, [container, item, offset, top, gapBelow, watching, pinning, screen, nearEndPx, near, callNearEnd]);
-  // runs only while there is something to pin or a list end to watch, on the screen in front
-  const callback = useFrameCallback(frame, false);
-  const run = focused && (pinned || watchEnd);
-  useEffect(() => {
-    callback.setActive(run);
-  }, [callback, run]);
+  // Runs again whenever a value it reads changes: the scroll, the finder's place and its height. It
+  // asks when the end comes near, and again when the list has grown (a new height) and still ends
+  // near: a list shorter than the screen fills it. Scrolling about near the end asks once.
+  useAnimatedReaction(
+    () => {
+      if (!watching.value || y.value < 0) return -1;
+      return nearEnd(screenTop(y.value, scrollY.value, headerHeight), height.value, viewport, nearEndPx) ? height.value : -1;
+    },
+    (nearAt, before) => {
+      if (nearAt >= 0 && nearAt !== before) scheduleOnRN(callNearEnd);
+    },
+    [headerHeight, viewport, nearEndPx, callNearEnd],
+  );
 
-  const pinnedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }));
-  return { container, item, pinnedStyle };
+  const pinnedStyle = useAnimatedStyle(() => {
+    if (!pinning.value || y.value < 0) return { transform: [{ translateY: 0 }] };
+    const top = screenTop(y.value, scrollY.value, headerHeight);
+    return { transform: [{ translateY: stickyOffset(top, height.value, itemHeight.value, headerHeight, gapBelow) }] };
+  });
+
+  const onItemLayout = useCallback((e: LayoutChangeEvent) => itemHeight.set(e.nativeEvent.layout.height), [itemHeight]);
+
+  return { container, onContainerLayout, onItemLayout, pinnedStyle };
 }

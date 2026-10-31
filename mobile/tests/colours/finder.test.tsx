@@ -1,11 +1,15 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { Dimensions, Linking } from "react-native";
+import { useEffect } from "react";
+import { getAnimatedStyle, type SharedValue } from "react-native-reanimated";
 
 import { brandView, ColourFinder, ColourFinderFromParams, COLUMNS, tileWidth } from "~/components/colours/ColourFinder";
 import { closesSheet, isDownward, PreviewSheet } from "~/components/colours/PreviewSheet";
 import { swatchHeight, TILE_GAP } from "~/components/colours/ShadeTiles";
 import type { Load } from "~/components/colours/useLoad";
+import { NavStateProvider } from "~/components/site/nav-state";
+import { Page, usePage } from "~/components/site/Page";
 import { ApiError } from "~/lib/api";
 import { clearColourCache, FALLBACK_CREDIT, type BrandList, type PaintShade } from "~/lib/colours";
 import { site } from "~/shared";
@@ -19,13 +23,19 @@ jest.mock("expo-router", () => ({
   useIsFocused: jest.fn(() => true),
 }));
 
-// The finder measures itself on each frame (the pinned bar, the list's end); Jest has no layout,
-// so each test says where the finder is on screen.
-const mockMeasure = jest.fn();
-jest.mock("react-native-reanimated", () => {
-  const actual = jest.requireActual("react-native-reanimated");
-  return { __esModule: true, ...actual, default: actual.default, measure: (...args: unknown[]) => mockMeasure(...args) };
-});
+// The finder pins its bar and loads more from the page's scroll and where it sits in the page; Jest
+// has no layout, so a test puts it on a page, says where it is (measureLayout, the preset's shared
+// mock) and scrolls the page (its scrollY).
+const measureLayout: jest.Mock = jest.requireActual("@react-native/jest-preset/jest/MockNativeMethods").default.measureLayout;
+let page: { scrollY: SharedValue<number>; headerHeight: number } | undefined;
+/** Hands the page's API to the test once rendered. */
+function Probe({ onPage }: { onPage: (api: ReturnType<typeof usePage>) => void }) {
+  const api = usePage();
+  useEffect(() => {
+    onPage(api);
+  });
+  return null;
+}
 
 const make = (n: number, over: Partial<PaintShade> = {}): PaintShade => ({
   id: `asian-paints:${1000 + n}`,
@@ -49,8 +59,8 @@ const brands = [
 ];
 const families = ["white", "green", "plaid"];
 
-type Page = { data: PaintShade[]; total?: number; page?: number; pages?: number };
-const reply = ({ data, total = data.length, page = 1, pages = 1 }: Page) =>
+type ShadePage = { data: PaintShade[]; total?: number; page?: number; pages?: number };
+const reply = ({ data, total = data.length, page = 1, pages = 1 }: ShadePage) =>
   ({ ok: true, status: 200, json: async () => ({ apiVersion: "v1", kind: "paint-colour", label: "x", data, meta: { total, page, pages } }) }) as Response;
 const fetchMock = jest.fn();
 const asked = () => fetchMock.mock.calls.map((c) => new URL(c[0] as string).searchParams);
@@ -58,6 +68,27 @@ const lastAsk = () => asked().at(-1)!;
 
 const finder = (props: Partial<Parameters<typeof ColourFinder>[0]> = {}) =>
   render(<ColourFinder brands={brands} brandFamilies={families} brandTotal={8539} credit={FALLBACK_CREDIT} {...props} />);
+
+/** The finder on a page, where it pins its bar and loads more as the page scrolls. */
+const finderInPage = (props: Partial<Parameters<typeof ColourFinder>[0]> = {}) =>
+  render(
+    <NavStateProvider>
+      <Page footer={false}>
+        <ColourFinder brands={brands} brandFamilies={families} brandTotal={8539} credit={FALLBACK_CREDIT} {...props} />
+        <Probe onPage={(api) => (page = api)} />
+      </Page>
+    </NavStateProvider>,
+  );
+
+/** Scrolls the page so the finder's top is `top` points down the screen (negative: scrolled past it), laid out `height` tall. */
+async function place(top: number, height: number) {
+  measureLayout.mockImplementation((_page, onSuccess: (x: number, y: number) => void) => onSuccess(0, 0));
+  await act(() => {
+    page!.scrollY.value = page!.headerHeight - top;
+  });
+  await fireEvent(screen.getByTestId("finder"), "layout", { nativeEvent: { layout: { x: 0, y: 0, width: 393, height } } });
+}
+const barShift = () => (getAnimatedStyle as unknown as (el: unknown) => { transform: { translateY: number }[] })(screen.getByTestId("finder-bar")).transform[0].translateY;
 
 /** Lets the debounce, the request and a frame or two run. */
 const settle = (ms = 300) => act(() => new Promise((r) => setTimeout(r, ms)));
@@ -67,8 +98,8 @@ beforeEach(() => {
   clearColourCache();
   fetchMock.mockReset();
   globalThis.fetch = fetchMock;
-  // far down the page: nothing near the end, nothing to pin
-  mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 4000, pageX: 0, pageY: 2000 });
+  // not laid out yet: nothing near the end, nothing to pin
+  measureLayout.mockImplementation(() => undefined);
   jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 });
 
@@ -120,14 +151,22 @@ describe("all brands, no search", () => {
     expect(Linking.openURL).toHaveBeenCalledWith(FALLBACK_CREDIT.licenseUrl);
   });
 
-  it("keeps the brands and the search in a bar pinned under the header", async () => {
-    // scrolled 300pt past the header: the bar moves down with the page to stay under it
-    mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 4000, pageX: 0, pageY: -227 });
-    await finder();
+  it("keeps the brands and the search in a bar pinned under the header, moved with the page's own scroll", async () => {
+    await finderInPage();
     await settle(50);
     const bar = screen.getByTestId("finder-bar");
     expect(within(bar).getByRole("button", { name: "All brands" })).toBeOnTheScreen();
     expect(within(bar).getByLabelText("Search all brands by code, name or hex")).toBeOnTheScreen();
+    await fireEvent(bar, "layout", { nativeEvent: { layout: { x: 0, y: 0, width: 393, height: 120 } } });
+    // below the header: the bar stays in place
+    await place(500, 4000);
+    expect(barShift()).toBe(0);
+    // scrolled 300pt past the header: the bar moves down with the page to stay under it
+    await place(page!.headerHeight - 300, 4000);
+    expect(barShift()).toBe(300);
+    // at the finder's end it goes up with it, keeping its 12pt gap
+    await place(-5000, 4000);
+    expect(barShift()).toBe(4000 - 120 - 12);
   });
 });
 
@@ -289,11 +328,11 @@ describe("inside a brand", () => {
 
   it("loads the next page by itself when the list's end comes near", async () => {
     fetchMock.mockResolvedValueOnce(reply({ data: [pepper], total: 2, pages: 2 }));
-    await finder({ initialBrand: "asian-paints" });
+    await finderInPage({ initialBrand: "asian-paints" });
     await settle(50);
     fetchMock.mockResolvedValueOnce(reply({ data: [make(5)], total: 2, page: 2, pages: 2 }));
     // the finder's end is now on screen
-    mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 1000, pageX: 0, pageY: -300 });
+    await place(-300, 1000);
     await settle(100);
     expect(lastAsk().get("page")).toBe("2");
     expect(screen.getByRole("button", { name: "Shade 5 1005" })).toBeOnTheScreen();
@@ -301,8 +340,9 @@ describe("inside a brand", () => {
 
   it("does not load by itself past the automatic pages", async () => {
     fetchMock.mockResolvedValueOnce(reply({ data: [pepper], total: 2, pages: 2 }));
-    mockMeasure.mockReturnValue({ x: 0, y: 0, width: 393, height: 1000, pageX: 0, pageY: -300 });
-    await finder({ initialBrand: "asian-paints", autoLoadPages: 1 });
+    await finderInPage({ initialBrand: "asian-paints", autoLoadPages: 1 });
+    await settle(50);
+    await place(-300, 1000);
     await settle(100);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -460,10 +500,14 @@ describe("helpers", () => {
   });
 
   it("waits for layout before pinning anything", async () => {
-    mockMeasure.mockReturnValue(null);
     fetchMock.mockResolvedValue(reply({ data: [pepper] }));
-    await finder({ initialBrand: "asian-paints" });
+    await finderInPage({ initialBrand: "asian-paints" });
     await settle(80);
     await waitFor(() => expect(screen.getByTestId("finder-bar")).toBeOnTheScreen());
+    // the page has scrolled, but the finder has not been laid out: nothing moves
+    await act(() => {
+      page!.scrollY.value = 5000;
+    });
+    expect(barShift()).toBe(0);
   });
 });

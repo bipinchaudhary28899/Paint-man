@@ -1,4 +1,3 @@
-import { useIsFocused } from "expo-router";
 import { memo, useCallback, useEffect, useState } from "react";
 import { AccessibilityInfo, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -69,7 +68,7 @@ function useScreenReader(): boolean {
 }
 
 export function ShadeSwatches({ shades, label }: { shades: Swatch[]; label: string }) {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const tile = (width - gutter * 2 - GAP * 2) / COLUMNS;
   const totalRows = Math.ceil(shades.length / COLUMNS);
   const [rows, setRows] = useState(Math.min(FIRST_ROWS, totalRows));
@@ -84,23 +83,18 @@ export function ShadeSwatches({ shades, label }: { shades: Swatch[]; label: stri
     return () => cancelAnimationFrame(id);
   }, [screenReader, done, rows, more]);
 
-  const focused = useIsFocused();
-  const { container } = useStickyScroll({
+  const { container, onContainerLayout } = useStickyScroll({
     pinned: false,
-    focused,
-    stickTop: 0,
-    screenHeight: height,
     gapBelow: 0,
     watchEnd: !done,
     nearEndPx: AHEAD_PX,
     onNearEnd: more,
-    listKey: rows,
   });
 
   const left = totalRows - rows;
   return (
     <View accessibilityLabel={label}>
-      <Animated.View ref={container} collapsable={false} style={styles.grid}>
+      <Animated.View ref={container} onLayout={onContainerLayout} collapsable={false} style={styles.grid} testID="swatch-grid">
         {shades.slice(0, rows * COLUMNS).map((s) => (
           <SwatchTile key={s.id} s={s} width={tile} />
         ))}
