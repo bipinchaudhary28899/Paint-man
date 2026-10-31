@@ -14,7 +14,10 @@
     "backgroundColor": "#f8f5ef",
     "ios": {
       "bundleIdentifier": "in.paintsaathi.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "associatedDomains": [
+        "applinks:paintsaathi.in"
+      ]
     },
     "android": {
       "package": "in.paintsaathi.app",
@@ -22,7 +25,109 @@
         "backgroundColor": "#f8f5ef",
         "foregroundImage": "../public/brand/05-app-icon/app-icon-light-1024.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/about"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/book"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/colours"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/contact"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/faq"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/gallery"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/login"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/palettes"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/privacy-policy"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/terms"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/thank-you"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/account"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "pathPrefix": "/account/projects/"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/services"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "pathPrefix": "/services/"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "path": "/shade-cards"
+            },
+            {
+              "scheme": "https",
+              "host": "paintsaathi.in",
+              "pathPrefix": "/shade-cards/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
