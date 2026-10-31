@@ -7,7 +7,10 @@
     "icon": "../public/brand/05-app-icon/app-icon-light-1024.png",
     "scheme": "paintsaathi",
     "userInterfaceStyle": "light",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "backgroundColor": "#f8f5ef",
     "ios": {
       "bundleIdentifier": "in.paintsaathi.app",
@@ -27,9 +30,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#f8f5ef",
-          "image": "../public/brand/04-icon/paintsaathi-icon-color-512.png",
-          "imageWidth": 96
+          "backgroundColor": "#f8f5ef"
         }
       ]
     ],

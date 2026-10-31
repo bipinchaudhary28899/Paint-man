@@ -1,17 +1,24 @@
 import { DMSerifDisplay_400Regular, DMSerifDisplay_400Regular_Italic } from "@expo-google-fonts/dm-serif-display";
-import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold } from "@expo-google-fonts/manrope";
+import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { useFonts } from "expo-font";
-import { Tabs } from "expo-router/tabs";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { View } from "react-native";
 
-import { TabBar } from "~/components/TabBar";
+import { BottomNav } from "~/components/site/BottomNav";
+import { LaunchAnimation } from "~/components/site/LaunchAnimation";
+import { NavStateProvider } from "~/components/site/nav-state";
 import { colors } from "~/theme";
 
 SplashScreen.preventAutoHideAsync();
 
-// Four tabs, as the website's phone nav: Home, Services (with cities), Colours and Estimate (booking).
+// A screen that throws shows the website's error notice (src/app/(site)/error.tsx) inside the page.
+export { ScreenError as ErrorBoundary } from "~/components/content/NotFound";
+
+// The app is the website on a phone: one stack of pages at the website's own paths (src/app mirrors
+// src/app/(site)), each with the sticky header and the footer, and the phone nav fixed over them.
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     DMSerifDisplay_400Regular,
@@ -20,7 +27,12 @@ export default function RootLayout() {
     Manrope_500Medium,
     Manrope_600SemiBold,
     Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
+
+  // the opening animation plays over the app as the (plain cream) native splash hides
+  const [launching, setLaunching] = useState(true);
+  const launched = useCallback(() => setLaunching(false), []);
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync();
@@ -29,14 +41,13 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <>
-      <StatusBar style="dark" />
-      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.canvas } }}>
-        <Tabs.Screen name="index" options={{ title: "Home" }} />
-        <Tabs.Screen name="services" options={{ title: "Services" }} />
-        <Tabs.Screen name="colours" options={{ title: "Colours" }} />
-        <Tabs.Screen name="book" options={{ title: "Estimate" }} />
-      </Tabs>
-    </>
+    <NavStateProvider>
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
+        <BottomNav />
+        {launching && <LaunchAnimation onDone={launched} />}
+      </View>
+    </NavStateProvider>
   );
 }

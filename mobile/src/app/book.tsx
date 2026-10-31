@@ -1,90 +1,53 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
-import { BookingForm } from "~/components/BookingForm";
-import { Button } from "~/components/Button";
-import { Card } from "~/components/Card";
-import { ContactActions } from "~/components/ContactActions";
-import { StepList } from "~/components/Lists";
-import { Art } from "~/components/Media";
-import { Screen, Section } from "~/components/Screen";
-import { Accent, Body, Heading } from "~/components/Text";
-import { bookingPrefill } from "~/lib/prefill";
-import { webUrl } from "~/lib/config";
-import { bookingSteps, illustrations, site } from "~/shared";
+import { BookForm, BookingFaq, BookingSteps, NextSteps, PreferToTalk } from "~/components/content/Book";
+import { Blob } from "~/components/content/Decor";
+import { GradientText } from "~/components/content/Inline";
+import { Container, Page } from "~/components/site/Page";
+import { Breadcrumbs, Promises } from "~/components/site/Sections";
+import { H, P } from "~/components/ui/Text";
+import { site } from "~/shared";
+import { colors } from "~/theme";
 
-type Params = { service?: string; city?: string; message?: string };
+export { ScreenError as ErrorBoundary } from "~/components/content/NotFound";
 
-export default function Book() {
-  const params = useLocalSearchParams<Params>();
-  const prefill = bookingPrefill(params);
-  const prefillKey = JSON.stringify(prefill);
-  // The confirmation belongs to the booking it followed: arriving with a new service, city or shade shows the form again.
-  const [done, setDone] = useState<{ sent: boolean; prefillKey: string }>();
-  const [round, setRound] = useState(0);
-
-  if (done && done.prefillKey === prefillKey) {
-    return (
-      <Screen testID="book-done">
-        <Art art={illustrations.paintCan} style={styles.can} />
-        {done.sent ? (
-          <>
-            <Heading level={1}>
-              Your inspection request is <Accent>in</Accent>
-            </Heading>
-            <Body style={styles.block}>Shukriya! Our team will call you shortly to confirm a time for the site visit. Hours: {site.hoursDisplay}.</Body>
-          </>
-        ) : (
-          <>
-            <Heading level={1}>
-              Almost <Accent>there</Accent>
-            </Heading>
-            <Body style={styles.block}>
-              Your details are complete, but this test version of the app does not send bookings yet, so nothing has been sent. Please book on our website for now.
-            </Body>
-            <Button label="Book on paintsaathi.in" onPress={() => void Linking.openURL(webUrl("/book"))} style={styles.block} />
-          </>
-        )}
-        <Button
-          label="Start a new booking"
-          variant="secondary"
-          onPress={() => {
-            setDone(undefined);
-            setRound((r) => r + 1);
-          }}
-          style={styles.block}
-        />
-      </Screen>
-    );
-  }
-
+// The website's /book (src/app/(site)/book/page.tsx) at phone width: the sand blob behind, the title,
+// the booking form (prefilled from ?service=, ?palette= or ?shade=, as BookPrefill does), what happens
+// next, "Prefer to talk?", the promises, how booking works and the booking questions.
+export default function BookScreen() {
+  const { service, palette, shade } = useLocalSearchParams<{ service?: string; palette?: string; shade?: string }>();
   return (
-    <Screen testID="book">
-      <Art art={illustrations.paintCan} style={styles.can} />
-      <Heading level={1}>
-        Book a free <Accent>inspection</Accent>
-      </Heading>
-      <Body style={styles.block}>Share a few details and book a free site inspection. We'll call you back to confirm a convenient time for the visit.</Body>
-      <Card style={styles.card}>
-        <BookingForm key={`${round}:${prefillKey}`} prefill={prefill} onDone={({ sent }) => setDone({ sent, prefillKey })} />
-      </Card>
-      <ContactActions />
-
-      <Section>
-        <Heading>
-          What happens <Accent>next</Accent>
-        </Heading>
-        <View style={styles.block}>
-          <StepList steps={bookingSteps.slice(1)} />
-        </View>
-      </Section>
-    </Screen>
+    <Page>
+      <View style={styles.wrap}>
+        <Blob color={colors.sand} size={448} style={styles.blob} />
+        <Container style={styles.page}>
+          <Breadcrumbs items={[{ name: "Book painters online", path: "/book" }]} />
+          <H size={36} leading={1.05} style={styles.title}>
+            Book painters online in <GradientText>{site.city}</GradientText>
+          </H>
+          <P size={18} leading={28 / 18} color={colors.muted} style={styles.intro}>
+            Share a few details and book a free site inspection. We&apos;ll call you back to confirm a convenient time for the visit.
+          </P>
+          <BookForm query={{ service, palette, shade }} />
+          <NextSteps style={styles.next} />
+          <PreferToTalk style={styles.talk} />
+          <Promises style={styles.section} />
+          <BookingSteps style={styles.section} />
+          <BookingFaq style={styles.section} />
+        </Container>
+      </View>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  can: { width: "56%", alignSelf: "center", marginBottom: 12 },
-  block: { marginTop: 16 },
-  card: { marginTop: 22, marginBottom: 16, padding: 18 },
+  wrap: { overflow: "hidden" },
+  blob: { position: "absolute", left: -160, top: 80, opacity: 0.5 },
+  page: { paddingVertical: 40 },
+  title: { marginTop: 24 },
+  intro: { marginTop: 16 },
+  next: { marginTop: 48 },
+  talk: { marginTop: 24 },
+  section: { marginTop: 80 },
 });

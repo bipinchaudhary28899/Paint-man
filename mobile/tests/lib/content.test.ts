@@ -1,4 +1,4 @@
-import { imageSource, logo } from "~/lib/images";
+import { imageSource, logos } from "~/lib/images";
 import { cities, illustrations, images, liveCities, servicesIn, services } from "~/shared";
 
 // The app shows the website's own facts and pictures; these checks catch a change on the website
@@ -17,7 +17,7 @@ describe("images", () => {
     expect(imageSource(illustrations.painter.src)).not.toHaveProperty("uri");
     expect(imageSource(images.uniformCeiling.src)).not.toHaveProperty("uri");
     expect(imageSource(images.livingRoom.src, 800)).toEqual({ uri: `${images.livingRoom.src}?auto=compress&cs=tinysrgb&w=800` });
-    expect(logo.aspectRatio).toBeCloseTo(4.27, 2);
+    expect(Object.keys(logos)).toEqual(["short", "stackedReversed", "stackedColor"]);
   });
 
   it("refuses a path it cannot show", () => {

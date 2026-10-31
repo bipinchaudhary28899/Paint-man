@@ -1,6 +1,5 @@
 import { contactLinks, telUrl, whatsappUrl } from "~/lib/contact";
 import { formatDate, isoToLocalDate, localDateToIso } from "~/lib/dates";
-import { bookingPrefill } from "~/lib/prefill";
 import { site } from "~/shared";
 
 describe("contact links", () => {
@@ -36,14 +35,4 @@ describe("dates", () => {
   });
 });
 
-describe("bookingPrefill", () => {
-  it("takes a known service, a live city and a note", () => {
-    expect(bookingPrefill({ service: "Interior Painting", city: "mathura", message: " Shade: x " })).toEqual({ service: "Interior Painting", city: "mathura", message: "Shade: x" });
-  });
-
-  it("ignores unknown services, cities that are not live, and caps the note", () => {
-    expect(bookingPrefill({ service: "Roofing", city: "bangalore" })).toEqual({});
-    expect(bookingPrefill({ service: ["Exterior Painting", "x"], message: "a".repeat(1200) })).toEqual({ service: "Exterior Painting", message: "a".repeat(1000) });
-    expect(bookingPrefill({})).toEqual({});
-  });
-});
+// The booking prefill (src/lib/prefill.ts) is tested with the booking page in tests/content/prefill.test.ts.

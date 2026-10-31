@@ -1,11 +1,21 @@
 # Paint Saathi app
 
-The Paint Saathi mobile app for iOS and Android, built with Expo (SDK 58), TypeScript and Expo Router. It has four tabs, the same as the website's phone nav:
+The Paint Saathi mobile app for iOS and Android, built with Expo (SDK 58), TypeScript and Expo Router. It has every page and feature of paintsaathi.in, at the same paths, with the same facts and design system, laid out mobile-first (see "Mobile redesign" below).
 
-- **Home**: the hero, promises, "We diagnose first", services, how the work gets done, cities and FAQs.
-- **Services**: every service (what's included, the process, preparation and paint, price factors, timing, FAQs, each city's own notes) and every city (localities and weather notes; cities coming soon link to the waitlist on the website).
-- **Colours**: the colour finder over the brands' shade cards, with the PaintDB credit.
-- **Estimate**: booking a free inspection, with the same fields and checks as the website's `LeadForm`.
+- One stack of pages under `src/app/`, mirroring `src/app/(site)/` on the website: `/`, `/services`, `/services/<service>`, `/services/<service>/<city>`, `/services/house-painting`, `/services/house-painting/<city>`, `/colours`, `/palettes`, `/shade-cards`, `/shade-cards/<brand>`, `/shade-cards/<brand>/<family>`, `/gallery`, `/about`, `/faq`, `/contact`, `/book`, `/thank-you`, `/privacy-policy`, `/terms`.
+- Headings balance their lines as the website's `text-wrap: balance` does (`H` in `src/components/ui/Text.tsx`).
+- Every page has a sticky header (the short "PS" logo and a menu button that opens the navigation drawer) and ends with the footer link hub. The phone nav sits over them: a charcoal bar of four tabs (Home, Services, Colours, Estimate) with depth, and the active tab's glossy colour dab sitting in a dip cut into the bar. On the home page the active tab follows the section in view.
+- Links from the website's config (menus, footer, FAQ links, weather notes) open the app screen at the same path through `openHref` (`src/lib/links.ts`). A `#fragment` scrolls to that anchor on the page. Paths the app has no screen for (`/admin`) open on the website.
+
+## Mobile redesign
+
+Beyond the website's own phone layout, the app is tuned for a phone (owner's plan, three phases):
+
+- **Phase 1:** pill buttons everywhere; a sticky "Book a free inspection" pill above the nav (it glides to the page's own booking form when there is one, hides over a form, near the top and while scrolling down; a WhatsApp or Call button joins it once `site.whatsapp` / `site.phone` are filled in); the navigation drawer (`site/Drawer.tsx`); a first-screen hero; booking in two steps (your details, then where to paint), with the city preselected on a city's pages.
+- **Phase 2:** swipeable service cards (`services/ServiceCarousel.tsx`); one trust section (`home/Trust.tsx`); one painting journey stepper (`home/Journey.tsx`); a drag-to-compare colour preview on an example room (`colours/BeforeAfter.tsx`, on home and the gallery: labelled as a preview, never as one of our jobs); a native colour finder (brand pills and search pinned under the header, a three-column grid, the shade preview as a bottom sheet).
+- **Phase 3:** motion (sections rise in as they scroll into view, the booking steps slide, accordions open smoothly; all off under reduce motion); skeleton loading states; footer accordions and "Back to top"; photos fetched at the size drawn and cached (`photoSource` in `src/lib/images.ts`); an automated accessibility audit of every screen and a WCAG contrast check (`tests/a11y/`); text that grows with the phone's text size; windowed shade-card grids and render-count tests (`tests/perf/`).
+
+Bundled art that could be re-exported smaller for the app (the audit's finding; `public/` is the website's): `paint-can.webp` (drawn at about 264 px), `toolbox.webp` (about 720 px), `paint-brands.webp` (about 1080 px); the logo pack has no @3x files, so 3× phones load @4x.
 
 ## Run it
 
@@ -30,56 +40,47 @@ Use the local server while developing, so testing never sends bursts of requests
 ```bash
 npm run typecheck
 npm test
-npm run test:coverage   # 90% gate on src/lib, src/components and the rest of src outside src/app
+npm run test:coverage   # 90% gate on src/** except the screens in src/app
 ```
 
 The website's own checks (`npm run typecheck`, `npm run test:coverage`, `npm run build` in the repo root) leave `mobile/` alone: the root `tsconfig.json` excludes it, Vitest only matches `tests/**`, and Next never imports it.
 
 ## What the app shares with the website
 
-Nothing is copied. [`src/shared.ts`](src/shared.ts) re-exports the website's own modules:
+Nothing is copied. [`src/shared.ts`](src/shared.ts) re-exports the website's own modules: `site.ts` (services, cities with `status`, localities, promises, FAQs, the work flow), `nav.ts` (menus, footer columns), `images.ts`, `gallery.ts`, `palettes.ts`, `scenes.ts`, `src/lib/leads/*` (the booking checks, options, date range, job estimate) and `src/lib/colours/catalogue.ts`. Copy written inside a website page is reproduced word for word in the matching screen.
 
-- services, `cities` with `status`, localities, promises, the work flow and FAQs from `src/config/site.ts`;
-- the photos' and illustrations' alt text from `src/config/images.ts`;
-- the booking checks, options, date range and job estimate from `src/lib/leads/*`.
+`@/` in `tsconfig.json` points at the website's `src` (so those files' own imports resolve), and `~/` points at the app's `src`. [`metro.config.js`](metro.config.js) watches those website folders and `../public/brand`, `../public/photos` and `../public/scenes`. The logo, illustrations, uniform photos and the room's wall mask are bundled from `../public`; Pexels stock photos load from Pexels.
 
-`@/` in `tsconfig.json` points at the website's `src` (so those files' own imports resolve), and `~/` points at the app's `src`. [`metro.config.js`](metro.config.js) watches `../src/config`, `../src/lib/leads`, `../public/brand` and `../public/photos`. The logo, illustrations and uniform photos are bundled from `../public`; Pexels stock photos load from Pexels.
+The colour pages use the public JSON API under `/api/v1/` and its envelope: `/api/v1/colours/paint` and `/brands` for the finder, `/api/v1/palettes` (with each shade's LRV and closest Berger and Nerolac matches) for the palettes, and `/api/v1/colours/shade-cards`, `/shade-cards/{brand}` and `/shade-cards/{brand}/{family}` for the shade-card pages, which serve the website's own shade-card data and copy facts. The PaintDB attribution and licence link show wherever shades are shown.
 
-The colour finder uses the public JSON API (`GET /api/v1/colours/paint` and `/api/v1/colours/brands`) and its envelope. The PaintDB attribution and licence link from the response's `meta` show under the results and on every shade.
+The design tokens in [`src/theme.ts`](src/theme.ts) are the website's (`src/app/globals.css`). The building blocks in `src/components/ui` are its `.btn-*`, `.field`, `.card`, `.eyebrow`, `.pill`, `.sticker`, `.link-arrow` and `.swipe`. The ones in `src/components/site` are its header, footer, phone nav, `PageHero`, `Breadcrumbs`, `FaqList`, `Promises`, `WorkFlow`, `CtaBanner`, `BookingSection` and `LeadForm`.
 
-Call and WhatsApp buttons appear once `site.phone` / `site.whatsapp` are filled in `src/config/site.ts`. Both are empty today, so the buttons are hidden.
+## Forms: checked, not sent (for now)
 
-## Booking: stubbed for now
-
-The website's `/api/leads` accepts same-origin requests only, so the app cannot post to it. Until an app endpoint is approved and built, **Book my inspection** checks the form exactly as the website would, then says plainly that nothing was sent and links to the website's booking page. Nothing is sent or stored (`BOOKINGS_ARE_SENT` in [`src/lib/booking.ts`](src/lib/booking.ts)).
+The website's forms post to `/api/leads`, which accepts same-origin requests only, so the app cannot send them. Until an app endpoint is approved and built, the booking and contact forms check their answers exactly as the website does. A complete form then opens the thank-you page, which says plainly that nothing was sent and links to the website. Nothing is sent or stored (`LEADS_ARE_SENT` in [`src/lib/leads.ts`](src/lib/leads.ts)).
 
 Proposed endpoint (not built; needs the owner's OK):
 
 ```
-POST /api/v1/bookings   (JSON, ≤ 10 KB)
-Body: the LeadForm booking fields, checked by the same bookingSchema / field-checks
-  name, phone, address, locality, pincode, city
-  optional: service, propertyType, floors, homeSize, carpetArea, preferredDate, message
+POST /api/v1/leads   (JSON, ≤ 10 KB)
+Body: the website's lead schema (src/lib/leads/schema.ts): booking or contact
+  booking: name, phone, address, locality, pincode, city; optional service,
+           propertyType, floors, homeSize, carpetArea, preferredDate, message
+  contact: name, phone, message
   website (honeypot), page: "app"
 No same-origin check (an app sends no Origin). Bounded instead by:
   the same per-IP rateLimit as /api/leads, a JSON content type and body-size cap, the honeypot
-201  kind "booking", label "Booking received. We call back Mon–Sat, 9 am to 7 pm."
-     data { received: true, city }   (submitted personal data is never echoed)
+201  kind "lead", label "Request received. We call back Mon–Sat, 9 am to 7 pm."
+     data { received: true, type }   (submitted personal data is never echoed)
 400  invalid_request, details: { field: message }
 413  too_large   415  unsupported_media_type   429  rate_limited   500  store_failed
 All responses Cache-Control: no-store. Saved through saveLead. Doc comment and tests per status.
 ```
 
-`toBookingPayload()` already builds that body. Wiring it up means one `fetch` in `submitBooking` and setting `BOOKINGS_ARE_SENT` to `true`.
-
-## Design
-
-The app follows the website's design system: cream canvas, ink text, terracotta buttons, golden, sage and sand (tokens in [`src/theme.ts`](src/theme.ts)). Headings are DM Serif Display with one italic accent word (`<Accent>`), and text is Manrope. Cards have hairline borders and soft radii, and standalone photos have sharp corners. There are no icons except the four tab icons in [`src/components/TabBar.tsx`](src/components/TabBar.tsx), the same drawings as the website's phone nav.
+`toBookingPayload()` and `toContactPayload()` already build those bodies. Wiring it up means one `fetch` in `src/lib/leads.ts` and setting `LEADS_ARE_SENT` to `true`.
 
 ## Not done yet
 
 - App Store and Play Store release: EAS build profiles, signing and store listings. The bundle ID `in.paintsaathi.app` is a placeholder until the owner confirms it.
-- The booking endpoint above.
-- Previewing a shade on the room photo, as the website's finder does.
-- Android has not been run on an emulator yet; only iOS has been checked.
+- The lead endpoint above.
 - Live-site traffic from the app could meet Vercel's bot challenge, which blocks non-browser requests. Check it once the app has real users.

@@ -93,8 +93,20 @@ describe("GET /api/v1/palettes", () => {
       id: "asian-paints:8386",
       brand: "asian-paints",
       brandName: "Asian Paints",
+      lrv: 55,
+      // the nearest Berger and Nerolac shades, as the /palettes page names them
+      closest: [
+        { id: "berger:7T1508", brand: "berger", brandName: "Berger Paints", code: "7T1508", name: "Garden Walkway", hex: expect.stringMatching(/^#[0-9a-f]{6}$/), lrv: expect.any(Number), distance: expect.any(Number), match: "Very close match", links: { html: "/colours?brand=berger&q=7T1508" } },
+        { id: "nerolac:4370", brand: "nerolac", brandName: "Kansai Nerolac", code: "4370", name: "Crisp Green", hex: expect.stringMatching(/^#[0-9a-f]{6}$/), lrv: expect.any(Number), distance: expect.any(Number), match: "Very close match", links: { html: "/colours?brand=nerolac&q=4370" } },
+      ],
       links: { self: "/api/v1/colours/paint?brand=asian-paints&q=8386", html: "/colours?brand=asian-paints&q=8386" },
     });
+    // a match without a real shade-card code prints no code, and its finder link searches the name
+    const matches = body.data.flatMap((p: { colours: Record<string, { closest: { code: string | null; name: string; brand: string; match: string; links: { html: string } }[] }> }) => Object.values(p.colours).flatMap((c) => c.closest));
+    for (const m of matches) {
+      expect(["Very close match", "Close match", "Nearest in this range"]).toContain(m.match);
+      expect(m.links.html).toBe(`/colours?${new URLSearchParams({ brand: m.brand, q: m.code ?? m.name })}`);
+    }
     expect(calm.links).toEqual({ html: "/palettes#calm-bedroom", book: "/book?palette=calm-bedroom" });
     expect(body.meta).toMatchObject({ total: palettes.length, query: { room: null }, hints: { rooms: [...rooms] } });
     expect(body.links).toEqual({ self: "/api/v1/palettes", html: "/palettes" });

@@ -5,3 +5,6 @@ jest.mock("@react-native-community/datetimepicker", () => {
   const { createElement } = jest.requireActual("react");
   return { __esModule: true, default: (props: Record<string, unknown>) => createElement(View, { ...props, testID: props.testID ?? "date-picker" }) };
 });
+
+// Safe-area insets without a provider (the library's own Jest mock: zero insets, a 390×844 frame).
+jest.mock("react-native-safe-area-context", () => require("react-native-safe-area-context/jest/mock").default);
