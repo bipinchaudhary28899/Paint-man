@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { scheduleOnRN } from "react-native-worklets";
 
+import { useAccountLink } from "~/components/account/AccountButton";
 import { Arrow, Chevron } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
 import { Collapse, Turn } from "~/components/ui/Collapse";
@@ -17,7 +18,8 @@ import { WHATSAPP_GREEN, WhatsAppLogo } from "./StickyCta";
 
 // The phone menu: a hairline three-bar button in the sticky header opens a drawer that slides in from
 // the right over the dimmed page. It holds the website's own menus (nav.ts: Services, Cities as region ›
-// city › localities, Colours), then FAQ, About and Contact, and at the bottom "Book a free inspection"
+// city › localities, Colours), then FAQ, About and Contact, then "My account" (signed in) or "Log in",
+// and at the bottom "Book a free inspection"
 // with call and WhatsApp when site.ts has numbers for them. Sections slide open and shut in place (their
 // chevrons turning), the page
 // being viewed is marked, and every link opens its screen through openHref and closes the drawer. The
@@ -73,6 +75,7 @@ export function NavDrawer({ open, onClose, scrollTo = () => undefined, details =
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const panel = Math.min(PANEL_MAX, Math.round(width * 0.88));
+  const account = useAccountLink();
   // mounted from the moment it opens until its slide out has finished
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
@@ -116,6 +119,7 @@ export function NavDrawer({ open, onClose, scrollTo = () => undefined, details =
   };
 
   const contact = contactLinks(details);
+  const pages = account ? [...DRAWER_PAGES, account] : DRAWER_PAGES;
 
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose} testID="nav-drawer-modal">
@@ -138,7 +142,7 @@ export function NavDrawer({ open, onClose, scrollTo = () => undefined, details =
             {navMenus().map((menu) => (
               <MenuSection key={menu.label} menu={menu} pathname={pathname} expanded={expanded} toggle={toggle} go={go} />
             ))}
-            {DRAWER_PAGES.map((p) => {
+            {pages.map((p) => {
               const current = isCurrentHref(p.href, pathname);
               return (
                 <Pressable

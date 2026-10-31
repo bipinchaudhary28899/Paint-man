@@ -5,6 +5,9 @@ import { Linking } from "react-native";
 import type { TestInstance } from "test-renderer";
 
 import NotFoundScreen from "~/app/+not-found";
+import AccountScreen from "~/app/account/index";
+import ProjectScreen from "~/app/account/projects/[id]";
+import LoginScreen from "~/app/login";
 import AboutScreen from "~/app/about";
 import BookScreen from "~/app/book";
 import ColourFinderScreen from "~/app/colours";
@@ -25,11 +28,13 @@ import ShadeCardsScreen from "~/app/shade-cards/index";
 import TermsScreen from "~/app/terms";
 import ThankYouScreen from "~/app/thank-you";
 import { NavStateProvider } from "~/components/site/nav-state";
+import { AuthProvider } from "~/lib/auth-context";
 import { clearColourCache } from "~/lib/colours";
 import { getCity, getService, palettes, serviceCityTitle } from "~/shared";
 import { BAR_TOP, BottomNav } from "~/components/site/BottomNav";
 import { over } from "~/lib/contrast";
 import { colors } from "~/theme";
+import { asha, detail, seedToken, summary } from "../account/helpers";
 import { contrastFindings, controlAndImageFindings, headerFindings, isPressable, nameOf, reachable, roleOf, scalingFindings, targetFindings } from "./audit";
 
 // Every screen of the app (src/app/**) put together and read the way VoiceOver and TalkBack read it,
@@ -40,7 +45,7 @@ import { contrastFindings, controlAndImageFindings, headerFindings, isPressable,
 
 jest.mock("@shopify/react-native-skia", () => require("../colours/skia-mock"));
 jest.mock("expo-router", () => ({
-  router: { push: jest.fn(), navigate: jest.fn(), back: jest.fn() },
+  router: { push: jest.fn(), navigate: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
   usePathname: jest.fn(() => "/"),
   useLocalSearchParams: jest.fn(() => ({})),
   useIsFocused: jest.fn(() => true),
@@ -94,9 +99,13 @@ const api: Record<string, unknown> = {
     meta: {},
   },
   "/api/v1/palettes": { data: [{ colours: { featureWall: { id: palettes[0].shades[0].id, lrv: 55, closest: [] } } }], meta: {} },
+  // the account screens, signed in (the saved token seeded for their routes)
+  "/api/v1/me": { data: asha, meta: {} },
+  "/api/v1/projects": { data: [summary({ finalPricePaise: 2250000 }), summary({ id: "p-0", stage: "booked", stageLabel: "Booking received" })], meta: {} },
+  [`/api/v1/projects/${summary().id}`]: { data: detail(), meta: {} },
 };
 
-type Route = { path: string; Screen: ComponentType; h1: RegExp; params?: Record<string, string> };
+type Route = { path: string; Screen: ComponentType; h1: RegExp; params?: Record<string, string>; signedIn?: boolean };
 const exact = (text: string) => new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
 const interior = getService("interior-painting")!;
 const exterior = getService("exterior-painting")!;
@@ -114,6 +123,10 @@ const routes: Route[] = [
   { path: "/privacy-policy", Screen: PrivacyScreen, h1: exact("Privacy policy") },
   { path: "/terms", Screen: TermsScreen, h1: exact("Terms of service") },
   { path: "/thank-you", Screen: ThankYouScreen, h1: exact("Your request was not sent"), params: { type: "booking" } },
+  { path: "/thank-you?sent=1", Screen: ThankYouScreen, h1: exact("Your inspection request is in"), params: { type: "booking", sent: "1", project: "p-1" } },
+  { path: "/login", Screen: LoginScreen, h1: exact("Log in to your account") },
+  { path: "/account", Screen: AccountScreen, h1: exact("Namaste, Asha"), signedIn: true },
+  { path: "/account/projects/[id]", Screen: ProjectScreen, h1: exact("Interior Painting in Kamla Nagar, Agra"), params: { id: summary().id }, signedIn: true },
   { path: "/services", Screen: ServicesScreen, h1: exact("Painting services") },
   { path: "/services/interior-painting", Screen: ServiceHubScreen, h1: exact(interior.title), params: { slug: interior.slug } },
   { path: "/services/exterior-painting", Screen: ServiceHubScreen, h1: exact(exterior.title), params: { slug: exterior.slug } },
@@ -148,14 +161,17 @@ beforeEach(() => {
   }) as never;
 });
 
-async function show({ path, Screen, params = {} }: Route) {
+async function show({ path, Screen, params = {}, signedIn = false }: Route) {
   (usePathname as jest.Mock).mockReturnValue(path.split("?")[0]);
   (useLocalSearchParams as jest.Mock).mockReturnValue(params);
+  if (signedIn) seedToken();
   await render(
-    <NavStateProvider>
-      <Screen />
-      <BottomNav />
-    </NavStateProvider>,
+    <AuthProvider>
+      <NavStateProvider>
+        <Screen />
+        <BottomNav />
+      </NavStateProvider>
+    </AuthProvider>,
   );
   await act(() => new Promise((r) => setTimeout(r, 30)));
   return screen.container as TestInstance;

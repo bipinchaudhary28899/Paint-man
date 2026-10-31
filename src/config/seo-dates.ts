@@ -13,7 +13,7 @@ export const SITE_UPDATED = "2026-10-29";
  */
 export const sectionUpdated: Record<string, string> = {
   "/": "2026-10-31",
-  "/privacy-policy": "2026-10-26",
+  "/privacy-policy": "2026-10-31",
   "/terms": "2026-10-19",
 };
 

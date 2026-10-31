@@ -1,12 +1,20 @@
-import { after, NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { readUserSession } from "@/lib/auth/user-session";
 import { leadSchema } from "@/lib/leads/schema";
-import { ensureSheetHeader, saveLead, warmLeadStorage } from "@/lib/leads/store";
+import { saveLead } from "@/lib/leads/store";
 import { bodyTooLarge, clientIp, isSameOrigin, noStore } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { createTimer } from "@/lib/timing";
 
 export const runtime = "nodejs";
 
+/**
+ * POST /api/leads (same-origin only): the website's booking, contact and quick site-visit forms.
+ * Saves the lead in Postgres (a booking also opens its project); when the visitor is signed in
+ * (ps_session cookie) the lead and project are linked to their account. Answers { ok: true } and
+ * never echoes the submitted data.
+ * Example: POST /api/leads { "type": "contact", "name": "Asha", "phone": "9876543210", "message": "Shop repaint" } → { "ok": true }
+ */
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return NextResponse.json({ ok: false, error: "Forbidden." }, { status: 403, headers: noStore });
   if (bodyTooLarge(req)) return NextResponse.json({ ok: false, error: "Request too large." }, { status: 413, headers: noStore });
@@ -34,24 +42,22 @@ export async function POST(req: NextRequest) {
 
   const ip = clientIp(req);
   const timer = createTimer();
-  // Fetch the Google access token while the rate limit is checked, not after it.
-  warmLeadStorage();
   // Only valid submissions count, so customers fixing typos aren't locked out.
   if (!(await timer.time("ratelimit", rateLimit(ip)))) {
     return NextResponse.json({ ok: false, error: "Too many requests. Please call us or try again later." }, { status: 429 });
   }
 
   try {
+    // a signed-in visitor's lead (and its project) goes straight into their account
+    const session = await timer.time("session", readUserSession(req));
     // Nothing about stored data is sent back to the browser.
-    await saveLead(parsed.data, timer);
+    await saveLead(parsed.data, { source: "web", userId: session?.user.id, timer });
     // Step durations only (no lead data): shows in the Vercel logs and the browser's network panel.
     console.info("Lead saved in", JSON.stringify(timer.summary()));
-    // After the response: keep the sheet's header row current (adds new columns once).
-    after(() => ensureSheetHeader().catch((e) => console.error("Sheet header check failed:", e instanceof Error ? e.message.slice(0, 120) : "unknown")));
     return NextResponse.json({ ok: true }, { headers: { ...noStore, "Server-Timing": timer.header() } });
   } catch (err) {
-    // Log the error type only: never the submitted personal details.
-    console.error("Failed to save lead:", err instanceof Error ? err.message.slice(0, 200) : "unknown error");
+    // Log the error type only: never the submitted personal details (a database message can quote them).
+    console.error("Failed to save lead:", err instanceof Error ? err.name : "unknown error");
     return NextResponse.json({ ok: false, error: "We couldn't save your request. Please try again or call us." }, { status: 500 });
   }
 }

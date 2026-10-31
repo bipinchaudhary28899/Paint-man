@@ -10,6 +10,7 @@ import { View } from "react-native";
 import { BottomNav } from "~/components/site/BottomNav";
 import { LaunchAnimation } from "~/components/site/LaunchAnimation";
 import { NavStateProvider } from "~/components/site/nav-state";
+import { AuthProvider } from "~/lib/auth-context";
 import { colors } from "~/theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -19,6 +20,7 @@ export { ScreenError as ErrorBoundary } from "~/components/content/NotFound";
 
 // The app is the website on a phone: one stack of pages at the website's own paths (src/app mirrors
 // src/app/(site)), each with the sticky header and the footer, and the phone nav fixed over them.
+// AuthProvider restores the customer's session (the token in the secure store) for every screen.
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     DMSerifDisplay_400Regular,
@@ -41,13 +43,15 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <NavStateProvider>
-      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
-        <BottomNav />
-        {launching && <LaunchAnimation onDone={launched} />}
-      </View>
-    </NavStateProvider>
+    <AuthProvider>
+      <NavStateProvider>
+        <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
+          <BottomNav />
+          {launching && <LaunchAnimation onDone={launched} />}
+        </View>
+      </NavStateProvider>
+    </AuthProvider>
   );
 }

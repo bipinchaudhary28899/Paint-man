@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, FadeInLeft, FadeInRight, FadeOutLeft, FadeOutRight, LayoutAnimationConfig, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -10,8 +10,10 @@ import { Collapse } from "~/components/ui/Collapse";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { DateInput, Field, Input, optionsOf, PhoneInput, PillChoice, Select, type Focusable } from "~/components/ui/Field";
 import { bookingRequiredFields, carpetAreaProblem, DETAIL_FIELDS, emptyBooking, FORM_ERROR, jobEstimate, type BookingField, type BookingValues } from "~/lib/booking";
+import { useAuth } from "~/lib/auth-context";
 import { submitBooking, submitContact, type SubmitResult } from "~/lib/leads";
 import { openHref } from "~/lib/links";
+import { heldBooking, holdBooking, takeBooking, type HeldPin } from "~/lib/pending-booking";
 import { cityRegion, fillFromPlace, locate, locateProblem, NOT_LISTED_NOTE, opensSettings, regionAt, type LatLng, type LocateProblem, type MapRegion } from "~/lib/location";
 import {
   bookingDateRange,
@@ -42,6 +44,10 @@ import { colors, fonts, radii } from "~/theme";
 // asked) and "Pick on the map": both open the map picker, and confirming the pin fills the address,
 // locality, PIN code and (when it is a live city) the city, all still editable. The pinned spot stays
 // in the form's state for the booking's optional `location`; typing the address works as before.
+// "Book my inspection" sends the booking (POST /api/v1/bookings) with the visitor's session. Signed
+// out, the answers are held in memory (src/lib/pending-booking.ts) and the login screen opens; once
+// signed in, the booking is sent from here without anything retyped. The API's field messages (the
+// website's own words) show on their fields. Signed in, the name and mobile start as the account's.
 
 type FormType = "booking" | "contact";
 type Values = BookingValues;
@@ -58,7 +64,7 @@ type Props = {
   footnote?: ReactNode;
   live?: readonly City[];
   /** what happens after a successful submit; opens the thank-you page by default */
-  onDone?: (result: { sent: boolean }) => void;
+  onDone?: (result: { sent: boolean; projectId?: string }) => void;
   /** something to add to the booking is still on its way (the shade the visitor picked): its place shows as a skeleton */
   carrying?: boolean;
 };
@@ -72,6 +78,9 @@ const FIRST_STEP: readonly RequiredField[] = ["name", "phone", "city"];
 const ORDER: readonly BookingField[] = ["name", "phone", "city", "address", "locality", "pincode", "service", "propertyType", "floors", "homeSize", "carpetArea", "preferredDate", "message"];
 
 const floorLabel = (f: string) => (f === "1" ? "1 floor" : `${f} floors`);
+
+/** The note under "Book my inspection" while signed out: what happens before the booking is sent. */
+export const SIGN_IN_NOTE = "Before it is sent, we text a code to your mobile to confirm the number.";
 
 /** The localities to offer as pills: those containing what is typed, or all of them once one is chosen. */
 export function localityChoices(areas: readonly string[], typed: string): string[] {
@@ -126,13 +135,28 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   const required: readonly RequiredField[] = booking ? bookingRequiredFields(live) : ["name", "phone", "message"];
   const askCity = booking && required.includes("city");
   const firstStep = required.filter((f) => FIRST_STEP.includes(f));
-  const [values, setValues] = useState<Values>(() =>
-    emptyBooking({ service: defaultService ?? "", message: defaultMessage ?? "", city: live.some((c) => c.slug === defaultCity) ? defaultCity : "" }),
+  const pathname = usePathname();
+  const auth = useAuth();
+  // a booking held for sign-in on this screen comes back as it was (the form opened again after signing in)
+  const [resumed] = useState(() => {
+    const held = booking ? heldBooking() : null;
+    return held?.path === pathname ? held : null;
+  });
+  const [values, setValues] = useState<Values>(
+    () =>
+      resumed?.values ??
+      emptyBooking({
+        service: defaultService ?? "",
+        message: defaultMessage ?? "",
+        city: live.some((c) => c.slug === defaultCity) ? defaultCity : "",
+        name: booking ? (auth.user?.name ?? "") : "",
+        phone: booking ? (auth.user?.phone ?? "") : "",
+      }),
   );
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(resumed ? 2 : 1);
   // "Add more details" starts open only when the page prefilled the note, so the visitor sees it
   const [moreOpen, setMoreOpen] = useState(Boolean(defaultMessage) && booking);
   const [range] = useState(bookingDateRange);
@@ -142,7 +166,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   // the map picker: where it opens (open while set), the phone's position once shared, and the confirmed pin
   const [picker, setPicker] = useState<MapRegion>();
   const [gps, setGps] = useState<LatLng>();
-  const [pin, setPin] = useState<{ coords: LatLng; short: string; outside: boolean }>();
+  const [pin, setPin] = useState<HeldPin | undefined>(resumed?.pin);
   const [locating, setLocating] = useState(false);
   const [opening, setOpening] = useState(false);
   const [locError, setLocError] = useState<LocateProblem>();
@@ -150,6 +174,14 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   useEffect(() => {
     if (focusOn) inputs.current[focusOn.field]?.focus();
   }, [focusOn]);
+
+  // the account loaded after the form opened: the name and mobile start as the account's while both are still blank
+  const user = booking ? auth.user : null;
+  const [prefilledFor, setPrefilledFor] = useState(user?.id);
+  if (user && user.id !== prefilledFor) {
+    setPrefilledFor(user.id);
+    if (!values.name && !values.phone) setValues({ ...values, name: user.name ?? "", phone: user.phone });
+  }
 
   const problemFor = (field: BookingField, value: string) => {
     if (field === "carpetArea") return carpetAreaProblem(value);
@@ -199,23 +231,44 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
     setStep(1);
   }
 
-  async function submit() {
+  async function submit(current: Values = values, pinned: HeldPin | undefined = pin) {
     setSubmitting(true);
-    const result: SubmitResult = booking ? await submitBooking(values, live) : await submitContact(values);
+    const result: SubmitResult = booking ? await submitBooking(current, { live, location: pinned?.coords, request: auth.request }) : await submitContact(current);
     setSubmitting(false);
     if (result.ok) {
       setErrors({});
       setFormError("");
-      if (onDone) onDone({ sent: result.sent });
-      else router.push({ pathname: "/thank-you", params: { type, sent: result.sent ? "1" : "0" } });
+      if (onDone) onDone({ sent: result.sent, projectId: result.projectId });
+      else router.push({ pathname: "/thank-you", params: { type, sent: result.sent ? "1" : "0", ...(result.projectId && { project: result.projectId }) } });
+      return;
+    }
+    if (result.signIn) {
+      // keep every answer for after the sign-in, then ask for it
+      setFormError("");
+      holdBooking({ path: pathname, values: current, pin: pinned });
+      router.push({ pathname: "/login", params: { next: pathname, resume: "booking" } });
       return;
     }
     setErrors(result.errors);
     setFormError(result.message);
     if (DETAIL_FIELDS.some((f) => result.errors[f])) setMoreOpen(true);
+    // a problem the API found on the first step (the mobile number, say) is shown there
+    if (booking && firstStep.some((f) => result.errors[f])) setStep(1);
     const first = ORDER.find((f) => result.errors[f]);
     if (first) setFocusOn({ field: first });
   }
+
+  // once the visitor has signed in, the booking held for it on this screen is sent: by the form still open
+  // under the login screen (its answers and pin are the held ones), or by the form opened again (it started
+  // with them)
+  const status = auth.status;
+  useEffect(() => {
+    if (!booking || status !== "signedIn") return;
+    const held = takeBooking(pathname);
+    // sent from a task of its own, as a tap on "Book my inspection" would be
+    if (held) queueMicrotask(() => void submit(held.values, held.pin));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the sign-in lands, with the held answers
+  }, [status]);
 
   /** "Use my current location": asks for permission (only here), finds the phone and opens the map there. */
   async function locateMe() {
@@ -281,6 +334,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   const notes = (
     <>
       {footnote ? <Text style={styles.footnote}>{footnote}</Text> : null}
+      {booking && step === 2 && auth.status !== "signedIn" ? <Text style={styles.footnote}>{SIGN_IN_NOTE}</Text> : null}
       <Text style={styles.privacy}>
         We use your details only to respond to this request. See our{" "}
         <Text accessibilityRole="link" style={styles.link} onPress={() => openHref("/privacy-policy")}>
@@ -310,7 +364,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
           <Input {...bind("message", "How can we help?")} multiline maxLength={1000} style={styles.textareaTall} />
         </Field>
         {errorLine}
-        <Button label="Send message" busyLabel="Sending…" busy={submitting} onPress={submit} height={54} fontSize={16} />
+        <Button label="Send message" busyLabel="Sending…" busy={submitting} onPress={() => void submit()} height={54} fontSize={16} />
         {notes}
       </View>
     );
@@ -472,7 +526,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
             {errorLine}
             <View style={styles.actions}>
               <Button label="Back" variant="secondary" onPress={back} height={54} fontSize={16} accessibilityHint={`Back to ${STEP_TITLES[1].toLowerCase()}`} style={styles.back} />
-              <Button label="Book my inspection" busyLabel="Sending…" busy={submitting} onPress={submit} height={54} fontSize={16} style={styles.submit} />
+              <Button label="Book my inspection" busyLabel="Sending…" busy={submitting} onPress={() => void submit()} height={54} fontSize={16} style={styles.submit} />
             </View>
           </Animated.View>
         )}

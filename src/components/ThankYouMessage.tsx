@@ -1,6 +1,7 @@
 "use client";
 
 import { bookingSteps, site } from "@/config/site";
+import { TrackBookingInvite } from "./account/AccountLink";
 import { useUrlQuery } from "./useUrlQuery";
 
 // The heading and line that depend on which form was sent (?type=booking|visit|waitlist|contact). Read in the
@@ -46,6 +47,8 @@ export function ThankYouMessage() {
           </ol>
         </section>
       )}
+      {/* follow the booking in the account: log in with the same number, or straight there when signed in */}
+      {booking && <TrackBookingInvite />}
     </>
   );
 }

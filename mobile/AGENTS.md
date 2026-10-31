@@ -1,6 +1,6 @@
 # Paint Saathi app
 
-The Paint Saathi app (see README.md). The repo's own rules in ../AGENTS.md apply here too: business facts come from ../src/config/site.ts through src/shared.ts (never copied), the design system (cream, ink, terracotta; DM Serif Display headings with one italic accent word, Manrope text; hairline borders, soft radii, sharp-cornered photos; no icons beyond the four tab icons), and new modules ship with tests (`npm run test:coverage`, 90% gate). Booking stays stubbed until the owner approves an app endpoint (README.md).
+The Paint Saathi app (see README.md). The repo's own rules in ../AGENTS.md apply here too: business facts come from ../src/config/site.ts through src/shared.ts (never copied), the design system (cream, ink, terracotta; DM Serif Display headings with one italic accent word, Manrope text; hairline borders, soft radii, sharp-cornered photos; no icons beyond the four tab icons), and new modules ship with tests (`npm run test:coverage`, 90% gate). Bookings are sent to `POST /api/v1/bookings` once the visitor is signed in (README.md, "Accounts" and "Bookings"); the contact form stays checked-only until there is an app endpoint for messages. The session token lives only in expo-secure-store and is never logged.
 
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 

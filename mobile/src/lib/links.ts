@@ -6,11 +6,14 @@ import { webUrl } from "./config";
 // The app's screens sit at the website's own paths (/services/interior-painting/agra, /colours,
 // /shade-cards/berger...), so every href in the website's config (nav.ts, FAQ links, weather notes)
 // opens the matching screen. A #fragment becomes the `section` param, which the page scrolls to (the
-// website's in-page anchors). Paths the app has no screen for (/admin) open on the website.
+// website's in-page anchors). Paths the app has no screen for (/admin) open on the website. The
+// customer account screens sit at the website's paths too: /login, /account and /account/projects/<id>.
 
 const ROUTES: RegExp[] = [
   /^\/$/,
-  /^\/(about|book|colours|contact|faq|gallery|palettes|privacy-policy|terms|thank-you)$/,
+  /^\/(about|book|colours|contact|faq|gallery|login|palettes|privacy-policy|terms|thank-you)$/,
+  /^\/account$/,
+  /^\/account\/projects\/[A-Za-z0-9-]{1,64}$/,
   /^\/services$/,
   /^\/services\/[a-z0-9-]+$/,
   /^\/services\/[a-z0-9-]+\/[a-z0-9-]+$/,

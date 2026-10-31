@@ -1,301 +1,205 @@
 import "server-only";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getCity } from "@/config/site";
-import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
-import path from "node:path";
-import { JWT } from "google-auth-library";
+import { getDb } from "@/lib/db/client";
+import { leads, projectEvents, projects, users } from "@/lib/db/schema";
 import type { Timer } from "@/lib/timing";
 import { estimatePaintArea } from "./estimate";
+import { LEAD_COLUMNS, LEAD_STATUSES, statusLabel, type LeadRecord, type LeadStatus } from "./record";
 import type { LeadInput } from "./schema";
 
-export const LEAD_COLUMNS = [
-  "Submitted At (IST)",
-  "Lead ID",
-  "Type",
-  "Name",
-  "Phone",
-  "Locality",
-  "Property Type",
-  "Service",
-  "Preferred Inspection Date",
-  "Message",
-  "Page",
-  "UTM Source",
-  "UTM Medium",
-  "UTM Campaign",
-  "Landing Page",
-  "Referrer",
-  "Status",
-  // job size (added later, so kept at the end: existing rows stay aligned)
-  "Floors",
-  "Home Size",
-  "Carpet Area per Floor (sq ft)",
-  "Est. Paint Area (sq ft)",
-  // full address (added later, kept at the end for the same reason)
-  "Address",
-  "PIN Code",
-  "City",
-] as const;
+// Leads live in Postgres (the `leads` table). Every booking also opens its project, in stage
+// `booked` with a first timeline event, in the same transaction, so the customer can track it
+// once they sign in with that mobile number.
 
-/** Sheet column letter for a 1-based index (1 → A, 27 → AA). */
-export function columnLetter(n: number): string {
-  let s = "";
-  for (let i = n; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + ((i - 1) % 26)) + s;
-  return s;
+export { LEAD_COLUMNS, LEAD_STATUSES, type LeadRecord, type LeadStatus };
+
+export type LeadLocation = { lat: number; lng: number };
+
+export type SaveLeadOptions = {
+  /** Where the lead came from: the website's forms (default) or the app. */
+  source?: "web" | "app";
+  /** The signed-in customer who sent it. Without one, a customer with the lead's phone is linked. */
+  userId?: string | null;
+  /** The app's map pin for the booking address. */
+  location?: LeadLocation | null;
+  /** Records the database step's duration (no data). */
+  timer?: Timer;
+};
+
+export type SavedLead = { id: string; projectId: string | null };
+
+type LeadRow = typeof leads.$inferInsert;
+
+/** A quick site-visit request is a waitlist entry when its city is not live yet. */
+function visitKind(city: string): "visit" | "waitlist" {
+  return getCity(city)?.status === "live" ? "visit" : "waitlist";
 }
-const LAST_COLUMN = columnLetter(LEAD_COLUMNS.length);
 
-/** A quick site-visit request's locality column and note: the city (and locality), and whether it is a waitlist entry. */
-function visitDetails(lead: Extract<LeadInput, { type: "visit" }>) {
-  const city = getCity(lead.city);
-  const name = city?.name ?? lead.city;
-  const live = city?.status === "live";
+const blank = (v: string | undefined | null) => (v === undefined || v === null || v === "" ? null : v);
+
+/** The `leads` row for a submission (the user link is added when it is saved). */
+export function toLeadRow(lead: LeadInput, opts: Pick<SaveLeadOptions, "source" | "location"> = {}): LeadRow {
+  const t = lead.tracking ?? {};
+  const common = {
+    source: opts.source ?? "web",
+    name: lead.name,
+    phone: lead.phone,
+    page: blank(lead.page),
+    utmSource: blank(t.utmSource),
+    utmMedium: blank(t.utmMedium),
+    utmCampaign: blank(t.utmCampaign),
+    landingPage: blank(t.landingPage),
+    referrer: blank(t.referrer),
+    locationLat: opts.location?.lat ?? null,
+    locationLng: opts.location?.lng ?? null,
+  } satisfies Partial<LeadRow>;
+
+  if (lead.type === "contact") return { ...common, kind: "contact", message: lead.message };
+  if (lead.type === "visit") return { ...common, kind: visitKind(lead.city), city: lead.city, locality: blank(lead.locality) };
   return {
-    locality: lead.locality ? `${lead.locality}, ${name}` : name,
-    note: live ? "Quick site-visit request: take the job details on the call." : `Waitlist: not painting in ${name} yet. Call when bookings open there.`,
-    type: live ? "visit" : "waitlist",
+    ...common,
+    kind: "booking",
+    address: lead.address,
+    locality: lead.locality,
+    pincode: lead.pincode,
+    city: lead.city,
+    propertyType: blank(lead.propertyType),
+    service: blank(lead.service),
+    preferredDate: blank(lead.preferredDate),
+    message: blank(lead.message),
+    floors: blank(lead.floors),
+    homeSize: blank(lead.homeSize),
+    carpetArea: lead.carpetArea ?? null,
+    estPaintArea: estimatePaintArea(lead.carpetArea, lead.floors ?? "1", lead.service ?? ""),
   };
 }
 
-export function toRow(lead: LeadInput, id: string, submittedAt: Date): string[] {
-  const t = lead.tracking ?? {};
-  const isBooking = lead.type === "booking";
-  const visit = lead.type === "visit" ? visitDetails(lead) : undefined;
-  return [
-    submittedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
-    id,
-    visit?.type ?? lead.type,
-    lead.name,
-    lead.phone,
-    isBooking ? lead.locality : (visit?.locality ?? ""),
-    isBooking ? (lead.propertyType ?? "") : "",
-    isBooking ? (lead.service ?? "") : "",
-    isBooking ? (lead.preferredDate ?? "") : "",
-    lead.type === "visit" ? visit!.note : (lead.message ?? ""),
-    lead.page ?? "",
-    t.utmSource ?? "",
-    t.utmMedium ?? "",
-    t.utmCampaign ?? "",
-    t.landingPage ?? "",
-    t.referrer ?? "",
-    "New",
-    isBooking ? (lead.floors ?? "") : "",
-    isBooking ? (lead.homeSize ?? "") : "",
-    isBooking && lead.carpetArea ? String(lead.carpetArea) : "",
-    isBooking ? String(estimatePaintArea(lead.carpetArea, lead.floors ?? "1", lead.service ?? "") ?? "") : "",
-    isBooking ? lead.address : "",
-    isBooking ? lead.pincode : "",
-    isBooking ? (getCity(lead.city)?.name ?? lead.city) : "",
-  ];
-}
-
-// ---------- Errors ----------
-
-/** Google Sheets isn't set up and a local file can't be used (e.g. on Vercel). */
-export class StorageNotConfiguredError extends Error {
-  constructor() {
-    super("Google Sheets is not configured. Set GOOGLE_SHEETS_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY.");
-    this.name = "StorageNotConfiguredError";
-  }
-}
-
-/** Google Sheets is set up but the request failed (wrong ID, not shared, bad key...). */
-export class SheetsRequestError extends Error {
-  constructor(public status: number) {
-    super(`Google Sheets request failed with status ${status}`);
-    this.name = "SheetsRequestError";
-  }
-}
-
-// Vercel (and other serverless hosts) have a read-only disk, so a local CSV
-// would silently lose leads there. Everywhere else the CSV is a safe fallback.
-const canUseLocalFile = () => !process.env.VERCEL;
-
-// ---------- Google Sheets ----------
-
-const sheetsConfig = () => {
-  const id = process.env.GOOGLE_SHEETS_ID;
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!id || !email || !key) return null;
-  return { id, email, key, tab: process.env.GOOGLE_SHEETS_TAB || "Leads" };
-};
-
-let jwt: JWT | null = null;
-let token: { value: Promise<string>; expires: number } | null = null;
-
 /**
- * One Google access token per server instance, shared by concurrent callers and refreshed a
- * little before Google's one-hour expiry. Started early by `warmLeadStorage` so the token
- * request overlaps the rate-limit check instead of following it.
+ * Saves a lead and returns its id, plus the project a booking opened. One transaction: the lead,
+ * its project and the project's first timeline event are stored together or not at all.
  */
-function accessToken(cfg: NonNullable<ReturnType<typeof sheetsConfig>>): Promise<string> {
-  if (token && Date.now() < token.expires) return token.value;
-  jwt ??= new JWT({ email: cfg.email, key: cfg.key, scopes: ["https://www.googleapis.com/auth/spreadsheets"] });
-  const value = jwt.getAccessToken().then(({ token: t }) => {
-    if (!t) throw new Error("Google did not return an access token.");
-    return t;
+export async function saveLead(lead: LeadInput, opts: SaveLeadOptions = {}): Promise<SavedLead> {
+  const db = await getDb();
+  const row = toLeadRow(lead, opts);
+  const work = db.transaction(async (tx) => {
+    let userId = opts.userId ?? null;
+    if (userId) {
+      // the account takes the booking's name when it has none yet
+      await tx.update(users).set({ name: lead.name }).where(and(eq(users.id, userId), isNull(users.name)));
+    } else {
+      // projects are linked to customers by their verified mobile number
+      const [owner] = await tx.select({ id: users.id }).from(users).where(eq(users.phone, lead.phone)).limit(1);
+      userId = owner?.id ?? null;
+    }
+
+    const [saved] = await tx.insert(leads).values({ ...row, userId }).returning({ id: leads.id });
+    if (lead.type !== "booking") return { id: saved.id, projectId: null };
+
+    const [project] = await tx
+      .insert(projects)
+      .values({
+        leadId: saved.id,
+        userId,
+        phone: lead.phone,
+        name: lead.name,
+        service: row.service,
+        city: lead.city,
+        locality: lead.locality,
+        address: lead.address,
+        pincode: lead.pincode,
+        stage: "booked",
+      })
+      .returning({ id: projects.id });
+    await tx.insert(projectEvents).values({ projectId: project.id, stage: "booked" });
+    return { id: saved.id, projectId: project.id };
   });
-  token = { value, expires: Date.now() + 50 * 60 * 1000 };
-  value.catch(() => { token = null; }); // a failed request is retried on the next call
-  return value;
-}
-
-/** Starts fetching the Google access token without waiting for it. No-op without Sheets. */
-export function warmLeadStorage() {
-  const cfg = sheetsConfig();
-  if (cfg) accessToken(cfg).catch(() => {});
-}
-
-async function sheetsRequest(url: string, init: RequestInit, cfg: NonNullable<ReturnType<typeof sheetsConfig>>, timer?: Timer) {
-  const bearer = timer ? await timer.time("sheets-token", accessToken(cfg)) : await accessToken(cfg);
-  const res = await fetch(url, {
-    ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  // The response body is not included: it can echo request details.
-  if (!res.ok) throw new SheetsRequestError(res.status);
-  return res.json();
-}
-
-async function appendToSheet(row: string[], cfg: NonNullable<ReturnType<typeof sheetsConfig>>, timer?: Timer) {
-  const base = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values`;
-  const tab = encodeURIComponent(cfg.tab);
-
-  // Append straight away: one Google request per lead. (This used to read A1 first on every
-  // fresh server instance to check for the header row, an extra round trip on most leads.)
-  // RAW stores values as plain text, so user input is never evaluated as a formula.
-  const append = sheetsRequest(
-    `${base}/${tab}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-    { method: "POST", body: JSON.stringify({ values: [row] }) },
-    cfg,
-    timer,
-  );
-  const res = await (timer ? timer.time("sheets-append", append) : append);
-
-  // Only for the very first lead: the sheet was empty, so the row landed on row 1. Put the
-  // header there and the lead on row 2.
-  const updated: string = res?.updates?.updatedRange ?? "";
-  if (/!A1(:|$)/.test(updated)) {
-    await sheetsRequest(
-      `${base}/${tab}!A1?valueInputOption=RAW`,
-      { method: "PUT", body: JSON.stringify({ values: [LEAD_COLUMNS, row] }) },
-      cfg,
-    );
-  }
-}
-
-let headerOk = false;
-
-/**
- * Makes row 1 of the sheet the current header (once per server instance). Run after the
- * response is sent, so it never slows a submission; it adds new columns to a sheet created
- * before they existed. Never touches any other row.
- */
-export async function ensureSheetHeader() {
-  const cfg = sheetsConfig();
-  if (!cfg || headerOk) return;
-  const base = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values`;
-  const tab = encodeURIComponent(cfg.tab);
-  const json = await sheetsRequest(`${base}/${tab}!A1:${LAST_COLUMN}1`, { method: "GET" }, cfg);
-  const current: string[] = json.values?.[0] ?? [];
-  if (LEAD_COLUMNS.some((c, i) => current[i] !== c)) {
-    await sheetsRequest(`${base}/${tab}!A1:${LAST_COLUMN}1?valueInputOption=RAW`, { method: "PUT", body: JSON.stringify({ values: [LEAD_COLUMNS] }) }, cfg);
-  }
-  headerOk = true;
-}
-
-// ---------- Local CSV (development fallback) ----------
-
-const csvPath = path.join(process.cwd(), "data", "leads.csv");
-
-export function csvCell(value: string) {
-  // Neutralise spreadsheet formula injection when the CSV is opened in Excel.
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return `"${safe.replace(/"/g, '""')}"`;
-}
-
-async function appendToCsv(row: string[]) {
-  await mkdir(path.dirname(csvPath), { recursive: true });
-  const exists = await stat(csvPath).then(() => true, () => false);
-  const lines = (exists ? "" : LEAD_COLUMNS.map(csvCell).join(",") + "\n") + row.map(csvCell).join(",") + "\n";
-  await appendFile(csvPath, lines, "utf8");
+  return opts.timer ? opts.timer.time("db", work) : work;
 }
 
 // ---------- Reading (admin only) ----------
 
-export type LeadRecord = Record<(typeof LEAD_COLUMNS)[number], string>;
+const IST = (d: Date) => d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+const text = (v: string | number | null | undefined) => (v === null || v === undefined ? "" : String(v));
+const cityName = (slug: string | null) => (slug ? (getCity(slug)?.name ?? slug) : "");
 
-/** Minimal RFC 4180 CSV parser (quoted fields, escaped quotes, newlines in quotes). */
-export function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') {
-        cell += '"';
-        i++;
-      } else if (ch === '"') quoted = false;
-      else cell += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ",") {
-      row.push(cell);
-      cell = "";
-    } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else cell += ch;
-  }
-  if (cell !== "" || row.length) {
-    row.push(cell);
-    rows.push(row);
-  }
-  return rows;
+/** What a quick visit or waitlist entry asks of the team (these forms have no message of their own). */
+function visitNote(kind: string, city: string | null): string {
+  if (kind === "visit") return "Quick site-visit request: take the job details on the call.";
+  return `Waitlist: not painting in ${cityName(city)} yet. Call when bookings open there.`;
 }
 
-export function rowsToLeads(rows: string[][]): LeadRecord[] {
-  const [header, ...data] = rows;
-  if (!header) return [];
-  return data
-    .filter((r) => r.some((c) => c.trim() !== ""))
-    .map((r) => Object.fromEntries(LEAD_COLUMNS.map((col) => [col, r[header.indexOf(col)] ?? ""])) as LeadRecord)
-    .reverse(); // newest first
+type ReadRow = typeof leads.$inferSelect & { projectId: string | null };
+
+/** One stored lead as the admin table's record. */
+export function toLeadRecord(l: ReadRow): LeadRecord {
+  const isVisit = l.kind === "visit" || l.kind === "waitlist";
+  const record: Record<string, string> = {
+    "Submitted At (IST)": IST(l.createdAt),
+    "Lead ID": l.id,
+    Type: l.kind,
+    Name: l.name,
+    Phone: l.phone,
+    Locality: text(l.locality),
+    "Property Type": text(l.propertyType),
+    Service: text(l.service),
+    "Preferred Inspection Date": text(l.preferredDate),
+    Message: isVisit ? visitNote(l.kind, l.city) : text(l.message),
+    Page: text(l.page),
+    "UTM Source": text(l.utmSource),
+    "UTM Medium": text(l.utmMedium),
+    "UTM Campaign": text(l.utmCampaign),
+    "Landing Page": text(l.landingPage),
+    Referrer: text(l.referrer),
+    Status: statusLabel(l.status),
+    Floors: text(l.floors),
+    "Home Size": text(l.homeSize),
+    "Carpet Area per Floor (sq ft)": text(l.carpetArea),
+    "Est. Paint Area (sq ft)": text(l.estPaintArea),
+    Address: text(l.address),
+    "PIN Code": text(l.pincode),
+    City: cityName(l.city),
+    Channel: l.source,
+    "Project ID": text(l.projectId),
+  };
+  return Object.fromEntries(LEAD_COLUMNS.map((c) => [c, record[c]])) as LeadRecord;
 }
 
-export async function readLeads(): Promise<LeadRecord[]> {
-  const cfg = sheetsConfig();
-  if (cfg) {
-    const tab = encodeURIComponent(cfg.tab);
-    const json = await sheetsRequest(
-      `https://sheets.googleapis.com/v4/spreadsheets/${cfg.id}/values/${tab}!A1:${LAST_COLUMN}5000`,
-      { method: "GET" },
-      cfg,
-    );
-    return rowsToLeads(json.values ?? []);
-  }
-  if (!canUseLocalFile()) throw new StorageNotConfiguredError();
-  const text = await readFile(csvPath, "utf8").catch(() => "");
-  return rowsToLeads(parseCsv(text));
+/** The newest leads first (up to `limit`), each with the project its booking opened. */
+export async function readLeads(limit = 5000): Promise<LeadRecord[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ lead: leads, projectId: projects.id })
+    .from(leads)
+    .leftJoin(projects, eq(projects.leadId, leads.id))
+    .orderBy(desc(leads.createdAt), desc(leads.id))
+    .limit(limit);
+  return rows.map(({ lead, projectId }) => toLeadRecord({ ...lead, projectId }));
 }
 
-/** Saves a lead and returns its ID. `timer` (optional) records the Google steps. */
-export async function saveLead(lead: LeadInput, timer?: Timer) {
-  const id = `L${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-  const row = toRow(lead, id, new Date());
-  const cfg = sheetsConfig();
+// ---------- Follow-up status (admin only) ----------
 
-  if (cfg) {
-    await appendToSheet(row, cfg, timer);
-  } else if (!canUseLocalFile()) {
-    throw new StorageNotConfiguredError();
-  } else {
-    await appendToCsv(row);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True for one of the team's stored statuses (`new`, `called`, …; src/lib/leads/record.ts). */
+export const isLeadStatus = (value: unknown): value is LeadStatus => typeof value === "string" && Object.hasOwn(LEAD_STATUSES, value);
+
+/** A status outside LEAD_STATUSES: the caller's input was not one of the team's statuses. */
+export class InvalidLeadStatusError extends Error {
+  constructor() {
+    super(`Choose one of: ${Object.keys(LEAD_STATUSES).join(", ")}.`);
+    this.name = "InvalidLeadStatusError";
   }
-  return id;
+}
+
+/**
+ * Sets a lead's follow-up status. Throws InvalidLeadStatusError for a status outside
+ * LEAD_STATUSES; answers false when there is no such lead (an id that is not a uuid included).
+ */
+export async function updateLeadStatus(id: string, status: string): Promise<boolean> {
+  if (!isLeadStatus(status)) throw new InvalidLeadStatusError();
+  if (!UUID.test(id)) return false;
+  const db = await getDb();
+  const updated = await db.update(leads).set({ status }).where(eq(leads.id, id)).returning({ id: leads.id });
+  return updated.length > 0;
 }

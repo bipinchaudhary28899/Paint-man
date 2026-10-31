@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { postJson } from "../support/request";
 
+// Storage is mocked here (tests/backend/lead-store.test.ts covers it against a real Postgres).
 const saveLead = vi.fn();
-const warmLeadStorage = vi.fn();
-const ensureSheetHeader = vi.fn(() => Promise.resolve());
-vi.mock("@/lib/leads/store", () => ({ saveLead, warmLeadStorage, ensureSheetHeader }));
-// `after` needs a request scope; run the callback straight away in tests
-vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after: (fn: () => unknown) => { void fn(); } }));
+const readUserSession = vi.fn();
+vi.mock("@/lib/leads/store", () => ({ saveLead }));
+vi.mock("@/lib/auth/user-session", () => ({ readUserSession }));
 
 const URL_ = "http://localhost:3000/api/leads";
 const valid = {
@@ -30,7 +29,9 @@ async function loadRoute() {
 
 beforeEach(() => {
   saveLead.mockReset();
-  saveLead.mockResolvedValue("LTEST");
+  saveLead.mockResolvedValue({ id: "lead-1", projectId: "project-1" });
+  readUserSession.mockReset();
+  readUserSession.mockResolvedValue(null);
 });
 
 describe("POST /api/leads", () => {
@@ -40,16 +41,25 @@ describe("POST /api/leads", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
     expect(res.headers.get("cache-control")).toContain("no-store");
-    expect(saveLead).toHaveBeenCalledWith(expect.objectContaining({ name: "Asha Verma", phone: "9876543210" }), expect.anything());
+    expect(saveLead).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Asha Verma", phone: "9876543210" }),
+      expect.objectContaining({ source: "web", userId: undefined, timer: expect.anything() }),
+    );
   });
 
-  it("starts the Google token early and reports step timings (durations only)", async () => {
+  it("links the lead to the signed-in customer (session cookie), still answering only { ok: true }", async () => {
+    readUserSession.mockResolvedValue({ sessionId: "s1", via: "cookie", client: "web", user: { id: "user-1", phone: "9876543210", name: "Asha" } });
+    const { POST } = await loadRoute();
+    const res = await POST(postJson(URL_, { body: valid, cookie: "ps_session=abc", headers: { "x-forwarded-for": "198.51.100.200" } }));
+    expect(await res.json()).toEqual({ ok: true });
+    expect(saveLead).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ source: "web", userId: "user-1" }));
+  });
+
+  it("reports step timings (durations only)", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const { POST } = await loadRoute();
     const res = await POST(postJson(URL_, { body: valid }));
-    expect(warmLeadStorage).toHaveBeenCalled();
-    expect(ensureSheetHeader).toHaveBeenCalled(); // header kept current after the response
-    expect(res.headers.get("server-timing")).toMatch(/^ratelimit;dur=[\d.]+, total;dur=[\d.]+$/);
+    expect(res.headers.get("server-timing")).toMatch(/^ratelimit;dur=[\d.]+, session;dur=[\d.]+, total;dur=[\d.]+$/);
     const logged = info.mock.calls.map((c) => c.join(" ")).join("\n");
     expect(logged).toMatch(/Lead saved in .*"ratelimit"/);
     expect(logged).not.toContain("Asha");
@@ -112,12 +122,12 @@ describe("POST /api/leads", () => {
 
   it("returns a generic error and never logs personal details when saving fails", async () => {
     const { POST } = await loadRoute();
-    saveLead.mockRejectedValue(new Error("Google Sheets 500: backend error"));
+    saveLead.mockRejectedValue(Object.assign(new Error('duplicate key value: Key (phone)=(9876543210) "Asha"'), { code: "23505" }));
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await POST(postJson(URL_, { body: valid, headers: { "x-forwarded-for": "198.51.100.5" } }));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(JSON.stringify(json)).not.toMatch(/Google|Sheets|stack/i);
+    expect(JSON.stringify(json)).not.toMatch(/duplicate|stack|9876543210/i);
     const logged = JSON.stringify(log.mock.calls);
     expect(logged).not.toContain("9876543210");
     expect(logged).not.toContain("Asha");

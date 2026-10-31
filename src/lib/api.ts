@@ -34,9 +34,10 @@ export type ApiErrorBody = {
   meta: { generatedAt: string };
 };
 
-type OkOpts<T> = { kind: string; label: string; data: T; meta?: Record<string, unknown>; links?: Record<string, string>; headers?: HeadersInit };
+/** `status` defaults to 200 (a created record answers 201). */
+type OkOpts<T> = { kind: string; label: string; data: T; meta?: Record<string, unknown>; links?: Record<string, string>; headers?: HeadersInit; status?: number };
 
-export function apiOk<T>({ kind, label, data, meta = {}, links, headers }: OkOpts<T>) {
+export function apiOk<T>({ kind, label, data, meta = {}, links, headers, status }: OkOpts<T>) {
   const body: ApiEnvelope<T> = {
     apiVersion: API_VERSION,
     kind,
@@ -45,7 +46,7 @@ export function apiOk<T>({ kind, label, data, meta = {}, links, headers }: OkOpt
     meta: { ...meta, generatedAt: new Date().toISOString() },
     ...(links && { links }),
   };
-  return NextResponse.json(body, { headers });
+  return NextResponse.json(body, { headers, status });
 }
 
 /** An error in the envelope. `headers` is for the rare cacheable error, such as a 410 for a retired endpoint. */

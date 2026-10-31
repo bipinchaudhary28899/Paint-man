@@ -42,6 +42,18 @@ const privateHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // PGlite (the local development database, src/lib/db/client.ts) loads its WebAssembly from its own
+  // package files, so it is required at run time rather than bundled. Production always connects
+  // through DATABASE_URL (postgres.js), so its files are left out of the deployed functions too.
+  serverExternalPackages: ["@electric-sql/pglite"],
+  // (the package and Turbopack's link to it; it is only ever imported on first use without DATABASE_URL)
+  outputFileTracingExcludes: { "/*": ["node_modules/@electric-sql/pglite/**", ".next/node_modules/@electric-sql/pglite-*"] },
+  // The quotation PDF (src/lib/pdf/quotation.ts) reads the brand fonts and the logo from disk at run
+  // time, so its functions (the customer's download and the admin preview) ship with them.
+  outputFileTracingIncludes: {
+    "/api/v1/projects/*/quotations/*/pdf": ["src/lib/pdf/fonts/*.ttf", "public/brand/01-horizontal/paintsaathi-horizontal-color@2x.png"],
+    "/api/admin/projects/*/quotations/*/pdf": ["src/lib/pdf/fonts/*.ttf", "public/brand/01-horizontal/paintsaathi-horizontal-color@2x.png"],
+  },
   images: {
     // Placeholder stock photos from Pexels (free licence). Replace with your own project photos.
     remotePatterns: [{ protocol: "https", hostname: "images.pexels.com", pathname: "/photos/**" }],
@@ -72,6 +84,9 @@ const nextConfig: NextConfig = {
       ...(isPreview ? [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }] : []),
       { source: "/admin/:path*", headers: privateHeaders },
       { source: "/admin", headers: privateHeaders },
+      // the customer's account pages: personal data, never cached or indexed
+      { source: "/account/:path*", headers: privateHeaders },
+      { source: "/account", headers: privateHeaders },
       { source: "/api/:path*", headers: privateHeaders },
     ];
   },

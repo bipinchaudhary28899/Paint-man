@@ -13,9 +13,11 @@ import { ButtonRow } from "./Inline";
 
 // The thank-you page (src/app/(site)/thank-you/page.tsx and ThankYouMessage): the toolbox, the
 // heading and line for the form that was sent (?type=booking|visit|waitlist|contact) and, for a
-// booking, what happens next. The app's forms are checked but not sent until the owner approves an
-// app endpoint (mobile/README.md); they arrive here with sent=0, and then the page says plainly that
-// nothing was sent and points to the website and the ways to reach us, never to a call back.
+// booking, what happens next. A booking sent from the app (POST /api/v1/bookings, signed in) arrives
+// with sent=1 and its project id (?project=), and the page links to "Track this booking" in the
+// account. A form the app checked but did not send (the contact form: there is no app endpoint for
+// messages yet) arrives with sent=0, and then the page says plainly that nothing was sent and points
+// to the website and the ways to reach us, never to a call back.
 
 export type ThankYouType = "booking" | "visit" | "waitlist" | "contact";
 
@@ -27,6 +29,12 @@ export function thankYouType(param: string | string[] | undefined): ThankYouType
 
 /** Only a form that says it was sent (sent=1) gets the website's thank-you; anything else is treated as not sent. */
 export const wasSent = (param: string | string[] | undefined) => (Array.isArray(param) ? param[0] : param) === "1";
+
+/** The booking's project id from ?project= (an id the API gave: letters, digits and dashes), or undefined. */
+export function projectParam(param: string | string[] | undefined): string | undefined {
+  const value = Array.isArray(param) ? param[0] : param;
+  return value && /^[A-Za-z0-9-]{1,64}$/.test(value) ? value : undefined;
+}
 
 type Copy = { title: string; text: string };
 
@@ -65,17 +73,17 @@ export function webActions(type: ThankYouType): { label: string; url: string }[]
   return type === "contact" || type === "waitlist" ? [contact, book] : [book, contact];
 }
 
-/** The whole message under the toolbox, with its buttons. */
-export function ThankYou({ type, sent }: { type: ThankYouType; sent: boolean }) {
+/** The whole message under the toolbox, with its buttons; `project` (a booking sent from the app) adds "Track this booking". */
+export function ThankYou({ type, sent, project }: { type: ThankYouType; sent: boolean; project?: string }) {
   return (
     <Container style={styles.page}>
       <Art art={illustrations.toolbox} width={240} style={styles.art} />
-      {sent ? <Sent type={type} /> : <NotSent type={type} />}
+      {sent ? <Sent type={type} project={project} /> : <NotSent type={type} />}
     </Container>
   );
 }
 
-function Sent({ type }: { type: ThankYouType }) {
+function Sent({ type, project }: { type: ThankYouType; project?: string }) {
   const copy = sentCopy(type);
   return (
     <>
@@ -109,9 +117,17 @@ function Sent({ type }: { type: ThankYouType }) {
           </View>
         </View>
       )}
+      {project && type !== "waitlist" && type !== "contact" && (
+        <View style={styles.track}>
+          <P size={14} leading={20 / 14} color={colors.muted} style={styles.trackText}>
+            Your booking is in your account. Follow each step there, from the call to the handover.
+          </P>
+          <Button label="Track this booking" accessibilityRole="link" onPress={() => router.push(`/account/projects/${project}` as never)} />
+        </View>
+      )}
       <ButtonRow center style={styles.actions}>
         <Button label="Back to home" variant="secondary" textColor={colors.terracottaHover} accessibilityRole="link" onPress={() => router.navigate("/")} />
-        <Button label="Explore services" accessibilityRole="link" onPress={() => router.push("/services")} />
+        <Button label="Explore services" variant={project ? "secondary" : "primary"} accessibilityRole="link" onPress={() => router.push("/services")} />
       </ButtonRow>
     </>
   );
@@ -160,5 +176,7 @@ const styles = StyleSheet.create({
   dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.sand, alignItems: "center", justifyContent: "center" },
   dotText: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.ink },
   actions: { marginTop: 32 },
+  track: { marginTop: 32, alignSelf: "center", width: "100%", maxWidth: 448, gap: 14 },
+  trackText: { textAlign: "center" },
   hours: { marginTop: 16, textAlign: "center" },
 });

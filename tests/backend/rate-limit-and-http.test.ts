@@ -38,6 +38,15 @@ describe("memory rate limiter", () => {
     await rl.reset("a");
     expect(await rl.hit("a", 1)).toBe(true);
   });
+
+  it("says how long a blocked key must wait: until the hit that brings it under the limit expires", async () => {
+    const rl = createMemoryLimiter({ limit: 2, windowMs: 1000 });
+    expect(await rl.retryAfterMs("a", 0)).toBe(0);
+    await rl.hit("a", 100);
+    await rl.hit("a", 300);
+    expect(await rl.retryAfterMs("a", 400)).toBe(700); // the hit at 100 expires at 1100
+    expect(await rl.retryAfterMs("a", 1200)).toBe(0);
+  });
 });
 
 describe("Redis (Upstash) rate limiter for Vercel", () => {
@@ -111,6 +120,14 @@ describe("Redis (Upstash) rate limiter for Vercel", () => {
     const rl = createRateLimiter({ name: "t", limit: 1, windowMs: 60_000 });
     expect(await rl.hit("ip")).toBe(true);
     expect(await rl.hit("ip")).toBe(false);
+  });
+
+  it("says a blocked key waits until its fixed window ends, also through the fallback wrapper", async () => {
+    const rl = createRedisLimiter({ name: "t", limit: 1, windowMs: 1000 }, { url: "https://r.upstash.io", token: "tok" });
+    expect(await rl.retryAfterMs("ip", 2250)).toBe(750);
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://r.upstash.io");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "tok");
+    expect(await createRateLimiter({ name: "t", limit: 1, windowMs: 1000 }).retryAfterMs("ip", 2250)).toBe(750);
   });
 
   it("uses memory when Redis is not configured", () => {

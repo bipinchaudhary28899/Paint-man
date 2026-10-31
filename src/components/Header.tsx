@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { navMenus } from "@/config/nav";
 import { liveCityNames, site } from "@/config/site";
+import { AccountLink } from "./account/AccountLink";
 import { Wordmark } from "./Logo";
 import { HeaderLink, NavMenu } from "./NavMenu";
 
@@ -18,13 +19,16 @@ export function Header() {
           ))}
           <HeaderLink href="/faq" label="FAQ" />
         </nav>
-        <div className="hidden items-center gap-4 min-[721px]:flex md:gap-6">
+        <div className="flex items-center gap-3 md:gap-5">
           {site.phone && (
-            <a href={`tel:${site.phone}`} className="hidden text-[15px] font-medium lg:inline">
+            <a href={`tel:${site.phone}`} className="hidden text-[15px] font-medium xl:inline">
               {site.phoneDisplay || site.phone}
             </a>
           )}
-          <Link href="/book" className="btn-primary !min-h-[46px] !px-5 text-sm">
+          {/* "Log in" or "My account", chosen in the browser so the page stays static, at one fixed width for both.
+              Phones and from 900px up; on narrower tablets the row is full (the footer and the thank-you page link it). */}
+          <AccountLink className="btn-secondary !min-h-11 w-[7.25rem] !px-0 text-sm min-[721px]:!min-h-[46px] min-[721px]:max-[899px]:hidden" />
+          <Link href="/book" className="btn-primary hidden !min-h-[46px] !px-5 text-sm min-[721px]:inline-flex">
             Book site visit
           </Link>
         </div>

@@ -9,7 +9,7 @@ import { FaqDirectory } from "~/components/content/Faq";
 import { GalleryGrid, GalleryGroups, GalleryNav, GalleryNote, GalleryPreview } from "~/components/content/Gallery";
 import { ErrorNotice, NotFoundContent, ScreenError } from "~/components/content/NotFound";
 import { ProseH2, ProseList, ProseP, ProsePage } from "~/components/content/Prose";
-import { notSentCopy, sentCopy, ThankYou, thankYouType, wasSent, webActions } from "~/components/content/ThankYou";
+import { notSentCopy, projectParam, sentCopy, ThankYou, thankYouType, wasSent, webActions } from "~/components/content/ThankYou";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { webUrl } from "~/lib/config";
 import { contactLinks } from "~/lib/contact";
@@ -320,6 +320,7 @@ describe("thank you", () => {
 
   it("thanks a sent booking in the website's words, with what happens next", async () => {
     await render(<ThankYou type="booking" sent />);
+    expect(screen.queryByRole("link", { name: "Track this booking" })).toBeNull();
     expect(screen.getByLabelText(illustrations.toolbox.alt)).toBeOnTheScreen();
     expect(screen.getByRole("header", { name: "Your inspection request is in" })).toBeOnTheScreen();
     expect(screen.getByText(`Shukriya! Our team will call you shortly to confirm a time for the site visit. Hours: ${site.hoursDisplay}.`)).toBeOnTheScreen();
@@ -329,6 +330,16 @@ describe("thank you", () => {
     await fireEvent.press(screen.getByRole("link", { name: "Explore services" }));
     expect(router.navigate).toHaveBeenCalledWith("/");
     expect(router.push).toHaveBeenCalledWith("/services");
+  });
+
+  it("links a booking sent from the app to its tracker", async () => {
+    await render(<ThankYou type="booking" sent project="3f0c-1" />);
+    expect(screen.getByRole("header", { name: "Your inspection request is in" })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole("link", { name: "Track this booking" }));
+    expect(router.push).toHaveBeenCalledWith("/account/projects/3f0c-1");
+    expect(projectParam("3f0c-1")).toBe("3f0c-1");
+    expect(projectParam(["p-2", "p-3"])).toBe("p-2");
+    for (const bad of [undefined, "", "../admin", "a b", "x".repeat(65)]) expect(projectParam(bad)).toBeUndefined();
   });
 
   it("words a sent message and the waitlist as the website does, without the steps", async () => {

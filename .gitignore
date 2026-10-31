@@ -6,6 +6,8 @@ out
 *.tsbuildinfo
 next-env.d.ts
 data/*.csv
+# local development database (PGlite), created by npm run dev
+data/dev-db/
 .DS_Store
 
 # test coverage output

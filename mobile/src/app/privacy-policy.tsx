@@ -15,7 +15,9 @@ export default function PrivacyScreen() {
         <ProseH2>Information we collect</ProseH2>
         <ProseList
           items={[
-            "Details you submit in our forms: name, mobile number, locality, property type, service needed, preferred date and your message.",
+            "Details you submit in our forms: name, mobile number, address, locality, PIN code, property type, service needed, preferred date and your message.",
+            "If you sign in: your mobile number (confirmed with a one-time code sent by SMS), your name, and the projects, inspection notes and quotations for your bookings. In our app, the map location you choose for your address.",
+            "When you sign in on this website, a cookie that keeps you signed in on that device. It is not used for advertising or tracking.",
             "Basic technical information such as the page you came from and campaign tags in the link you used.",
             "Anonymous visit statistics (pages viewed, the referring site, country and device type) through Vercel Web Analytics, from our hosting provider. It uses no cookies and does not identify you.",
           ]}
@@ -28,11 +30,12 @@ export default function PrivacyScreen() {
         <ProseH2>Sharing</ProseH2>
         <ProseP>
           We share only what is needed with the people who carry out your job, such as our inspector and assigned painting team, and with service providers that host
-          our systems.
+          our systems or send our text messages, such as sign-in codes.
         </ProseP>
         <ProseH2>Retention</ProseH2>
         <ProseP>We keep enquiry records only as long as needed for the purposes above and for legal, tax and accounting requirements.</ProseP>
         <ProseH2>Your choices</ProseH2>
+        <ProseP>You can delete your account at any time from your account page or the app. Your booking records stay with us for the purposes above, no longer linked to an account.</ProseP>
         <ProseP>
           You can ask us to access, correct or delete your information, or withdraw consent to be contacted
           {site.email ? (

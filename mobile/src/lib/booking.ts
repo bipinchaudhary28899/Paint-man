@@ -14,6 +14,7 @@ import { roundLatLng, type LatLng } from "./location";
 // The booking form's data, matching the website's LeadForm: name, mobile and the full address are
 // required (plus the city, as we paint in more than one); everything about the job is optional.
 // The required-field checks and their messages are the website's own (src/lib/leads/field-checks.ts).
+// Sending the booking is src/lib/leads.ts (submitBooking).
 
 export type BookingValues = {
   name: string;
@@ -96,7 +97,7 @@ export function jobEstimate(values: Pick<BookingValues, "carpetArea" | "floors" 
 }
 
 /**
- * The JSON a booking endpoint would receive: the website's booking fields, cleaned the way its
+ * The JSON POST /api/v1/bookings receives: the website's booking fields, cleaned the way its
  * schema cleans them, with blank optional answers left out. With one live city the form asks for
  * none and the booking is for that city. `location` is the spot the visitor pinned on the map (kept
  * in the form's state, not in its text fields), sent to 6 decimals and only when there is one.
@@ -122,20 +123,4 @@ export function toBookingPayload(values: BookingValues, live: readonly City[] = 
     ...(location ? { location: roundLatLng(location) } : {}),
     page: "app",
   };
-}
-
-export type SubmitResult = { ok: true; sent: boolean } | { ok: false; errors: Partial<Record<BookingField, string>>; message: string };
-
-/**
- * Whether bookings leave the phone. The website's /api/leads accepts same-origin requests only, so
- * the app needs its own endpoint (POST /api/v1/bookings, proposed in mobile/README.md). Until the
- * owner approves and it is built, submitting checks the booking exactly as the website would and
- * reports it as not sent: nothing is transmitted or stored.
- */
-export const BOOKINGS_ARE_SENT = false;
-
-export async function submitBooking(values: BookingValues, live: readonly City[] = liveCities()): Promise<SubmitResult> {
-  const errors = validateBooking(values, live);
-  if (Object.keys(errors).length > 0) return { ok: false, errors, message: FORM_ERROR };
-  return { ok: true, sent: BOOKINGS_ARE_SENT };
 }

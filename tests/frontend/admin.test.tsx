@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { address, crew, filterLeads, jobSize, leadsToCsv, LeadsTable, optionsOf, statusOf } from "@/components/admin/LeadsTable";
 import { LoginForm } from "@/components/admin/LoginForm";
 import { SignOutButton } from "@/components/admin/SignOutButton";
-import { LEAD_COLUMNS, type LeadRecord } from "@/lib/leads/store";
+import { LEAD_COLUMNS, type LeadRecord } from "@/lib/leads/record";
 
 // Sign-in and sign-out end with a full page load (not a router transition); capture it here.
 const nav = vi.hoisted(() => ({ hardNavigate: vi.fn() }));

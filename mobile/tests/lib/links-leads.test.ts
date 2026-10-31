@@ -22,6 +22,15 @@ describe("routeFor", () => {
     expect(routeFor("/colours?brand=asian-paints&q=8386")).toEqual({ pathname: "/colours", params: { brand: "asian-paints", q: "8386" } });
   });
 
+  it("has the account screens at the website's paths", () => {
+    expect(routeFor("/login")).toEqual({ pathname: "/login", params: {} });
+    expect(routeFor("/login?next=/account")).toEqual({ pathname: "/login", params: { next: "/account" } });
+    expect(routeFor("/account")).toEqual({ pathname: "/account", params: {} });
+    expect(routeFor("/account/projects/3f0c2b1a-1111-4222-8333-444455556666")).toEqual({ pathname: "/account/projects/3f0c2b1a-1111-4222-8333-444455556666", params: {} });
+    expect(routeFor("/account/projects/a/b")).toBeNull();
+    expect(routeFor("/account/settings")).toBeNull();
+  });
+
   it("has no screen for external links or pages the app does not have", () => {
     expect(routeFor("https://wa.me/91")).toBeNull();
     expect(routeFor("/admin")).toBeNull();
@@ -53,8 +62,8 @@ describe("openHref", () => {
 });
 
 describe("contact form (stubbed)", () => {
-  it("check the website's required fields and send nothing", async () => {
-    expect(LEADS_ARE_SENT).toBe(false);
+  it("check the website's required fields and send nothing (bookings are sent; messages have no app endpoint)", async () => {
+    expect(LEADS_ARE_SENT).toEqual({ booking: true, contact: false });
     await expect(submitContact({ name: "", phone: "", message: "" })).resolves.toEqual({
       ok: false,
       errors: { name: FIELD_MESSAGES.name, phone: FIELD_MESSAGES.phone, message: FIELD_MESSAGES.message },

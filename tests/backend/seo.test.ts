@@ -321,6 +321,8 @@ describe("sitemap", () => {
     expect(urls).not.toContain("/areas");
     expect(urls.some((u) => u.includes("delhi-ncr") || u.includes("bangalore"))).toBe(false);
     expect(urls.some((u) => u.startsWith("/admin") || u.startsWith("/api") || u === "/thank-you")).toBe(false);
+    // the customer's login and account pages are noindex and never listed
+    expect(urls.some((u) => u === "/login" || u.startsWith("/account"))).toBe(false);
     expect(new Set(urls).size).toBe(urls.length);
     for (const e of sitemap()) expect(e.url.startsWith(site.url)).toBe(true);
     // the photo visualizer was retired; /visualizer now redirects to the colour finder

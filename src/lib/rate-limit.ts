@@ -12,6 +12,8 @@ export type RateLimiter = {
   /** True when the key has used up its allowance (does not record a hit). */
   isBlocked(key: string, now?: number): Promise<boolean>;
   reset(key: string, now?: number): Promise<void>;
+  /** For a key that is blocked: milliseconds until it may hit again (memory: 0 when it is not blocked). */
+  retryAfterMs(key: string, now?: number): Promise<number>;
 };
 
 type Options = { name: string; limit: number; windowMs: number };
@@ -37,6 +39,11 @@ export function createMemoryLimiter({ limit, windowMs }: Omit<Options, "name">):
     },
     async reset(key) {
       hits.delete(key);
+    },
+    async retryAfterMs(key, now = Date.now()) {
+      const list = recent(key, now);
+      // the hit whose expiry brings the key back under the limit
+      return list.length < limit ? 0 : list[list.length - limit] + windowMs - now;
     },
   };
 }
@@ -75,6 +82,10 @@ export function createRedisLimiter({ name, limit, windowMs }: Options, cfg: { ur
     async reset(key, now = Date.now()) {
       await pipeline([["DEL", keyFor(key, now)]]);
     },
+    // fixed windows: a blocked key is free again when its window ends (no request needed)
+    async retryAfterMs(_key, now = Date.now()) {
+      return windowMs - (now % windowMs);
+    },
   };
 }
 
@@ -103,6 +114,8 @@ export function createRateLimiter(opts: Options): RateLimiter {
     hit: withFallback(redis.hit, memory.hit),
     isBlocked: withFallback(redis.isBlocked, memory.isBlocked),
     reset: withFallback(redis.reset, memory.reset),
+    // the longer wait of the two, in case the memory limiter stood in for Redis
+    retryAfterMs: async (key, now) => Math.max(await redis.retryAfterMs(key, now), await memory.retryAfterMs(key, now)),
   };
 }
 

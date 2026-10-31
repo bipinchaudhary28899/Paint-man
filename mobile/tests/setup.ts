@@ -48,3 +48,34 @@ jest.mock("expo-location", () => ({
   geocodeAsync: jest.fn(async () => []),
   reverseGeocodeAsync: jest.fn(async () => []),
 }));
+
+// The secure store keeps the session token: an in-memory map per test (`__store` lets a test seed
+// or read it). Its calls are recorded mocks.
+jest.mock("expo-secure-store", () => {
+  const store = new Map<string, string>();
+  return {
+    __store: store,
+    getItemAsync: jest.fn(async (key: string) => store.get(key) ?? null),
+    setItemAsync: jest.fn(async (key: string, value: string) => void store.set(key, value)),
+    deleteItemAsync: jest.fn(async (key: string) => void store.delete(key)),
+  };
+});
+beforeEach(() => (jest.requireMock("expo-secure-store") as { __store: Map<string, string> }).__store.clear());
+
+// The quotation PDF: expo-file-system's File and Paths as plain objects (a File's uri joins its
+// parts), with downloadFileAsync a recorded mock answering the destination file; expo-sharing's
+// calls are recorded mocks of a phone that can share.
+jest.mock("expo-file-system", () => {
+  class File {
+    uri: string;
+    constructor(...parts: (string | { uri: string })[]) {
+      this.uri = parts.map((p) => (typeof p === "string" ? p : p.uri)).join("/");
+    }
+    static downloadFileAsync = jest.fn(async (_url: string, destination: unknown) => destination);
+  }
+  return { File, Paths: { cache: { uri: "file:///cache" } } };
+});
+jest.mock("expo-sharing", () => ({
+  isAvailableAsync: jest.fn(async () => true),
+  shareAsync: jest.fn(async () => undefined),
+}));

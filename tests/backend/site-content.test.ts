@@ -36,7 +36,7 @@ const allCopy = (s: Service) => [...specificCopy(s), s.title, s.description, ...
 // Routes a link in site.ts may point to: every page in the real sitemap, plus the real pages kept
 // out of it on purpose (noindex). A link to anything else dangles, so a renamed or removed route
 // fails here instead of shipping a 404.
-const unlistedRoutes = ["/thank-you"];
+const unlistedRoutes = ["/thank-you", "/login", "/account"];
 const knownRoutes = new Set([...sitemap().map((e) => e.url.replace(site.url, "") || "/"), ...unlistedRoutes]);
 
 /** Why an internal href would not land on a page (or a locality on a city page); undefined when it does. */

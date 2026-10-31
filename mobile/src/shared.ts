@@ -2,7 +2,8 @@
 // (../src), not copies: services, cities and their localities, promises and FAQs (src/config/site.ts),
 // the menus and footer link hub (nav.ts), photos and alt text (images.ts), the ideas gallery
 // (gallery.ts), colour combinations (palettes.ts), the room the finder previews shades on
-// (scenes.ts), and the booking form's checks, options, date range and job estimate (src/lib/leads).
+// (scenes.ts), the booking form's checks, options, date range and job estimate (src/lib/leads), and
+// the customer-facing project stages (src/lib/projects/stages.ts: labels and one-line explanations).
 // Change the facts there and both the site and the app follow. Add an export here when a screen
 // needs another one; never copy website data into the app.
 
@@ -57,3 +58,4 @@ export { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyType
 export { BOOKING_DAYS_AHEAD, bookingDateRange, indiaToday, isCalendarDate } from "@/lib/leads/dates";
 export { crewEstimate, estimatePaintArea, floorCount, formatSqft, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 export { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
+export { MAIN_STAGES, STAGE_LABELS, stageExplanation, type ProjectStage, type StageStep } from "@/lib/projects/stages";

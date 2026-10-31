@@ -135,6 +135,8 @@ export function footerColumns(): { heading: string; links: NavLink[] }[] {
         { href: "/about", label: "About us" },
         { href: "/faq", label: "FAQs" },
         { href: "/contact", label: "Contact" },
+        // the customer's projects and quotations (noindex; it sends a signed-out visitor to /login)
+        { href: "/account", label: "My account" },
       ],
     },
   ];

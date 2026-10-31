@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, useWindowDimensions, View, type NativeScrollEven
 import Animated, { makeMutable, useAnimatedRef, useReducedMotion, useScrollOffset, useSharedValue, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AccountButton } from "~/components/account/AccountButton";
 import { Logo } from "~/components/ui/Media";
 import { site } from "~/shared";
 import { colors, gutter, HEADER_HEIGHT } from "~/theme";
@@ -187,7 +188,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
   );
 }
 
-/** The website's phone header: the short "PS" logo linking home and the menu button, on frosted canvas, a hairline under it. */
+/** The website's phone header: the short "PS" logo linking home, then the account control ("Log in", or the customer's initials) and the menu button, on frosted canvas, a hairline under it. */
 export function Header() {
   const insets = useSafeAreaInsets();
   const { scrollTo } = usePage();
@@ -200,7 +201,10 @@ export function Header() {
         <Pressable accessibilityRole="link" accessibilityLabel={`${site.name} home`} onPress={() => router.navigate("/")} hitSlop={8}>
           <Logo name="short" height={40} decorative />
         </Pressable>
-        <MenuButton open={menu} onPress={() => setMenu(true)} />
+        <View style={styles.headerEnd}>
+          <AccountButton />
+          <MenuButton open={menu} onPress={() => setMenu(true)} />
+        </View>
       </View>
       <NavDrawer open={menu} onClose={() => setMenu(false)} scrollTo={scrollTo} />
     </View>
@@ -240,6 +244,7 @@ const styles = StyleSheet.create({
   header: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, elevation: 10, borderBottomWidth: 1, borderColor: colors.lineSoft, overflow: "hidden" },
   headerWash: { backgroundColor: "rgba(248, 245, 239, 0.9)" },
   headerRow: { minHeight: HEADER_HEIGHT - 1, paddingHorizontal: gutter, paddingVertical: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headerEnd: { flexDirection: "row", alignItems: "center", gap: 10 },
   container: { paddingHorizontal: gutter },
   ctaRoom: { height: CTA_HEIGHT + CTA_GAP },
   ctaRoomInk: { backgroundColor: colors.ink },

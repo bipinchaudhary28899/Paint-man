@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { crewEstimate, formatSqft } from "@/lib/leads/estimate";
-import type { LeadRecord } from "@/lib/leads/store";
+import { LEAD_STATUSES, type LeadRecord, type LeadStatus } from "@/lib/leads/record";
+import { adminSend } from "./useAdminAction";
 
 type Filter = "all" | "booking" | "visit" | "waitlist" | "contact";
 
@@ -27,8 +29,62 @@ export function address(l: LeadRecord): string {
   return l["PIN Code"] ? `${place} ${l["PIN Code"]}` : place;
 }
 
-/** A lead's status, "New" until someone sets one in the sheet. */
+/** A lead's status, "New" until the team sets another. */
 export const statusOf = (l: LeadRecord) => l.Status || "New";
+
+/** The stored status for a label the table shows ("Not interested" → "not_interested"), or "" for a label outside the list. */
+export function statusKey(label: string): LeadStatus | "" {
+  const found = Object.entries(LEAD_STATUSES).find(([, l]) => l === label);
+  return found ? (found[0] as LeadStatus) : "";
+}
+
+/**
+ * The status control of one lead: choosing another status saves it at once (PATCH
+ * /api/admin/leads/{id}); the choice shows straight away and goes back if the save fails.
+ */
+function StatusSelect({ lead, onSaved }: { lead: LeadRecord; onSaved: (label: string) => void }) {
+  const [pending, setPending] = useState<LeadStatus | null>(null);
+  const [error, setError] = useState("");
+  const current = statusOf(lead);
+  const key = statusKey(current);
+
+  async function change(next: LeadStatus) {
+    setPending(next);
+    setError("");
+    const result = await adminSend<{ statusLabel: string }>("PATCH", `/api/admin/leads/${lead["Lead ID"]}`, { status: next });
+    if (result.ok) onSaved(result.data.statusLabel);
+    else setError(result.status === 401 ? "Session ended: sign in again." : result.message);
+    setPending(null);
+  }
+
+  return (
+    <div>
+      <select
+        aria-label={`Status of ${lead.Name}`}
+        value={pending ?? (key || current)}
+        disabled={pending !== null}
+        onChange={(e) => change(e.target.value as LeadStatus)}
+        className="field w-auto min-w-36 !py-2 !pl-3 !pr-9 text-sm disabled:opacity-60"
+      >
+        {!key && (
+          <option value={current} disabled>
+            {current}
+          </option>
+        )}
+        {Object.entries(LEAD_STATUSES).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      {error && (
+        <p role="alert" className="mt-1 max-w-48 text-xs font-semibold text-danger">
+          Not saved: {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /** The distinct, non-empty values of a column across the leads, sorted: the options of a filter. */
 export function optionsOf(leads: LeadRecord[], pick: (l: LeadRecord) => string): string[] {
@@ -86,7 +142,10 @@ function downloadCsv(leads: LeadRecord[]) {
   URL.revokeObjectURL(url);
 }
 
-export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
+export function LeadsTable({ leads: loaded }: { leads: LeadRecord[] }) {
+  // statuses changed on this page since it loaded, by lead id (the table, its counts and filters use them)
+  const [saved, setSaved] = useState<Record<string, string>>({});
+  const leads = useMemo(() => loaded.map((l) => (saved[l["Lead ID"]] ? { ...l, Status: saved[l["Lead ID"]] } : l)), [loaded, saved]);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<Filter>("all");
   const [city, setCity] = useState("");
@@ -183,12 +242,13 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
           )}
         </div>
       ) : (
-        // tall lists scroll inside the frame, so the column headings stay in view
-        <div className="mt-6 max-h-[70vh] overflow-auto rounded-2xl border border-line bg-paper">
-          <table className="w-full min-w-[900px] text-left text-sm">
+        // tall lists scroll inside the frame, so the column headings stay in view; relative, so the
+        // screen-reader text in the rows (absolutely placed) stays inside it and never widens the page
+        <div className="relative mt-6 max-h-[70vh] overflow-auto rounded-2xl border border-line bg-paper">
+          <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-ink text-on-ink">
               <tr>
-                {["Received", "Name", "Phone", "Type", "Address", "Property", "Service", "Job size", "Est. area & crew", "Preferred date", "Message", "Source", "Status"].map((h) => (
+                {["Received", "Name", "Phone", "Type", "Address", "Property", "Service", "Job size", "Est. area & crew", "Preferred date", "Message", "Source", "Status", "Project"].map((h) => (
                   <th key={h} scope="col" className="px-4 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
@@ -211,7 +271,14 @@ export function LeadsTable({ leads }: { leads: LeadRecord[] }) {
                   <td className="max-w-xs px-4 py-3 text-muted">{l.Message}</td>
                   <td className="px-4 py-3 text-muted">{[l["UTM Source"], l["UTM Campaign"]].filter(Boolean).join(" / ") || "Direct"}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-cream-wash px-2.5 py-1 text-xs font-bold">{statusOf(l)}</span>
+                    <StatusSelect lead={l} onSaved={(label) => setSaved((s) => ({ ...s, [l["Lead ID"]]: label }))} />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    {l["Project ID"] && (
+                      <Link href={`/admin/projects/${l["Project ID"]}`} className="font-semibold text-tangerine-text underline">
+                        Open project <span className="sr-only">for {l.Name}</span>
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

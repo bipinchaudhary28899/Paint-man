@@ -1,12 +1,10 @@
 import { FIELD_MESSAGES, requiredFieldErrors } from "@/lib/leads/field-checks";
 import {
-  BOOKINGS_ARE_SENT,
   bookingRequiredFields,
   carpetAreaProblem,
   emptyBooking,
   FORM_ERROR,
   jobEstimate,
-  submitBooking,
   toBookingPayload,
   validateBooking,
 } from "~/lib/booking";
@@ -92,19 +90,5 @@ describe("toBookingPayload", () => {
 
   it("books the only live city when there is one", () => {
     expect(toBookingPayload({ ...complete, city: "" }, [agra]).city).toBe("agra");
-  });
-});
-
-describe("submitBooking (stubbed)", () => {
-  it("sends nothing: a complete booking is checked and reported as not sent", async () => {
-    const fetchMock = jest.fn();
-    globalThis.fetch = fetchMock;
-    expect(BOOKINGS_ARE_SENT).toBe(false);
-    await expect(submitBooking(complete, live)).resolves.toEqual({ ok: true, sent: false });
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("returns the field errors and the form line", async () => {
-    await expect(submitBooking({ ...complete, pincode: "12" }, live)).resolves.toEqual({ ok: false, errors: { pincode: FIELD_MESSAGES.pincode }, message: FORM_ERROR });
   });
 });

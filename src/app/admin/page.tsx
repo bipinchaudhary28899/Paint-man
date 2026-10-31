@@ -1,6 +1,5 @@
+import { AdminHeader } from "@/components/admin/AdminHeader";
 import { LeadsTable } from "@/components/admin/LeadsTable";
-import { SignOutButton } from "@/components/admin/SignOutButton";
-import { Logo } from "@/components/Logo";
 import { requireAdmin } from "@/lib/auth/server";
 import { leadLoadErrorMessage } from "@/lib/leads/load-error";
 import { readLeads, type LeadRecord } from "@/lib/leads/store";
@@ -23,20 +22,11 @@ export default async function AdminPage() {
 
   return (
     <div className="container-page py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-5">
-        <div className="flex items-center gap-2.5">
-          <Logo />
-          <div>
-            <p className="font-display text-xl font-normal">Leads</p>
-            <p className="text-xs text-muted">
-              Signed in as {session.sub} · Loaded at {loadedAt} ·{" "}
-              {/* a plain link: a fresh page load re-reads the sheet, with or without JavaScript */}
-              <a href="/admin" className="font-semibold text-ink underline">Refresh</a>
-            </p>
-          </div>
-        </div>
-        <SignOutButton />
-      </header>
+      <AdminHeader title="Leads" user={session.sub} current="leads">
+        Loaded at {loadedAt} ·{" "}
+        {/* a plain link: a fresh page load re-reads the database, with or without JavaScript */}
+        <a href="/admin" className="font-semibold text-ink underline">Refresh</a>
+      </AdminHeader>
       {loadError ? (
         <div role="alert" className="mt-8 rounded-2xl border border-line bg-peach-wash p-5">
           <p className="font-display text-lg font-bold">Couldn&apos;t load leads</p>

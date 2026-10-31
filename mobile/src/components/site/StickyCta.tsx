@@ -16,13 +16,13 @@ import { navReach } from "./BottomNav";
 // The floating "Book a free inspection" pill: past the first screen of a page it rises just above the
 // bottom nav whenever the visitor scrolls back up, and slides away while they scroll down (so it never
 // sits over the buttons and shades they are reading towards) and again near the top. It stays off the
-// pages that are themselves the booking or contact form (/book, /thank-you, /contact) and steps aside
+// pages that are themselves the booking or contact form (/book, /thank-you, /contact, /login) and steps aside
 // while a booking form is on screen, so it never covers the form it points to. With a WhatsApp number
 // in site.ts a round WhatsApp button sits beside it; with only a phone number, a "Call" pill. Neither
 // shows while those numbers are empty (contactLinks).
 
-/** Pages where the pill never shows: the booking page, its thank-you page and the contact page. */
-export const CTA_HIDDEN_ROUTES = ["/book", "/thank-you", "/contact"] as const;
+/** Pages where the pill never shows: the booking page, its thank-you page, the contact page and the login screen. */
+export const CTA_HIDDEN_ROUTES = ["/book", "/thank-you", "/contact", "/login"] as const;
 
 /** The page anchors that hold a booking or contact form (BookingSection, the services' block, the city waitlist, the contact form). */
 export const FORM_ANCHORS: readonly string[] = ["book-visit", "book-inspection", "waitlist", "send-message"];

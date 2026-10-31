@@ -1,15 +1,22 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { AccessibilityInfo, Linking } from "react-native";
 import { getAnimatedStyle } from "react-native-reanimated";
 
-import { LeadForm, localityChoices } from "~/components/site/LeadForm";
+import { LeadForm, localityChoices, SIGN_IN_NOTE } from "~/components/site/LeadForm";
+import { AuthProvider, useAuth, type Auth } from "~/lib/auth-context";
+import { emptyBooking, toBookingPayload } from "~/lib/booking";
+import { heldBooking, holdBooking, releaseBooking } from "~/lib/pending-booking";
 import { FORM_ERROR } from "~/lib/leads";
 import { CITY_DELTA, INDIA, NOT_LISTED_NOTE, regionAt, type Place } from "~/lib/location";
 import { FIELD_MESSAGES, liveCities, site, type City } from "~/shared";
+import { asha, mockApi, seedToken, type Answer, type Call } from "../account/helpers";
 
-jest.mock("expo-router", () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));
+jest.mock("expo-router", () => ({
+  router: { push: jest.fn(), navigate: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
+  usePathname: jest.fn(() => "/book"),
+}));
 
 // every host input's focus() (the preset's shared mock); its `this` says which field took focus
 const focus: jest.Mock = jest.requireActual("@react-native/jest-preset/jest/MockNativeMethods").default.focus;
@@ -42,7 +49,24 @@ async function fillAddress(city: City = agra) {
   await type("PIN code", "282005");
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  releaseBooking();
+});
+
+const toLogin = { pathname: "/login", params: { next: "/book", resume: "booking" } };
+const booked: Answer = { status: 201, data: { received: true, projectId: "p-1" } };
+
+/** The form inside a signed-in session (the saved token checked with /api/v1/me), the booking endpoint answering `bookings`. */
+async function renderSignedIn(ui: React.ReactElement, bookings: Answer | Answer[] = booked, user = asha) {
+  seedToken();
+  const calls = mockApi({ "GET /api/v1/me": { data: user }, "POST /api/v1/bookings": bookings });
+  await render(<AuthProvider>{ui}</AuthProvider>);
+  await waitFor(() => expect(calls.some((c) => c.path === "/api/v1/me")).toBe(true));
+  return calls;
+}
+
+const bookingCalls = (calls: Call[]) => calls.filter((c) => c.path === "/api/v1/bookings");
 
 describe("localityChoices", () => {
   const areas = ["Kamla Nagar", "Krishna Nagar", "Dayalbagh"];
@@ -190,23 +214,26 @@ describe("LeadForm (booking): step 2, where to paint", () => {
     expect(screen.getByText(FIELD_MESSAGES.pincode)).toBeOnTheScreen();
   });
 
-  it("opens the thank-you page after a complete booking, marked as not sent", async () => {
+  it("signed out, holds a complete booking and opens the login screen, saying a code comes first", async () => {
     await render(<LeadForm type="booking" />);
     await toWhereToPaint();
+    expect(screen.getByText(SIGN_IN_NOTE)).toBeOnTheScreen();
     await fillAddress();
     await press("Book my inspection");
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "0" } });
+    expect(router.push).toHaveBeenCalledWith(toLogin);
+    expect(heldBooking()).toMatchObject({ path: "/book", values: { name: "Asha Verma", phone: "98765 43210", pincode: "282005" } });
   });
 
   it("hands the result to onDone instead when given, with the note under both steps' buttons", async () => {
     const onDone = jest.fn();
-    await render(<LeadForm type="booking" onDone={onDone} footnote="Zero advance payment." />);
+    await renderSignedIn(<LeadForm type="booking" onDone={onDone} footnote="Zero advance payment." />);
     expect(screen.getByText("Zero advance payment.")).toBeOnTheScreen();
     await toWhereToPaint();
     expect(screen.getByText("Zero advance payment.")).toBeOnTheScreen();
+    expect(screen.queryByText(SIGN_IN_NOTE)).toBeNull();
     await fillAddress();
     await press("Book my inspection");
-    expect(onDone).toHaveBeenCalledWith({ sent: false });
+    await waitFor(() => expect(onDone).toHaveBeenCalledWith({ sent: true, projectId: "p-1" }));
     expect(router.push).not.toHaveBeenCalled();
   });
 
@@ -377,7 +404,9 @@ describe("LeadForm (booking): the address from the map", () => {
     expect(screen.getByRole("radio", { name: agra.name })).toBeChecked();
     await press("Continue");
     await press("Book my inspection");
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "0" } });
+    // signed out: the pinned spot is held with the answers for after the sign-in
+    expect(router.push).toHaveBeenCalledWith(toLogin);
+    expect(heldBooking()?.pin).toMatchObject({ coords: home, short: "12 Nehru Road, Kamla Nagar, Agra", outside: false });
   });
 
   it("clears the errors the pin fixes", async () => {
@@ -416,7 +445,8 @@ describe("LeadForm (booking): the address from the map", () => {
     expect(openSettings).toHaveBeenCalled();
     await fillAddress();
     await press("Book my inspection");
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "0" } });
+    expect(router.push).toHaveBeenCalledWith(toLogin);
+    expect(heldBooking()?.pin).toBeUndefined();
   });
 
   it("says when location services are off, without a Settings link", async () => {
@@ -501,5 +531,117 @@ describe("LeadForm (contact)", () => {
     await type("How can we help?", "Waitlist for Delhi NCR");
     await press("Send message");
     expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "contact", sent: "0" } });
+  });
+});
+
+describe("LeadForm (booking): sending it", () => {
+  let auth: Auth;
+  function Probe() {
+    auth = useAuth();
+    return null;
+  }
+
+  it("signed in, starts with the account's name and mobile, and sends the booking with the pin", async () => {
+    const calls = await renderSignedIn(<LeadForm type="booking" />);
+    expect(screen.getByLabelText("Your name")).toHaveProp("value", "Asha Verma");
+    expect(screen.getByLabelText("Mobile number")).toHaveProp("value", "9876543210");
+    await fireEvent.press(screen.getByRole("radio", { name: agra.name }));
+    await press("Continue");
+    await fillAddress();
+    await press("Book my inspection");
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "1", project: "p-1" } }));
+    const [sent] = bookingCalls(calls);
+    expect(sent).toMatchObject({ method: "POST", headers: { Authorization: "Bearer saved-token" } });
+    expect(sent.body).toEqual(
+      JSON.parse(JSON.stringify(toBookingPayload(emptyBooking({ name: "Asha Verma", phone: "9876543210", city: "agra", address: "12, Rose Villa, Nehru Road", locality: agra.areas[0], pincode: "282005" })))),
+    );
+  });
+
+  it("fills the name and mobile from the account once it loads, leaving typed answers alone", async () => {
+    seedToken();
+    mockApi({ "GET /api/v1/me": { data: { ...asha, name: null } } });
+    await render(
+      <AuthProvider>
+        <LeadForm type="booking" />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(screen.getByLabelText("Mobile number")).toHaveProp("value", "9876543210"));
+    expect(screen.getByLabelText("Your name")).toHaveProp("value", "");
+  });
+
+  it("sends the held booking once the visitor signs in, with nothing retyped", async () => {
+    const calls = mockApi({ "POST /api/v1/auth/verify": { data: { user: asha, token: "new-token", expiresAt: "2027-01-29T00:00:00.000Z" } }, "POST /api/v1/bookings": booked });
+    await render(
+      <AuthProvider>
+        <LeadForm type="booking" />
+        <Probe />
+      </AuthProvider>,
+    );
+    await toWhereToPaint();
+    await fillAddress();
+    await press("Book my inspection");
+    expect(router.push).toHaveBeenLastCalledWith(toLogin);
+    expect(bookingCalls(calls)).toHaveLength(0);
+    // the login screen signs in; the form under it sends the booking
+    await act(async () => void (await auth.signIn("9876543210", "123456")));
+    await waitFor(() => expect(router.push).toHaveBeenLastCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "1", project: "p-1" } }));
+    expect(bookingCalls(calls)).toHaveLength(1);
+    expect(bookingCalls(calls)[0]).toMatchObject({ headers: { Authorization: "Bearer new-token" }, body: { name: "Asha Verma", phone: "9876543210", pincode: "282005", city: "agra" } });
+    expect(heldBooking()).toBeNull();
+  });
+
+  it("opened again after signing in, takes the held booking back and sends it", async () => {
+    const values = emptyBooking({ name: "Asha Verma", phone: "9876543210", city: "agra", address: "12, Rose Villa, Nehru Road", locality: "Kamla Nagar", pincode: "282005" });
+    holdBooking({ path: "/book", values, pin: { coords: { lat: 27.2, lng: 78.0 }, short: "Kamla Nagar, Agra", outside: false } });
+    const calls = await renderSignedIn(<LeadForm type="booking" />);
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "1", project: "p-1" } }));
+    expect(bookingCalls(calls)[0].body).toMatchObject({ address: "12, Rose Villa, Nehru Road", location: { lat: 27.2, lng: 78 } });
+    expect(screen.getByText("Pinned on the map")).toBeOnTheScreen();
+  });
+
+  it("does not take a booking held on another screen", async () => {
+    holdBooking({ path: "/services/interior-painting/agra", values: emptyBooking({ name: "Someone" }) });
+    const calls = await renderSignedIn(<LeadForm type="booking" />);
+    expect(screen.getByLabelText("Your name")).toHaveProp("value", "Asha Verma");
+    expect(bookingCalls(calls)).toHaveLength(0);
+    expect(heldBooking()).not.toBeNull();
+  });
+
+  it("shows the API's message on the field it names, back on the first step", async () => {
+    await renderSignedIn(<LeadForm type="booking" />, {
+      status: 400,
+      error: { code: "invalid_request", message: "Please check the highlighted fields.", details: { phone: "Use the mobile number you signed in with (******3210)" } },
+    });
+    await type("Mobile number", "9999999999");
+    await fireEvent.press(screen.getByRole("radio", { name: agra.name }));
+    await press("Continue");
+    await fillAddress();
+    await press("Book my inspection");
+    expect(await screen.findByText("Use the mobile number you signed in with (******3210)")).toBeOnTheScreen();
+    expect(step()).toHaveAccessibilityValue({ now: 1 });
+    expect(screen.getByRole("alert")).toHaveTextContent(FORM_ERROR);
+    await waitFor(() => expect(focused()).toBe("Mobile number"));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("shows the API's one message when it cannot take the booking now, staying on the step", async () => {
+    await renderSignedIn(<LeadForm type="booking" />, { status: 429, error: { code: "rate_limited", message: "Too many requests. Try again in 40 seconds.", details: { retryAfterSeconds: 40 } } });
+    await fireEvent.press(screen.getByRole("radio", { name: agra.name }));
+    await press("Continue");
+    await fillAddress();
+    await press("Book my inspection");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many requests. Try again in 40 seconds.");
+    expect(step()).toHaveAccessibilityValue({ now: 2 });
+  });
+
+  it("asks for sign-in again when the session has expired", async () => {
+    await renderSignedIn(<LeadForm type="booking" />, { status: 401, error: { code: "unauthenticated", message: "Sign in to continue: your session is missing or has expired." } });
+    await fireEvent.press(screen.getByRole("radio", { name: agra.name }));
+    await press("Continue");
+    await fillAddress();
+    await press("Book my inspection");
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(toLogin));
+    expect(heldBooking()?.values.pincode).toBe("282005");
+    expect(screen.getByText(SIGN_IN_NOTE)).toBeOnTheScreen();
   });
 });
