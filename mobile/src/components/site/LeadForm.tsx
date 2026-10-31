@@ -1,16 +1,18 @@
 import { router } from "expo-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, FadeInLeft, FadeInRight, FadeOutLeft, FadeOutRight, LayoutAnimationConfig, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { Button } from "~/components/ui/Button";
 import { Plus } from "~/components/ui/Bits";
+import { LocationPicker, type PinResult } from "~/components/site/LocationPicker";
 import { Collapse } from "~/components/ui/Collapse";
 import { Skeleton } from "~/components/ui/Skeleton";
 import { DateInput, Field, Input, optionsOf, PhoneInput, PillChoice, Select, type Focusable } from "~/components/ui/Field";
 import { bookingRequiredFields, carpetAreaProblem, DETAIL_FIELDS, emptyBooking, FORM_ERROR, jobEstimate, type BookingField, type BookingValues } from "~/lib/booking";
 import { submitBooking, submitContact, type SubmitResult } from "~/lib/leads";
 import { openHref } from "~/lib/links";
+import { cityRegion, fillFromPlace, locate, locateProblem, NOT_LISTED_NOTE, opensSettings, regionAt, type LatLng, type LocateProblem, type MapRegion } from "~/lib/location";
 import {
   bookingDateRange,
   fieldProblem,
@@ -36,6 +38,10 @@ import { colors, fonts, radii } from "~/theme";
 // (name, mobile, message). Mistakes show with the website's own words on Continue, on submit, or when
 // the visitor leaves a field they typed in, and the first one takes focus. A sent form opens the
 // thank-you page, as on the website.
+// "Where to paint" starts with "Use my current location" (the only place location permission is
+// asked) and "Pick on the map": both open the map picker, and confirming the pin fills the address,
+// locality, PIN code and (when it is a live city) the city, all still editable. The pinned spot stays
+// in the form's state for the booking's optional `location`; typing the address works as before.
 
 type FormType = "booking" | "contact";
 type Values = BookingValues;
@@ -133,6 +139,13 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   // focus moves after the render that shows the field (the next step, or the opened details)
   const [focusOn, setFocusOn] = useState<{ field: BookingField }>();
   const inputs = useRef<Partial<Record<BookingField, Focusable | null>>>({});
+  // the map picker: where it opens (open while set), the phone's position once shared, and the confirmed pin
+  const [picker, setPicker] = useState<MapRegion>();
+  const [gps, setGps] = useState<LatLng>();
+  const [pin, setPin] = useState<{ coords: LatLng; short: string; outside: boolean }>();
+  const [locating, setLocating] = useState(false);
+  const [opening, setOpening] = useState(false);
+  const [locError, setLocError] = useState<LocateProblem>();
 
   useEffect(() => {
     if (focusOn) inputs.current[focusOn.field]?.focus();
@@ -143,15 +156,17 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
     return isRequiredField(field) && required.includes(field) ? fieldProblem(field, value) : undefined;
   };
 
-  /** Sets a value and clears its error once the value is fine, so the visitor sees the fix land. */
-  function set(field: BookingField, value: string) {
-    setValues((v) => ({ ...v, [field]: value }));
-    if (!errors[field] || problemFor(field, value)) return;
+  /** Sets values and clears their errors once they are fine, so the visitor sees the fix land. */
+  function fill(patch: Partial<Values>) {
+    setValues((v) => ({ ...v, ...patch }));
     const next = { ...errors };
-    delete next[field];
+    for (const [field, value] of Object.entries(patch) as [BookingField, string][]) if (next[field] && !problemFor(field, value)) delete next[field];
+    if (Object.keys(next).length === Object.keys(errors).length) return;
     setErrors(next);
     if (Object.keys(next).length === 0) setFormError("");
   }
+
+  const set = (field: BookingField, value: string) => fill({ [field]: value });
 
   /** Leaving a required field the visitor typed in checks it there and then (an empty one waits for submit). */
   function blur(field: BookingField) {
@@ -200,6 +215,42 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
     if (DETAIL_FIELDS.some((f) => result.errors[f])) setMoreOpen(true);
     const first = ORDER.find((f) => result.errors[f]);
     if (first) setFocusOn({ field: first });
+  }
+
+  /** "Use my current location": asks for permission (only here), finds the phone and opens the map there. */
+  async function locateMe() {
+    setLocError(undefined);
+    setLocating(true);
+    const found = await locate();
+    setLocating(false);
+    if (!found.ok) return setLocError(found.problem);
+    setGps(found.coords);
+    setPicker(regionAt(found.coords));
+  }
+
+  /** "Pick on the map": opens the map over the chosen city (or the first live one), without asking for location. */
+  async function pickOnMap() {
+    setLocError(undefined);
+    setOpening(true);
+    const start = await cityRegion((city ?? live[0])?.name);
+    setOpening(false);
+    setPicker(start);
+  }
+
+  /** The confirmed pin fills the address fields it has answers for (an explicit action, so it may replace typed ones). */
+  function confirmPin({ coords, place }: PinResult) {
+    setPicker(undefined);
+    setLocError(undefined);
+    const found = place ? fillFromPlace(place, live, city) : undefined;
+    if (found) {
+      const patch: Partial<Values> = {};
+      if (found.address) patch.address = found.address;
+      if (found.locality) patch.locality = found.locality;
+      if (found.pincode) patch.pincode = found.pincode;
+      if (found.city && askCity) patch.city = found.city.slug;
+      fill(patch);
+    }
+    setPin({ coords, short: found?.short ?? "", outside: found !== undefined && !found.city });
   }
 
   const register = (name: BookingField) => (el: Focusable | null) => {
@@ -300,6 +351,39 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
           </Animated.View>
         ) : (
           <Animated.View key="step-2" entering={stepMotion.secondIn} exiting={stepMotion.secondOut} style={styles.step}>
+            {pin ? (
+              <View style={styles.pinned}>
+                <View style={styles.pinnedText}>
+                  <Text style={styles.carriedKey}>Pinned on the map</Text>
+                  <Text style={styles.pinnedAddress} numberOfLines={2}>
+                    {pin.short || "Type the address below"}
+                  </Text>
+                </View>
+                <Pressable accessibilityRole="button" accessibilityLabel="Change the pinned location" onPress={() => setPicker(regionAt(pin.coords))} style={styles.change}>
+                  <Text style={styles.changeText}>Change</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.locate}>
+                <Button label="Use my current location" busyLabel="Finding you…" busy={locating} disabled={opening} onPress={locateMe} height={48} accessibilityHint="Opens a map at your location to pin your home" />
+                <Pressable accessibilityRole="button" accessibilityState={{ busy: opening, disabled: locating || opening }} disabled={locating || opening} onPress={pickOnMap} style={styles.pickLink}>
+                  <Text style={styles.pickText}>{opening ? "Opening the map…" : "Pick on the map"}</Text>
+                </Pressable>
+              </View>
+            )}
+            {pin?.outside && <Text style={styles.note}>{NOT_LISTED_NOTE}</Text>}
+            {locError && (
+              <View style={styles.locError}>
+                <Text style={styles.note} accessibilityLiveRegion="polite">
+                  {locateProblem(locError, "form")}
+                </Text>
+                {opensSettings(locError) && (
+                  <Pressable accessibilityRole="link" onPress={() => void Linking.openSettings()} style={styles.settings}>
+                    <Text style={styles.settingsText}>Open Settings</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
             <Field label="House / flat no., building and street" error={errors.address}>
               <Input
                 {...bind("address", "House / flat no., building and street")}
@@ -393,6 +477,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
           </Animated.View>
         )}
         {notes}
+        {picker && <LocationPicker start={picker} gps={gps} onConfirm={confirmPin} onClose={() => setPicker(undefined)} onLocated={setGps} />}
       </View>
     </LayoutAnimationConfig>
   );
@@ -415,6 +500,18 @@ const styles = StyleSheet.create({
   carriedService: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 21, color: colors.ink },
   carriedNote: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.muted },
   localities: { marginTop: 10 },
+  locate: { gap: 2 },
+  pickLink: { alignSelf: "center", minHeight: 44, paddingHorizontal: 12, justifyContent: "center" },
+  pickText: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: colors.ink, textDecorationLine: "underline" },
+  pinned: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: radii.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper, paddingLeft: 14, paddingRight: 4, paddingVertical: 8 },
+  pinnedText: { flex: 1, gap: 2 },
+  pinnedAddress: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.ink },
+  change: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, alignItems: "center", justifyContent: "center" },
+  changeText: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.terracotta, textDecorationLine: "underline" },
+  note: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.muted },
+  locError: { borderRadius: radii.md, backgroundColor: colors.creamWash, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 2 },
+  settings: { alignSelf: "flex-start", minHeight: 44, justifyContent: "center" },
+  settingsText: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.terracotta, textDecorationLine: "underline" },
   details: { borderRadius: radii.md, borderWidth: 1, borderStyle: "dashed", borderColor: colors.lineStrong, backgroundColor: colors.creamWash },
   summary: { minHeight: 50, paddingHorizontal: 14, paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   summaryText: { flex: 1, fontSize: 15, color: colors.ink },

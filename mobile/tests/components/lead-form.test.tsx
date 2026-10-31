@@ -1,11 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import * as Location from "expo-location";
 import { router } from "expo-router";
-import { AccessibilityInfo } from "react-native";
+import { AccessibilityInfo, Linking } from "react-native";
 import { getAnimatedStyle } from "react-native-reanimated";
 
 import { LeadForm, localityChoices } from "~/components/site/LeadForm";
 import { FORM_ERROR } from "~/lib/leads";
-import { FIELD_MESSAGES, liveCities, type City } from "~/shared";
+import { CITY_DELTA, INDIA, NOT_LISTED_NOTE, regionAt, type Place } from "~/lib/location";
+import { FIELD_MESSAGES, liveCities, site, type City } from "~/shared";
 
 jest.mock("expo-router", () => ({ router: { push: jest.fn(), navigate: jest.fn() } }));
 
@@ -319,6 +321,169 @@ describe("LeadForm (booking): what the page prefilled", () => {
     await render(<LeadForm type="booking" />);
     await fireEvent.press(screen.getByRole("link", { name: "privacy policy" }));
     expect(router.push).toHaveBeenCalledWith({ pathname: "/privacy-policy", params: {} });
+  });
+});
+
+describe("LeadForm (booking): the address from the map", () => {
+  const loc = jest.mocked(Location);
+  const granted = { status: "granted", granted: true, canAskAgain: true, expires: "never" } as Awaited<ReturnType<typeof Location.requestForegroundPermissionsAsync>>;
+  const home = { lat: 27.2046, lng: 78.0042 };
+  const kamlaNagar: Place = { name: "12 Nehru Road", streetNumber: "12", street: "Nehru Road", district: "Kamla Nagar", city: "Agra", subregion: "Agra", postalCode: "282005" };
+  const lucknow: Place = { name: "MG Road", district: "Hazratganj", city: "Lucknow", subregion: "Lucknow", postalCode: "226001" };
+  const map = () => screen.getByLabelText("Map. Move it to put the pin on your home");
+  const placeIs = (place: Place | null) => loc.reverseGeocodeAsync.mockResolvedValue(place ? [place as Location.LocationGeocodedAddress] : []);
+  const shareLocation = () => press("Use my current location");
+  const confirm = () => press("Confirm this location");
+
+  beforeEach(() => {
+    loc.requestForegroundPermissionsAsync.mockResolvedValue(granted);
+    loc.hasServicesEnabledAsync.mockResolvedValue(true);
+    loc.getCurrentPositionAsync.mockResolvedValue({ coords: { latitude: home.lat, longitude: home.lng, altitude: null, accuracy: 5, altitudeAccuracy: null, heading: null, speed: null }, timestamp: 0 });
+    loc.getLastKnownPositionAsync.mockResolvedValue(null);
+    loc.geocodeAsync.mockResolvedValue([]);
+    placeIs(kamlaNagar);
+  });
+
+  it("asks for location only when the visitor taps for it", async () => {
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint();
+    expect(screen.getByRole("button", { name: "Use my current location" })).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Pick on the map" })).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Map. Move it to put the pin on your home")).toBeNull();
+    expect(loc.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    await shareLocation();
+    expect(loc.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(map()).toHaveProp("initialRegion", regionAt(home));
+  });
+
+  it("fills the address, locality, PIN and city from the confirmed pin, all still editable", async () => {
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint(mathura);
+    await type("House / flat no., building and street", "typed before");
+    await shareLocation();
+    await confirm();
+    expect(screen.queryByLabelText("Map. Move it to put the pin on your home")).toBeNull();
+    expect(screen.getByLabelText("House / flat no., building and street")).toHaveProp("value", "12 Nehru Road");
+    expect(screen.getByLabelText(`Locality in ${agra.name}`)).toHaveProp("value", "Kamla Nagar");
+    expect(screen.getByRole("radio", { name: "Kamla Nagar" })).toBeChecked();
+    expect(screen.getByLabelText("PIN code")).toHaveProp("value", "282005");
+    expect(screen.getByText("Pinned on the map")).toBeOnTheScreen();
+    expect(screen.getByText("12 Nehru Road, Kamla Nagar, Agra")).toBeOnTheScreen();
+    expect(screen.queryByText(NOT_LISTED_NOTE)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Use my current location" })).toBeNull();
+    await type("House / flat no., building and street", "Flat 4, 12 Nehru Road");
+    expect(screen.getByLabelText("House / flat no., building and street")).toHaveProp("value", "Flat 4, 12 Nehru Road");
+    await press("Back");
+    expect(screen.getByRole("radio", { name: agra.name })).toBeChecked();
+    await press("Continue");
+    await press("Book my inspection");
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "0" } });
+  });
+
+  it("clears the errors the pin fixes", async () => {
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint();
+    await press("Book my inspection");
+    expect(screen.getByRole("alert")).toHaveTextContent(FORM_ERROR);
+    await shareLocation();
+    await confirm();
+    for (const f of ["address", "locality", "pincode"] as const) expect(screen.queryByText(FIELD_MESSAGES[f])).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("reopens the map at the pinned spot with Change", async () => {
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint();
+    await shareLocation();
+    await fireEvent(map(), "regionChangeComplete", regionAt({ lat: 27.21, lng: 78.01 }), {});
+    await confirm();
+    await press("Change the pinned location");
+    expect(map()).toHaveProp("initialRegion", regionAt({ lat: 27.21, lng: 78.01 }));
+    await press("Close the map");
+    expect(screen.queryByLabelText("Map. Move it to put the pin on your home")).toBeNull();
+    expect(screen.getByText("Pinned on the map")).toBeOnTheScreen();
+  });
+
+  it("says calmly when location is off, links to Settings, and typing the address still works", async () => {
+    loc.requestForegroundPermissionsAsync.mockResolvedValue({ ...granted, status: "denied", granted: false } as typeof granted);
+    const openSettings = jest.spyOn(Linking, "openSettings").mockResolvedValue(undefined);
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint();
+    await shareLocation();
+    expect(screen.getByText(`Location is off for ${site.name}. Type your address below, or turn location on in Settings.`)).toBeOnTheScreen();
+    expect(screen.queryByLabelText("Map. Move it to put the pin on your home")).toBeNull();
+    await fireEvent.press(screen.getByRole("link", { name: "Open Settings" }));
+    expect(openSettings).toHaveBeenCalled();
+    await fillAddress();
+    await press("Book my inspection");
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "booking", sent: "0" } });
+  });
+
+  it("says when location services are off, without a Settings link", async () => {
+    loc.hasServicesEnabledAsync.mockResolvedValue(false);
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint();
+    await shareLocation();
+    expect(screen.getByText(/^Location services are off on this phone\. Type your address below/)).toBeOnTheScreen();
+    expect(screen.queryByRole("link", { name: "Open Settings" })).toBeNull();
+  });
+
+  it("opens the map over the chosen city without asking for location", async () => {
+    loc.geocodeAsync.mockResolvedValue([{ latitude: 27.49, longitude: 77.67 }]);
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint(mathura);
+    await press("Pick on the map");
+    expect(loc.geocodeAsync).toHaveBeenCalledWith("Mathura, India");
+    expect(map()).toHaveProp("initialRegion", regionAt({ lat: 27.49, lng: 77.67 }, CITY_DELTA));
+    expect(loc.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it("opens over India when the city cannot be found, and over the only live city when no city is asked", async () => {
+    await render(<LeadForm type="booking" live={[agra]} />);
+    await type("Your name", "Asha Verma");
+    await type("Mobile number", "9876543210");
+    await press("Continue");
+    await press("Pick on the map");
+    expect(loc.geocodeAsync).toHaveBeenCalledWith(`${agra.name}, India`);
+    expect(map()).toHaveProp("initialRegion", INDIA);
+  });
+
+  it("notes, in the site's words, a pin outside the cities we paint in, leaving the city as chosen", async () => {
+    placeIs(lucknow);
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint(mathura);
+    await shareLocation();
+    await confirm();
+    expect(screen.getByText(NOT_LISTED_NOTE)).toBeOnTheScreen();
+    expect(screen.getByText("MG Road, Hazratganj, Lucknow")).toBeOnTheScreen();
+    expect(screen.getByLabelText(`Locality in ${mathura.name}`)).toHaveProp("value", "Hazratganj");
+    await press("Back");
+    expect(screen.getByRole("radio", { name: mathura.name })).toBeChecked();
+  });
+
+  it("keeps what was typed when the address under the pin cannot be found", async () => {
+    placeIs(null);
+    await render(<LeadForm type="booking" />);
+    await toWhereToPaint();
+    await type("PIN code", "282005");
+    await shareLocation();
+    await confirm();
+    expect(screen.getByText("Type the address below")).toBeOnTheScreen();
+    expect(screen.getByLabelText("PIN code")).toHaveProp("value", "282005");
+    expect(screen.getByLabelText("House / flat no., building and street")).toHaveProp("value", "");
+    expect(screen.queryByText(NOT_LISTED_NOTE)).toBeNull();
+  });
+
+  it("does not ask for a city when only one is live, and notes a pin outside it", async () => {
+    placeIs({ ...kamlaNagar, city: "Mathura", subregion: "Mathura", district: "Krishna Nagar" });
+    await render(<LeadForm type="booking" live={[agra]} />);
+    await type("Your name", "Asha Verma");
+    await type("Mobile number", "9876543210");
+    await press("Continue");
+    await shareLocation();
+    await confirm();
+    expect(screen.getByText(NOT_LISTED_NOTE)).toBeOnTheScreen();
+    expect(screen.getByLabelText(`Locality in ${agra.name}`)).toHaveProp("value", "Krishna Nagar");
   });
 });
 

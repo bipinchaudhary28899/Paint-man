@@ -216,16 +216,28 @@ describe("the home page", () => {
     expect((paths[0].props.skia as { color: string }).color).toBe("#e8d7c5");
   });
 
-  it("lists the localities of every live city, each opening its entry on the city page", async () => {
+  it("shows one live city at a time: switch cities, open a locality, book in the city or see its page", async () => {
     await renderHome();
     expect(screen.getByRole("header", { name: `Painting homes across ${liveCityNames()}` })).toBeOnTheScreen();
-    const city = liveCities()[0];
-    const area = city.areas[0];
-    await fireEvent.press(screen.getByRole("link", { name: `Painters in ${area}` }));
-    expect(router.push).toHaveBeenCalledWith({ pathname: `/services/house-painting/${city.slug}`, params: { section: expect.any(String) } });
-    const cityLinks = screen.getAllByRole("link", { name: city.name });
-    await fireEvent.press(cityLinks[cityLinks.length - 1]);
-    expect(router.push).toHaveBeenLastCalledWith({ pathname: `/services/house-painting/${city.slug}`, params: {} });
+    const [first, second] = liveCities();
+    expect(screen.getByRole("tab", { name: first.name })).toBeSelected();
+    expect(screen.getByText(`${first.areas.length} localities · ${first.region}`)).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole("link", { name: `Painters in ${first.areas[0]}` }));
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: `/services/house-painting/${first.slug}`, params: { section: expect.any(String) } });
+
+    // the second city's card replaces the first
+    await fireEvent.press(screen.getByRole("tab", { name: second.name }));
+    expect(screen.getByRole("tab", { name: second.name })).toBeSelected();
+    expect(screen.queryByRole("link", { name: `Painters in ${first.areas[0]}` })).toBeNull();
+    await fireEvent.press(screen.getByRole("link", { name: `Book in ${second.name}` }));
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: `/services/house-painting/${second.slug}`, params: { section: "book-visit" } });
+    await fireEvent.press(screen.getByRole("link", { name: `See painting in ${second.name}` }));
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: `/services/house-painting/${second.slug}`, params: {} });
+
+    await fireEvent.press(screen.getByRole("link", { name: "Ask us" }));
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: "/contact", params: {} });
+    expect(screen.getByText(/^Coming next: /)).toBeOnTheScreen();
   });
 
   it("closes with the general FAQs, the first open, and the banner", async () => {

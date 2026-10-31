@@ -65,7 +65,9 @@ Proposed endpoint (not built; needs the owner's OK):
 POST /api/v1/leads   (JSON, ≤ 10 KB)
 Body: the website's lead schema (src/lib/leads/schema.ts): booking or contact
   booking: name, phone, address, locality, pincode, city; optional service,
-           propertyType, floors, homeSize, carpetArea, preferredDate, message
+           propertyType, floors, homeSize, carpetArea, preferredDate, message,
+           location { lat, lng } (numbers, 6 decimals; only when the visitor
+           pinned the spot on the map; the schema would need this optional field)
   contact: name, phone, message
   website (honeypot), page: "app"
 No same-origin check (an app sends no Origin). Bounded instead by:
@@ -77,7 +79,15 @@ No same-origin check (an app sends no Origin). Bounded instead by:
 All responses Cache-Control: no-store. Saved through saveLead. Doc comment and tests per status.
 ```
 
-`toBookingPayload()` and `toContactPayload()` already build those bodies. Wiring it up means one `fetch` in `src/lib/leads.ts` and setting `LEADS_ARE_SENT` to `true`.
+`toBookingPayload()` and `toContactPayload()` already build those bodies (pass the form's pinned spot as `toBookingPayload`'s third argument). Wiring it up means one `fetch` in `src/lib/leads.ts` and setting `LEADS_ARE_SENT` to `true`.
+
+## Location on the booking form
+
+"Where to paint" starts with **Use my current location** and **Pick on the map** (`site/LocationPicker.tsx`, logic in `src/lib/location.ts`). Both open a full-screen map with a pin fixed at its centre: the visitor drags the map under the pin (it lifts while the map moves and drops when it stops; still under reduce motion) or taps a spot, and the address under the pin is looked up as the map settles. **Confirm this location** fills the address, locality, PIN code and, when the place is in a live city, the city; every field stays editable and typing the address works as before. A place outside the live cities shows the site's own "If your area is not listed…" line.
+
+- Location permission (when in use only) is asked only when the visitor taps **Use my current location** (or **Locate me** on a map opened without it), never on load. Pick on the map opens over the chosen city without asking.
+- The position is used only to fill the address. It is never logged, and it stays in the form's state (the booking's optional `location`, which nothing sends until the endpoint above exists).
+- Expo Go needs no key (iOS uses Apple Maps). An Android standalone build needs a Google Maps API key in the app config (the `react-native-maps` config plugin's `androidGoogleMapsApiKey`). On Android the geocoder needs location permission, so Pick on the map without it opens over India and asks the visitor to type the address.
 
 ## Not done yet
 

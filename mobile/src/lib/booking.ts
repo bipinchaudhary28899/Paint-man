@@ -9,6 +9,7 @@ import {
   type City,
   type RequiredField,
 } from "~/shared";
+import { roundLatLng, type LatLng } from "./location";
 
 // The booking form's data, matching the website's LeadForm: name, mobile and the full address are
 // required (plus the city, as we paint in more than one); everything about the job is optional.
@@ -97,9 +98,10 @@ export function jobEstimate(values: Pick<BookingValues, "carpetArea" | "floors" 
 /**
  * The JSON a booking endpoint would receive: the website's booking fields, cleaned the way its
  * schema cleans them, with blank optional answers left out. With one live city the form asks for
- * none and the booking is for that city.
+ * none and the booking is for that city. `location` is the spot the visitor pinned on the map (kept
+ * in the form's state, not in its text fields), sent to 6 decimals and only when there is one.
  */
-export function toBookingPayload(values: BookingValues, live: readonly City[] = liveCities()) {
+export function toBookingPayload(values: BookingValues, live: readonly City[] = liveCities(), location?: LatLng) {
   const optional = (v: string) => v.trim() || undefined;
   const carpet = values.carpetArea.replace(/[,\s]/g, "");
   return {
@@ -117,6 +119,7 @@ export function toBookingPayload(values: BookingValues, live: readonly City[] = 
     carpetArea: carpet ? Number(carpet) : undefined,
     preferredDate: optional(values.preferredDate),
     message: optional(values.message),
+    ...(location ? { location: roundLatLng(location) } : {}),
     page: "app",
   };
 }

@@ -32,6 +32,16 @@
         {
           "backgroundColor": "#f8f5ef"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Paint Saathi uses your location only when you tap \"Use my location\", to fill in the address for your painting inspection.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
       ]
     ],
     "experiments": {
