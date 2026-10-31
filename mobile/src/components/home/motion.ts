@@ -1,3 +1,5 @@
+import { colors } from "~/theme";
+
 // The home page's scroll-driven motion as plain functions (worklets, so they run on the UI thread with
 // the page's scroll offset). They mirror the website's CSS timelines: the pinned reveal's `view()`
 // timeline over its 300vh track (src/components/home/PinnedReveal.tsx and .pin-* in globals.css) and
@@ -21,10 +23,13 @@ export function reveal(p: number) {
   return { fill, stage, edgeVisible: fill > 1 && fill < 99 };
 }
 
-/** A stage's opacity in the strip: the current one full, those done 55%, those to come 30%. */
-export function stageOpacity(i: number, stage: number) {
+/**
+ * A stage's colours in the strip: the current one ink with a terracotta number, the others the muted
+ * greys (6.3:1 and 5:1 on canvas), so every stage stays readable rather than fading.
+ */
+export function stageColours(i: number, stage: number) {
   "worklet";
-  return i === stage ? 1 : i < stage ? 0.55 : 0.3;
+  return i === stage ? { number: colors.terracotta, title: colors.ink } : { number: colors.muted2, title: colors.muted };
 }
 
 /** Where a page-content y sits on the screen: content starts under the header (`headerHeight`). */

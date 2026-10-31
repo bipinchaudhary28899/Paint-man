@@ -76,7 +76,7 @@ export function ColourExplorer() {
           <div className="relative mt-5 h-[150px] overflow-hidden rounded-[22px] tab:mt-6 tab:flex tab:h-auto tab:items-stretch tab:gap-4 tab:overflow-visible tab:rounded-[20px] tab:border tab:border-line-soft tab:bg-paper tab:p-3 desk:mt-9 desk:gap-5 desk:p-4">
             <div className="absolute inset-0 transition-colors duration-300 tab:static tab:min-h-[84px] tab:w-[92px] tab:shrink-0 tab:rounded-[14px] desk:min-h-0 desk:w-28" style={{ background: hex }} />
             <div className="absolute inset-x-3 bottom-3 flex min-w-0 flex-col justify-center gap-0.5 rounded-[14px] bg-canvas/94 px-3.5 py-3 tab:static tab:gap-1 tab:rounded-none tab:bg-transparent tab:p-0">
-              <span className="text-[10px] uppercase tracking-[0.12em] text-muted-2 tab:text-xs">Selected shade</span>
+              <span className="text-[11px] uppercase tracking-[0.12em] text-muted-2 tab:text-xs">Selected shade</span>
               <span className="flex flex-wrap items-baseline justify-between gap-x-2.5 tab:contents">
                 <strong className="font-display text-[22px] font-normal tracking-[-0.01em] tab:text-[26px] desk:text-[28px]">{name}</strong>
                 <span className="text-[13px] text-muted tab:text-sm">{hex.toUpperCase()} · {family}</span>

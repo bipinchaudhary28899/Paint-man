@@ -66,7 +66,7 @@ export function ServicesSection() {
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1 tab:gap-2 tab:max-desk:px-4 tab:max-desk:pb-[18px] tab:max-desk:pt-4 desk:block desk:p-7 desk:pb-8">
                 <span
-                  className={`sticker self-start !backdrop-blur-none max-tab:px-2 max-tab:py-[5px] max-tab:text-[9px] tab:px-2.5 tab:py-1.5 tab:text-[10px] desk:hidden ${look.chip}`}
+                  className={`sticker self-start !backdrop-blur-none max-tab:px-2.5 max-tab:py-[5px] max-tab:text-[11px] tab:px-2.5 tab:py-1.5 tab:text-[11px] desk:hidden ${look.chip}`}
                 >
                   {look.label}
                 </span>

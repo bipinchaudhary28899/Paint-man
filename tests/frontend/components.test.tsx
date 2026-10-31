@@ -317,7 +317,7 @@ describe("ThankYouMessage", () => {
   });
 });
 
-describe("Paint Saathi logos (one lock-up per screen size)", () => {
+describe("Paint Saathi logos", () => {
   const sizeOf = async (p: string) => {
     const { readFileSync } = await import("node:fs");
     const { join } = await import("node:path");
@@ -325,26 +325,24 @@ describe("Paint Saathi logos (one lock-up per screen size)", () => {
     return [png.readUInt32BE(16), png.readUInt32BE(20)];
   };
 
-  it("header: the short PS logo on phones, the full horizontal logo from the wide breakpoint", async () => {
-    const { Wordmark, BRAND, WIDE_MEDIA } = await import("@/components/Logo");
+  it("header: the full horizontal logo at every width, smaller on phones, with its space reserved", async () => {
+    const { Wordmark, BRAND } = await import("@/components/Logo");
     const { container } = render(<Wordmark eager />);
     const img = screen.getByAltText("Paint Saathi");
-    expect(decodeURIComponent(img.getAttribute("src")!)).toContain(BRAND.short.color.src);
-    expect(img).toHaveAttribute("width", String(BRAND.short.color.width));
+    expect(decodeURIComponent(img.getAttribute("src")!)).toContain(BRAND.horizontal.color.src);
+    // the logo's own size, so its space is reserved before it loads
+    expect(img).toHaveAttribute("width", String(BRAND.horizontal.color.width));
+    expect(img).toHaveAttribute("height", String(BRAND.horizontal.color.height));
     expect(img).toHaveAttribute("loading", "eager");
-    expect(img.className).toMatch(/h-10 .*min-\[721px\]:h-11 .*lg:h-12/); // smaller on phones, bigger on desktop
-    const source = container.querySelector("picture source")!;
-    expect(source).toHaveAttribute("media", WIDE_MEDIA);
-    expect(decodeURIComponent(source.getAttribute("srcset")!)).toContain(BRAND.horizontal.color.src);
-    // the wide logo's own size, so its space is reserved before it loads
-    expect(source).toHaveAttribute("width", String(BRAND.horizontal.color.width));
-    expect(source).toHaveAttribute("height", String(BRAND.horizontal.color.height));
+    expect(img.className).toMatch(/h-8 .*min-\[360px\]:h-9 .*min-\[721px\]:h-11 .*lg:h-12/); // smaller on phones, bigger on desktop
+    expect(container.querySelector("picture")).toBeNull(); // no separate phone lock-up
+    expect(container.innerHTML).not.toContain("short");
   });
 
   it("reversed variants exist for dark backgrounds, and the footer uses the stacked logo", async () => {
     const { Wordmark, StackedLogo, BRAND } = await import("@/components/Logo");
     const { container, unmount } = render(<Wordmark variant="reversed" />);
-    expect(decodeURIComponent(container.querySelector("source")!.getAttribute("srcset")!)).toContain(BRAND.horizontal.reversed.src);
+    expect(decodeURIComponent(container.querySelector("img")!.getAttribute("src")!)).toContain(BRAND.horizontal.reversed.src);
     unmount();
     render(<StackedLogo />);
     const img = screen.getByAltText("Paint Saathi");
@@ -354,7 +352,7 @@ describe("Paint Saathi logos (one lock-up per screen size)", () => {
 
   it("every logo the site uses exists in the brand pack at its stated size", async () => {
     const { BRAND } = await import("@/components/Logo");
-    for (const set of [BRAND.horizontal, BRAND.short, BRAND.stacked]) {
+    for (const set of [BRAND.horizontal, BRAND.stacked]) {
       for (const art of Object.values(set)) expect(await sizeOf(art.src), art.src).toEqual([art.width, art.height]);
     }
     expect(await sizeOf(BRAND.mark)).toEqual([256, 256]);

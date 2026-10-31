@@ -50,7 +50,7 @@ export function Hero() {
         <dl className="mt-5 grid grid-cols-3 gap-2 tab:col-span-2 tab:row-start-4 tab:mx-5 tab:-mt-11 tab:gap-3 tab:max-desk:relative tab:max-desk:z-[1] desk:mx-0 desk:mt-14 desk:flex desk:flex-wrap desk:gap-10 desk:border-t desk:border-line desk:pt-7">
           {facts.map(([k, v]) => (
             <div key={k} className="rounded-[14px] border border-line-soft bg-paper px-3 pb-3.5 pt-3 tab:rounded-[18px] tab:px-[18px] tab:py-4 desk:rounded-none desk:border-0 desk:bg-transparent desk:p-0">
-              <dt className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted tab:text-[11px] desk:text-xs desk:font-normal">{k}</dt>
+              <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted tab:text-[11px] desk:text-xs desk:font-normal">{k}</dt>
               <dd className="mt-1 text-[13px] font-semibold leading-[1.3] tab:mt-1.5 tab:text-[15px] tab:leading-[1.35] desk:text-base desk:font-medium desk:leading-normal">{v}</dd>
             </div>
           ))}

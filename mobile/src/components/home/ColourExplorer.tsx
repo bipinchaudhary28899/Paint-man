@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  labelKey: { fontFamily: fonts.sans, fontSize: 10, lineHeight: 15, letterSpacing: 1.2, textTransform: "uppercase", color: colors.muted2 },
+  labelKey: { fontFamily: fonts.sans, fontSize: 11, lineHeight: 15, letterSpacing: 1.2, textTransform: "uppercase", color: colors.muted2 },
   labelRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", columnGap: 10 },
   name: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 33, letterSpacing: -0.22, color: colors.ink },
   hex: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19.5, letterSpacing: -0.08, color: colors.muted },

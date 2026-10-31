@@ -9,7 +9,7 @@ import { Container, usePage } from "~/components/site/Page";
 import { Em, Eyebrow, H } from "~/components/ui/Text";
 import { genericScene } from "~/shared";
 import { colors, fonts } from "~/theme";
-import { containProgress, reveal, screenTop, stageOpacity, stickyOffset } from "./motion";
+import { containProgress, reveal, screenTop, stageColours, stickyOffset } from "./motion";
 import { skiaSource } from "./pictures";
 import { useContentY } from "./useContentY";
 
@@ -165,14 +165,15 @@ function StickerLabel({ index, label, stage }: { index: number; label: string; s
 }
 
 function Stage({ index, title, stage }: { index: number; title: string; stage: SharedValue<number> }) {
-  const dim = useAnimatedStyle(() => ({ opacity: stageOpacity(index, stage.value) }));
+  const number = useAnimatedStyle(() => ({ color: stageColours(index, stage.value).number }));
+  const name = useAnimatedStyle(() => ({ color: stageColours(index, stage.value).title }));
   const rule = useAnimatedStyle(() => ({ opacity: stage.value === index ? 1 : 0 }));
   return (
-    <Animated.View style={[styles.stage, dim]}>
+    <View style={styles.stage}>
       <Animated.View style={[styles.rule, rule]} />
-      <Text style={styles.stageNo}>0{index + 1}</Text>
-      <Text style={styles.stageTitle}>{title}</Text>
-    </Animated.View>
+      <Animated.Text style={[styles.stageNo, number]}>0{index + 1}</Animated.Text>
+      <Animated.Text style={[styles.stageTitle, name]}>{title}</Animated.Text>
+    </View>
   );
 }
 
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
   edge: { height: 1, backgroundColor: "rgba(248, 245, 239, 0.9)", boxShadow: "0px 0px 20px 4px rgba(248, 245, 239, 0.5)" },
   sticker: { position: "absolute", left: 14, top: 14, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: "rgba(248, 245, 239, 0.9)" },
   stickerLabel: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
-  stickerText: { fontFamily: fonts.sansSemiBold, fontSize: 10, lineHeight: 10, letterSpacing: 1.2, textTransform: "uppercase", color: colors.ink },
+  stickerText: { fontFamily: fonts.sansSemiBold, fontSize: 11, lineHeight: 11, letterSpacing: 1.2, textTransform: "uppercase", color: colors.ink },
   invisible: { opacity: 0 },
   stages: { marginTop: 14, flexDirection: "row", gap: 8 },
   stage: { flex: 1, borderTopWidth: 2, borderColor: colors.line, paddingTop: 6, gap: 2 },

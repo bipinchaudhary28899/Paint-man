@@ -17,7 +17,7 @@ describe("images", () => {
     expect(imageSource(illustrations.painter.src)).not.toHaveProperty("uri");
     expect(imageSource(images.uniformCeiling.src)).not.toHaveProperty("uri");
     expect(imageSource(images.livingRoom.src, 800)).toEqual({ uri: `${images.livingRoom.src}?auto=compress&cs=tinysrgb&w=800` });
-    expect(Object.keys(logos)).toEqual(["short", "stackedReversed", "stackedColor"]);
+    expect(Object.keys(logos)).toEqual(["horizontal", "stackedReversed", "stackedColor"]);
   });
 
   it("refuses a path it cannot show", () => {

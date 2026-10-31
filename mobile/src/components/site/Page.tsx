@@ -14,7 +14,7 @@ import { Footer } from "./Footer";
 import { useNavState } from "./nav-state";
 import { CTA_GAP, CTA_HEIGHT, CTA_HIDDEN_ROUTES, FORM_ANCHORS, StickyCta } from "./StickyCta";
 
-// Every screen is a website page: the sticky header (the short "PS" logo on phones, and the menu
+// Every screen is a website page: the sticky header (the full Paint Saathi logo, and the menu
 // button that opens the drawer), the page's sections, then the footer, all in one scroll. In-page
 // anchors (the website's #ids) register with the page; a `section` param (from a link with a
 // #fragment) scrolls to its anchor, 96px below the top as the website's scroll-margin-top does. The
@@ -188,7 +188,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
   );
 }
 
-/** The website's phone header: the short "PS" logo linking home, then the account control ("Log in", or the customer's initials) and the menu button, on frosted canvas, a hairline under it. */
+/** The phone header: the full Paint Saathi logo (mark and name) linking home, then the account control ("Log in", or the customer's initials) and the menu button, on frosted canvas, a hairline under it. */
 export function Header() {
   const insets = useSafeAreaInsets();
   const { scrollTo } = usePage();
@@ -199,7 +199,7 @@ export function Header() {
       <View style={[StyleSheet.absoluteFill, styles.headerWash]} />
       <View style={styles.headerRow}>
         <Pressable accessibilityRole="link" accessibilityLabel={`${site.name} home`} onPress={() => router.navigate("/")} hitSlop={8}>
-          <Logo name="short" height={40} decorative />
+          <Logo name="horizontal" height={32} decorative />
         </Pressable>
         <View style={styles.headerEnd}>
           <AccountButton />

@@ -92,7 +92,11 @@ describe("PinnedReveal on every screen", () => {
     const marks = rules(screen.getByRole("list"));
     expect(marks.map((m) => m.style.opacity)).toEqual(["0", "0", "1", "0"]);
     const items = within(screen.getByRole("list")).getAllByRole("listitem");
-    expect(items.map((li) => li.style.opacity)).toEqual(["0.55", "0.55", "1", "0.3"]);
+    // the current stage is switched on (ink title, terracotta number); the rest stay readable greys, never faded
+    expect(items.map((li) => li.style.getPropertyValue("--stage-on"))).toEqual(["0", "0", "1", "0"]);
+    expect(items.map((li) => li.style.opacity)).toEqual(["", "", "", ""]);
+    expect(items[2].querySelector(".pin-no")).not.toBeNull();
+    expect(items[2].querySelector(".pin-title")).toHaveTextContent("First coat");
     raf.mockRestore();
   });
 });

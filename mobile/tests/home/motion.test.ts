@@ -1,5 +1,6 @@
 import { COLLAGE_ASPECT, COLLAGE_GAP, collageHeight, collageTiles, pieceBox, shapePath, tileBox } from "~/components/home/collage";
-import { clamp01, containProgress, coverProgress, easeInOutQuad, reveal, riseIn, screenTop, stageOpacity, stickyOffset } from "~/components/home/motion";
+import { clamp01, containProgress, coverProgress, easeInOutQuad, reveal, riseIn, screenTop, stageColours, stickyOffset } from "~/components/home/motion";
+import { colors } from "~/theme";
 import { coverRect, skiaSource } from "~/components/home/pictures";
 import { PixelRatio } from "react-native";
 
@@ -20,7 +21,13 @@ describe("the reveal's timeline", () => {
   });
 
   it("dims the stages done and to come", () => {
-    expect([0, 1, 2, 3].map((i) => stageOpacity(i, 1))).toEqual([0.55, 1, 0.3, 0.3]);
+    // the current stage ink with a terracotta number, the others readable greys (never faded)
+    expect([0, 1, 2, 3].map((i) => stageColours(i, 1))).toEqual([
+      { number: colors.muted2, title: colors.muted },
+      { number: colors.terracotta, title: colors.ink },
+      { number: colors.muted2, title: colors.muted },
+      { number: colors.muted2, title: colors.muted },
+    ]);
   });
 
   it("pins the panel under the header for the length of its track", () => {

@@ -26,6 +26,9 @@
   --pm-terracotta-hover: #8f4526;
   --pm-terracotta-light: #c76b4a;
   --pm-golden: #e9b949;
+  /* golden deepened towards ink for text on light grounds (3.7:1 on canvas, enough for large text);
+     the brand golden is 1.7:1 there. Matches the app's goldenText. */
+  --pm-golden-text: #9a7e39;
   --pm-sage: #71856a;
   --pm-sage-deep: #5b6e55;
   /* text on sage-deep: canvas cream reaches 5.07:1 on #5b6e55 (WCAG AA for body text) */
@@ -58,6 +61,7 @@
   --pm-on-sage: #f8f5ef;
   --pm-fern: #9fb8a8;
   --pm-paprika: #e8866a;
+  --pm-golden-text: #e9b949;
 
   --pm-focus: #e9b949;
   --pm-shadow-ink: rgba(0, 0, 0, 0.7);
@@ -242,13 +246,13 @@ h1 em, h2 em, h3 em, .accent {
   paint-order: stroke fill;
 }
 .text-gradient {
-  background: linear-gradient(90deg, var(--pm-terracotta-light), var(--pm-golden), var(--pm-sage));
+  background: linear-gradient(90deg, var(--pm-terracotta-light), var(--pm-golden-text), var(--pm-sage));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .text-gradient-warm {
-  background: linear-gradient(90deg, var(--pm-sage), var(--pm-terracotta-light), var(--pm-golden));
+  background: linear-gradient(90deg, var(--pm-sage), var(--pm-terracotta-light), var(--pm-golden-text));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -307,8 +311,15 @@ h1 em, h2 em, h3 em, .accent {
 .pin-edge { transform: translateY(0); opacity: 0; }
 .pin-bar { width: 100%; }
 .pin-pct::after { counter-reset: fill var(--fill); content: counter(fill) "%"; }
-.pin-stage { opacity: 0.55; transition: opacity 400ms ease; }
-.pin-stage-3 { opacity: 1; }
+/* The current stage reads ink with a terracotta number; the others step back to the muted greys
+   (6.3:1 and 5:1 on canvas) instead of fading, so every stage stays readable. --stage-on is 1 for
+   the current stage, 0 for the rest; the colours between them stay above 4.5:1 too. */
+@property --stage-on { syntax: "<number>"; inherits: true; initial-value: 0; }
+.pin-stage { --stage-on: 0; transition: --stage-on 400ms ease; }
+.pin-stage-3 { --stage-on: 1; }
+.pin-no { color: color-mix(in srgb, var(--color-terracotta) calc(var(--stage-on) * 100%), var(--color-muted-2)); }
+.pin-title { color: color-mix(in srgb, var(--color-ink) calc(var(--stage-on) * 100%), var(--color-muted)); }
+.pin-text { color: color-mix(in srgb, var(--color-muted) calc(var(--stage-on) * 100%), var(--color-muted-2)); }
 .pin-label { opacity: 0; }
 .pin-label-3 { opacity: 1; }
 @keyframes pin-before { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
@@ -317,10 +328,10 @@ h1 em, h2 em, h3 em, .accent {
 @keyframes pin-edge-show { 0%, 2% { opacity: 0; } 4%, 96% { opacity: 1; } 98%, 100% { opacity: 0; } }
 @keyframes pin-bar { from { width: 0%; } to { width: 100%; } }
 @keyframes pin-pct { from { --fill: 0; } to { --fill: 100; } }
-@keyframes stage-0 { 0%, 22% { opacity: 1; } 23%, 100% { opacity: 0.55; } }
-@keyframes stage-1 { 0%, 22% { opacity: 0.3; } 23%, 50% { opacity: 1; } 51%, 100% { opacity: 0.55; } }
-@keyframes stage-2 { 0%, 50% { opacity: 0.3; } 51%, 78% { opacity: 1; } 79%, 100% { opacity: 0.55; } }
-@keyframes stage-3 { 0%, 78% { opacity: 0.3; } 79%, 100% { opacity: 1; } }
+@keyframes stage-0 { 0%, 22% { --stage-on: 1; } 23%, 100% { --stage-on: 0; } }
+@keyframes stage-1 { 0%, 22% { --stage-on: 0; } 23%, 50% { --stage-on: 1; } 51%, 100% { --stage-on: 0; } }
+@keyframes stage-2 { 0%, 50% { --stage-on: 0; } 51%, 78% { --stage-on: 1; } 79%, 100% { --stage-on: 0; } }
+@keyframes stage-3 { 0%, 78% { --stage-on: 0; } 79%, 100% { --stage-on: 1; } }
 @keyframes label-0 { 0%, 22% { opacity: 1; } 23%, 100% { opacity: 0; } }
 @keyframes label-1 { 0%, 22% { opacity: 0; } 23%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 @keyframes label-2 { 0%, 50% { opacity: 0; } 51%, 78% { opacity: 1; } 79%, 100% { opacity: 0; } }

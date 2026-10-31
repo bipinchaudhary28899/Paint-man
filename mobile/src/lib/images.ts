@@ -20,14 +20,14 @@ const bundled: Record<string, number> = {
 };
 
 /**
- * The brand pack's lock-ups the app draws (src/components/Logo.tsx on the website): the short "PS" logo
- * in the phone header, the stacked reversed logo in the footer and the stacked colour logo of the
- * opening animation. Each pack file comes at @1x, @2x and @4x; Metro picks the one for the screen. Only
- * these are required: every file required here ships in the app, drawn or not (the horizontal logo and
- * the swatch-fan mark, never drawn in the app, would add about 95 KB).
+ * The brand pack's lock-ups the app draws (src/components/Logo.tsx on the website): the full horizontal
+ * logo (the mark and "PaintSaathi") in the header, so the app always shows its name, the stacked
+ * reversed logo in the footer and the stacked colour logo of the opening animation. Each pack file comes
+ * at @1x, @2x and @4x; Metro picks the one for the screen. Only these are required: every file required
+ * here ships in the app, drawn or not (the short "PS" logo and the swatch-fan mark are not drawn here).
  */
 export const logos = {
-  short: { source: require("../../../public/brand/03-short-mobile/paintsaathi-short-color.png") as number, width: 344, height: 192 },
+  horizontal: { source: require("../../../public/brand/01-horizontal/paintsaathi-horizontal-color.png") as number, width: 1060, height: 248 },
   stackedReversed: { source: require("../../../public/brand/02-stacked/paintsaathi-stacked-reversed.png") as number, width: 592, height: 392 },
   stackedColor: { source: require("../../../public/brand/02-stacked/paintsaathi-stacked-color.png") as number, width: 592, height: 392 },
 } as const;

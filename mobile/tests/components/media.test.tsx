@@ -90,7 +90,7 @@ describe("Art and Logo", () => {
     await render(
       <>
         <Art art={illustrations.paintCan} width={88} />
-        <Logo name="short" decorative />
+        <Logo name="horizontal" decorative />
         <Logo name="stackedReversed" />
       </>,
     );

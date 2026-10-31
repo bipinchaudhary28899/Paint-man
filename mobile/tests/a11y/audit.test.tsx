@@ -8,7 +8,7 @@ import { Pill, Sticker } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
 import { H, MAX_SCALE, P } from "~/components/ui/Text";
 import { colors } from "~/theme";
-import { backgroundOf, contrastFindings, controlAndImageFindings, headerFindings, reachable, scalingFindings, tapSize, targetFindings } from "./audit";
+import { backgroundOf, contrastFindings, controlAndImageFindings, headerFindings, reachable, scalingFindings, sizeFindings, tapSize, targetFindings } from "./audit";
 
 // The audit the screen test runs, on small pieces built to fail it (so a clean screen means something),
 // and the text-size caps of the fixed pieces.
@@ -97,6 +97,20 @@ describe("the audit", () => {
       </View>,
     );
     expect(scalingFindings(nodes())).toEqual(['"Frozen" does not scale with the text size setting', '"Barely" stops growing at 1.1x']);
+  });
+
+  it("flags type under 11pt, inherited sizes included", async () => {
+    await render(
+      <View>
+        <Text style={{ fontSize: 10 }}>Tiny</Text>
+        <Text style={{ fontSize: 9 }}>
+          <Text>Nested</Text>
+        </Text>
+        <Text style={{ fontSize: 11 }}>Fine</Text>
+        <Text>Default</Text>
+      </View>,
+    );
+    expect(sizeFindings(nodes())).toEqual(['"Tiny" is 10pt', '"Nested" is 9pt']);
   });
 
   it("reads text against the backgrounds around it, laid over one another, and outlined words by their outline", async () => {

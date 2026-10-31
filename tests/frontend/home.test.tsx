@@ -105,9 +105,10 @@ describe("PinnedReveal", () => {
     expect(reveal(1)).toMatchObject({ fill: 100, stage: 3, edgeVisible: false });
     const mid = reveal(0.3);
     expect(mid.stage).toBe(1);
-    expect(mid.stageOpacity(1)).toBe(1);
-    expect(mid.stageOpacity(0)).toBe(0.55);
-    expect(mid.stageOpacity(3)).toBe(0.3);
+    // the current stage is "on" (ink title, terracotta number); the others step back to muted greys
+    expect(mid.stageOn(1)).toBe(1);
+    expect(mid.stageOn(0)).toBe(0);
+    expect(mid.stageOn(3)).toBe(0);
     expect(mid.edgeVisible).toBe(true);
     expect(clamp01(-1)).toBe(0);
     expect(clamp01(2)).toBe(1);

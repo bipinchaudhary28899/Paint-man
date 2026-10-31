@@ -35,7 +35,7 @@ import { BAR_TOP, BottomNav } from "~/components/site/BottomNav";
 import { over } from "~/lib/contrast";
 import { colors } from "~/theme";
 import { asha, detail, seedToken, summary } from "../account/helpers";
-import { contrastFindings, controlAndImageFindings, headerFindings, isPressable, nameOf, reachable, roleOf, scalingFindings, targetFindings } from "./audit";
+import { contrastFindings, controlAndImageFindings, headerFindings, isPressable, nameOf, reachable, roleOf, scalingFindings, sizeFindings, targetFindings } from "./audit";
 
 // Every screen of the app (src/app/**) put together and read the way VoiceOver and TalkBack read it,
 // with the bottom nav over it as in the app: every control has a role and a name, every picture a
@@ -242,6 +242,7 @@ describe.each(routes.map((r) => [r.path, r] as const))("%s", (_path, route) => {
       ...headerFindings(nodes, route.h1),
       ...targetFindings(nodes),
       ...scalingFindings(nodes),
+      ...sizeFindings(nodes),
       ...contrastFindings(root, colors.canvas, drawn),
       ...(await sameNameFindings(root)),
     ];
@@ -261,7 +262,7 @@ describe("over a screen", () => {
     const nodes = reachable(root);
     expect(nodes.filter(isPressable).map(nameOf)).toContain("Close menu");
     expect(nodes.filter(isPressable).map(nameOf)).not.toContain("Open menu");
-    expect([...controlAndImageFindings(nodes), ...targetFindings(nodes), ...scalingFindings(nodes), ...contrastFindings(root, colors.canvas)]).toEqual([]);
+    expect([...controlAndImageFindings(nodes), ...targetFindings(nodes), ...scalingFindings(nodes), ...sizeFindings(nodes), ...contrastFindings(root, colors.canvas)]).toEqual([]);
   });
 
   it("a shade's preview sheet in the finder reads well too", async () => {
@@ -270,6 +271,6 @@ describe("over a screen", () => {
     await act(() => new Promise((r) => setTimeout(r, 30)));
     const nodes = reachable(screen.container as TestInstance);
     expect(nodes.filter(isPressable).length).toBeGreaterThan(2);
-    expect([...controlAndImageFindings(nodes), ...targetFindings(nodes), ...scalingFindings(nodes)]).toEqual([]);
+    expect([...controlAndImageFindings(nodes), ...targetFindings(nodes), ...scalingFindings(nodes), ...sizeFindings(nodes)]).toEqual([]);
   });
 });

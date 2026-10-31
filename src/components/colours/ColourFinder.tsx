@@ -113,7 +113,7 @@ const BrandTile = memo(function BrandTile({ shade: s, selected, showBrand, onSel
       <span className="block h-14 border-b border-line sm:h-24" style={{ background: s.hex }} />
       <span className="block p-1.5 sm:p-3">
         <span className="block truncate font-display text-[12px] font-normal leading-tight sm:text-base">{shadeDisplayName(s.name)}</span>
-        <span className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted sm:mt-1 sm:text-xs">
+        <span className="mt-0.5 flex items-center justify-between gap-2 text-[11px] font-semibold text-muted sm:mt-1 sm:text-xs">
           <span className="truncate">{s.code}</span>
           <span className="hidden truncate sm:inline">{showBrand ? s.brandName : ""}</span>
         </span>

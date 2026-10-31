@@ -13,10 +13,11 @@ export const metadata = pageMetadata({
 });
 
 const principles = [
-  { title: "Itemised quotations", text: "Inclusions, exclusions and a payment schedule, in writing.", tint: "bg-sunshine" },
-  { title: "No silent swaps", text: "The paint brand and range you approve is what goes on the wall.", tint: "bg-sky-wash" },
-  { title: "Approved changes only", text: "Any change in scope is priced and approved before it's charged.", tint: "bg-rose-wash" },
-  { title: "Checked before closing", text: "A quality checklist and a walkthrough with you before we hand over.", tint: "bg-peach-wash" },
+  // muted text reads on the washes; on the golden card it is 3.8:1, so that one card's text is ink-soft (6.2:1)
+  { title: "Itemised quotations", text: "Inclusions, exclusions and a payment schedule, in writing.", tint: "bg-sunshine", textClass: "text-ink-soft" },
+  { title: "No silent swaps", text: "The paint brand and range you approve is what goes on the wall.", tint: "bg-sky-wash", textClass: "text-muted" },
+  { title: "Approved changes only", text: "Any change in scope is priced and approved before it's charged.", tint: "bg-rose-wash", textClass: "text-muted" },
+  { title: "Checked before closing", text: "A quality checklist and a walkthrough with you before we hand over.", tint: "bg-peach-wash", textClass: "text-muted" },
 ];
 
 export default function AboutPage() {
@@ -57,7 +58,7 @@ export default function AboutPage() {
           {principles.map((p) => (
             <div key={p.title} className={`reveal card p-6 ${p.tint}`}>
               <h3 className="text-xl font-normal">{p.title}</h3>
-              <p className="mt-2 text-muted">{p.text}</p>
+              <p className={`mt-2 ${p.textClass}`}>{p.text}</p>
             </div>
           ))}
         </div>

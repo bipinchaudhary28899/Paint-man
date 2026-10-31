@@ -124,6 +124,21 @@ export function scalingFindings(nodes: TestInstance[]): Finding[] {
   return out;
 }
 
+/** The smallest type a screen shows (iOS's legibility floor): captions, codes and stickers included. */
+export const MIN_TEXT = 11;
+
+/** Text set smaller than MIN_TEXT points. */
+export function sizeFindings(nodes: TestInstance[]): Finding[] {
+  const out = new Set<Finding>();
+  for (const n of nodes) {
+    if (n.type !== "Text") continue;
+    const own = n.children.filter((c): c is string => typeof c === "string").join("").trim();
+    const size = inherited<number>(n, "fontSize");
+    if (own && size !== undefined && size < MIN_TEXT) out.add(`"${own.slice(0, 40)}" is ${size}pt`);
+  }
+  return [...out];
+}
+
 /** The style value a text node shows, inherited from the Text around it when it sets none itself. */
 function inherited<T>(i: TestInstance, key: string): T | undefined {
   for (let n: TestInstance | null = i; n && (n.type === "Text" || n.type === "RCTVirtualText"); n = n.parent) {

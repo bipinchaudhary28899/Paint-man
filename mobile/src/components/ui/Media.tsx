@@ -88,7 +88,7 @@ export function Art({ art, style, width }: { art: Illustration; style?: StylePro
 type LogoName = keyof typeof logos;
 
 /** A brand-pack logo at a given height (its width follows the file's proportions). `decorative` hides it from screen readers (inside a link that names it). */
-export function Logo({ name = "short", height = 40, decorative = false }: { name?: LogoName; height?: number; decorative?: boolean }) {
+export function Logo({ name = "horizontal", height = 32, decorative = false }: { name?: LogoName; height?: number; decorative?: boolean }) {
   const art = logos[name];
   return (
     <Image

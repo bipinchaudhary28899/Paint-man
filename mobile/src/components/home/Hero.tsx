@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   facts: { marginTop: 12, flexDirection: "row", borderTopWidth: 1, borderColor: colors.line, paddingTop: 14 },
   fact: { flex: 1, minWidth: 0, paddingRight: 10 },
   factRule: { borderLeftWidth: 1, borderColor: colors.line, paddingLeft: 12 },
-  factKey: { fontFamily: fonts.sansSemiBold, fontSize: 10, lineHeight: 14, letterSpacing: 1.2, textTransform: "uppercase", color: colors.muted },
+  factKey: { fontFamily: fonts.sansSemiBold, fontSize: 11, lineHeight: 15, letterSpacing: 1.2, textTransform: "uppercase", color: colors.muted },
   factValue: { marginTop: 3, fontFamily: fonts.sansSemiBold, fontSize: 13, lineHeight: 17, letterSpacing: -0.08, color: colors.ink },
   // outside the container, so the picture runs edge to edge
   art: { marginTop: 12 },

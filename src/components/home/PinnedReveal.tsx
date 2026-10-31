@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type CSSProperties } from "react";
 import { genericScene } from "@/config/scenes";
 import { clamp01, easeInOutQuad, useNeedsJsScroll, useScrollFrame } from "@/lib/scroll";
 
@@ -54,8 +54,9 @@ const activeRule = [
 export function reveal(p: number) {
   const fill = Math.round(easeInOutQuad(clamp01(p)) * 1000) / 10;
   const stage = p < 0.22 ? 0 : p < 0.5 ? 1 : p < 0.78 ? 2 : 3;
-  const stageOpacity = (i: number) => (i === stage ? 1 : i < stage ? 0.55 : 0.3);
-  return { fill, stage, stageOpacity, edgeVisible: fill > 1 && fill < 99 };
+  /** 1 for the current stage, 0 for the rest: drives the stage colours (.pin-no, .pin-title, .pin-text). */
+  const stageOn = (i: number) => (i === stage ? 1 : 0);
+  return { fill, stage, stageOn, edgeVisible: fill > 1 && fill < 99 };
 }
 
 export function PinnedReveal() {
@@ -107,14 +108,14 @@ export function PinnedReveal() {
                 <li
                   key={s.title}
                   className={`pin-stage pin-stage-${i} relative flex flex-col gap-0.5 border-t-2 border-line pt-1.5 tab:flex-row tab:items-baseline tab:gap-[18px] tab:border-t-0 tab:border-b tab:py-3.5 desk:gap-6 desk:border-b-0 desk:py-4`}
-                  style={js ? { opacity: js.stageOpacity(i) } : undefined}
+                  style={js ? ({ "--stage-on": js.stageOn(i) } as CSSProperties) : undefined}
                 >
                   {/* Phones: the active stage's rule turns terracotta, on the same timeline as the sticker */}
                   <span aria-hidden className={`absolute inset-x-0 -top-0.5 h-0.5 bg-terracotta-light tab:hidden ${activeRule[i]}`} style={js ? { opacity: i === js.stage ? 1 : 0 } : undefined} />
-                  <span className="font-display text-[13px] text-terracotta tab:w-[22px] tab:text-[15px] desk:w-6">0{i + 1}</span>
+                  <span className="pin-no font-display text-[13px] tab:w-[22px] tab:text-[15px] desk:w-6">0{i + 1}</span>
                   <span className="flex flex-col gap-0.5">
-                    <strong className="text-[12px] font-semibold leading-tight tracking-[-0.01em] tab:text-[16px] desk:text-[17px]">{s.title}</strong>
-                    <span className="hidden text-muted tab:block tab:text-[14px] desk:text-[15px]">{s.text}</span>
+                    <strong className="pin-title text-[12px] font-semibold leading-tight tracking-[-0.01em] tab:text-[16px] desk:text-[17px]">{s.title}</strong>
+                    <span className="pin-text hidden tab:block tab:text-[14px] desk:text-[15px]">{s.text}</span>
                   </span>
                 </li>
               ))}
@@ -149,7 +150,7 @@ export function PinnedReveal() {
             <div aria-hidden className="pin-edge pointer-events-none absolute inset-0" style={js ? { transform: `translateY(${100 - js.fill}%)`, opacity: js.edgeVisible ? 1 : 0 } : undefined}>
               <div className="absolute inset-x-0 top-0 h-px bg-canvas/90 shadow-[0_0_20px_4px_rgba(248,245,239,0.5)]" />
             </div>
-            <span className="sticker absolute left-3.5 top-3.5 px-3 py-[7px] text-[10px] tab:left-[18px] tab:top-[18px] tab:px-3.5 tab:py-2 tab:text-[11px] desk:left-5 desk:top-5">
+            <span className="sticker absolute left-3.5 top-3.5 px-3 py-[7px] text-[11px] tab:left-[18px] tab:top-[18px] tab:px-3.5 tab:py-2 tab:text-[11px] desk:left-5 desk:top-5">
               {/* an invisible copy of the longest label sizes the sticker, so no stage label ever wraps */}
               <span aria-hidden className="invisible whitespace-nowrap">{longestLabel}</span>
               {stageLabels.map((l, i) => (

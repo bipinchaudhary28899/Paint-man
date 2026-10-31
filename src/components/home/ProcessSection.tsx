@@ -45,7 +45,7 @@ export function ProcessSection() {
                 key={s.title}
                 className="flex flex-col gap-2 max-tab:w-[248px] max-tab:shrink-0 max-tab:snap-start max-tab:rounded-[18px] max-tab:border max-tab:border-canvas/22 max-tab:bg-canvas/8 max-tab:p-4 tab:grid tab:grid-cols-[44px_210px_minmax(0,1fr)] tab:items-baseline tab:gap-4 tab:border-t tab:border-canvas/30 tab:py-5 desk:flex desk:items-stretch desk:pb-0 desk:pt-6"
               >
-                <span className="font-display text-[15px] max-tab:text-golden tab:max-desk:leading-[normal]">0{i + 1}</span>
+                <span className="font-display text-[15px] tab:max-desk:leading-[normal]">0{i + 1}</span>
                 <h3 className="font-sans text-[16px] font-semibold tracking-[-0.01em] max-desk:!font-sans max-desk:!font-semibold max-desk:!tracking-[-0.01em] tab:text-[18px] tab:max-desk:leading-[normal] desk:text-[19px]">{s.title}</h3>
                 <p className="text-[14px] leading-[1.5] text-on-sage tab:text-[15px] tab:leading-[1.6]">{s.text}</p>
               </li>
