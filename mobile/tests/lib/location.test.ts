@@ -117,10 +117,10 @@ describe("matching a place to the form", () => {
 
 describe("messages", () => {
   it("say what still works, on the form and on the map, with Settings only for a refused permission", () => {
-    expect(locateProblem("denied", "form")).toBe(`Location is off for ${site.name}. Type your address below, or turn location on in Settings.`);
+    expect(locateProblem("denied", "form")).toBe(`Location is off for ${site.name}. Pick your home on the map, or turn location on in Settings.`);
     expect(locateProblem("denied", "map")).toBe(`Location is off for ${site.name}. Move the map to your home, or turn location on in Settings.`);
-    expect(locateProblem("services-off", "form")).toMatch(/^Location services are off on this phone\. Type your address below/);
-    expect(locateProblem("timeout", "form")).toBe("We could not find your location in time. Type your address below, or pick it on the map.");
+    expect(locateProblem("services-off", "form")).toMatch(/^Location services are off on this phone\. Pick your home on the map/);
+    expect(locateProblem("timeout", "form")).toBe("We could not find your location in time. Pick your home on the map, or try again.");
     expect(locateProblem("unavailable", "map")).toBe("We could not get your location. Move the map to your home, or try Locate me again.");
     expect(opensSettings("denied")).toBe(true);
     for (const p of ["services-off", "timeout", "unavailable"] as const) expect(opensSettings(p)).toBe(false);

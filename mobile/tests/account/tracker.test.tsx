@@ -174,7 +174,7 @@ describe("the project tracker: when it cannot show the project", () => {
   });
 
   it("says when it cannot load, and tries again", async () => {
-    await show([offline, { data: detail() }]);
+    await show([offline, offline, { data: detail() }]); // the request and its one retry
     expect(await screen.findByRole("header", { name: "Your project could not load" })).toBeOnTheScreen();
     expect(screen.getByText("Network error. Please check your connection and try again.")).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole("button", { name: "Try again" }));

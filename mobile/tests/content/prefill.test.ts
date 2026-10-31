@@ -93,7 +93,7 @@ describe("brand shade ids (the website's useBrandShade)", () => {
     expect(result.current).toBeUndefined();
     fetchMock.mockRejectedValue(new Error("offline"));
     await rerender({ id: "berger:1234" });
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3)); // the failed request is tried once more
     expect(result.current).toBeUndefined();
   });
 

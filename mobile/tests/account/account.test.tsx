@@ -65,7 +65,7 @@ describe("the account screen", () => {
 
   it("says when the projects cannot load, and tries again", async () => {
     seedToken();
-    mockApi({ "GET /api/v1/me": me, "GET /api/v1/projects": [offline, { data: [summary()] }] });
+    mockApi({ "GET /api/v1/me": me, "GET /api/v1/projects": [offline, offline, { data: [summary()] }] }); // the request and its one retry
     await show();
     expect(await screen.findByText("Network error. Please check your connection and try again.")).toBeOnTheScreen();
     await press("Try again");
@@ -74,7 +74,7 @@ describe("the account screen", () => {
 
   it("loads the customer once more when the session was restored offline", async () => {
     seedToken();
-    mockApi({ "GET /api/v1/me": [offline, me], "GET /api/v1/projects": { data: [] } });
+    mockApi({ "GET /api/v1/me": [offline, offline, me], "GET /api/v1/projects": { data: [] } });
     await show();
     expect(await screen.findByRole("header", { name: "Namaste, Asha" })).toBeOnTheScreen();
   });

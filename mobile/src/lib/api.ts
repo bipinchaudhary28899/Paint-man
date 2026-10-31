@@ -64,6 +64,25 @@ export type ApiRequestInit = {
   signal?: AbortSignal;
 };
 
+/** Requests the API is fine to receive twice: reads, and PATCH (it sets fields to the values sent). */
+const REPEATABLE = new Set(["GET", "PATCH"]);
+
+/**
+ * fetch, with one more try for a repeatable request whose connection fails: iOS can hand a request a
+ * kept-alive connection the server has already closed ("The network connection was lost", -1005) and
+ * repeats only GETs itself, so saving a name failed where loading worked. A POST is never repeated
+ * (a booking or a code could go twice).
+ */
+async function send(url: string, init: Parameters<typeof fetch>[1], tries: number): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") throw err;
+    if (tries > 1) return send(url, init, tries - 1);
+    throw new ApiError("network", NETWORK_MESSAGE);
+  }
+}
+
 /** Calls one endpoint and returns its envelope, or throws an ApiError (the API's own code and message). */
 export async function apiRequest<T>(path: string, { method = "GET", body, token, signal }: ApiRequestInit = {}): Promise<ApiEnvelope<T>> {
   const headers: Record<string, string> = { Accept: "application/json" };
@@ -72,13 +91,7 @@ export async function apiRequest<T>(path: string, { method = "GET", body, token,
   const init: Parameters<typeof fetch>[1] = { headers, signal };
   if (method !== "GET") init.method = method;
   if (body !== undefined) init.body = JSON.stringify(body);
-  let res: Response;
-  try {
-    res = await fetch(`${apiBase()}${path}`, init);
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") throw err;
-    throw new ApiError("network", NETWORK_MESSAGE);
-  }
+  const res = await send(`${apiBase()}${path}`, init, REPEATABLE.has(method) ? 2 : 1);
   const answer: unknown = await res.json().catch(() => undefined);
   if (isErrorBody(answer)) throw new ApiError(answer.error.code, answer.error.message, res.status, answer.error.details);
   if (!res.ok || !isEnvelope(answer)) throw new ApiError("bad_response", BAD_RESPONSE_MESSAGE, res.status);

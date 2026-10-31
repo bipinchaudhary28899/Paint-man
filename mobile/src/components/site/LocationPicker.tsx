@@ -15,6 +15,7 @@ import {
   LOOKUP_FAILED,
   lookUpPlace,
   opensSettings,
+  regionAt,
   roundLatLng,
   STREET_DELTA,
   type LatLng,
@@ -78,10 +79,12 @@ const lift = { duration: 140, easing: Easing.out(Easing.quad) };
 const fall = { duration: 160, easing: Easing.in(Easing.quad) };
 const bounce = { duration: 90, easing: Easing.out(Easing.quad) };
 
-/** The pin: a terracotta head over a short stem whose tip marks the spot, and its shadow on the map. */
-function Pin({ raised }: { raised: SharedValue<number> }) {
-  const pinStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -PIN_LIFT * raised.value }] }));
-  const shadowStyle = useAnimatedStyle(() => ({ opacity: 0.35 - 0.15 * raised.value, transform: [{ scale: 1 - 0.4 * raised.value }] }));
+/** The pin: a terracotta head over a short stem whose tip marks the spot, and its shadow on the map (lifted while `raised`). */
+function Pin({ raised }: { raised?: SharedValue<number> }) {
+  const still = useSharedValue(0);
+  const lift = raised ?? still;
+  const pinStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -PIN_LIFT * lift.value }] }));
+  const shadowStyle = useAnimatedStyle(() => ({ opacity: 0.35 - 0.15 * lift.value, transform: [{ scale: 1 - 0.4 * lift.value }] }));
   return (
     <View style={styles.pinBox} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none">
       <Animated.View style={[styles.pinShadow, shadowStyle]} testID="pin-shadow" />
@@ -92,6 +95,52 @@ function Pin({ raised }: { raised: SharedValue<number> }) {
         <View style={styles.pinStem} />
       </Animated.View>
     </View>
+  );
+}
+
+/**
+ * A pinned spot on a form: a small still map around it with the pin, so the customer sees where it is,
+ * and "Change", which opens the picker to move it. The whole card is the button; the map is hidden
+ * from screen readers (the address fields say where).
+ */
+export function PinPreview({ pin, onChange }: { pin: LatLng; onChange: () => void }) {
+  const map = useRef<MapView>(null);
+  const region = regionAt(pin, PREVIEW_DELTA);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Pinned on the map. Change the pin"
+      onPress={onChange}
+      style={({ pressed }) => [styles.preview, pressed && styles.previewPressed]}
+      testID="pin-preview"
+    >
+      <View style={styles.previewMap} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {/* a new pin is a new map; the region is set again once the map is laid out (MapKit can
+            take a region given before it has a size as a much wider one) */}
+        <MapView
+          ref={map}
+          key={`${pin.lat},${pin.lng}`}
+          style={StyleSheet.absoluteFill}
+          initialRegion={region}
+          onMapReady={() => map.current?.animateToRegion(region, 0)}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          toolbarEnabled={false}
+          liteMode
+          userInterfaceStyle="light"
+          testID="pin-preview-map"
+        />
+        <View style={styles.previewPin}>
+          <Pin />
+        </View>
+      </View>
+      <View style={styles.previewBar}>
+        <Text style={styles.previewText}>Pinned on the map</Text>
+        <Text style={styles.previewChange}>Change</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -284,6 +333,8 @@ export function LocationPicker({ start, gps, onConfirm, onClose, onLocated }: Pr
 
 const PIN_HEAD = 30;
 const PIN_STEM = 14;
+/** The preview's view: about 250 m across, the street and its neighbours around the pin. */
+const PREVIEW_DELTA = 0.0025;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
@@ -309,6 +360,14 @@ const styles = StyleSheet.create({
   pinDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.canvas },
   pinStem: { width: 3, height: PIN_STEM, borderBottomLeftRadius: 1.5, borderBottomRightRadius: 1.5, backgroundColor: colors.ink },
   pinShadow: { position: "absolute", top: PIN_HEAD + PIN_STEM - 3, left: (PIN_HEAD - 16) / 2, width: 16, height: 6, borderRadius: 3, backgroundColor: colors.ink },
+  preview: { borderRadius: radii.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper, overflow: "hidden" },
+  previewPressed: { opacity: 0.85 },
+  previewMap: { height: 150, backgroundColor: colors.sand },
+  // centred, the pin box puts the stem's tip on the map's centre
+  previewPin: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, alignItems: "center", justifyContent: "center" },
+  previewBar: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, paddingHorizontal: 16 },
+  previewText: { flexShrink: 1, fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 20, color: colors.ink },
+  previewChange: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 20, color: colors.terracotta, textDecorationLine: "underline" },
   topBar: { position: "absolute", left: gutter, right: gutter, flexDirection: "row", alignItems: "flex-start", gap: 10 },
   hint: { flex: 1, minHeight: 44, justifyContent: "center", borderRadius: radii.md, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.paper, paddingHorizontal: 14, paddingVertical: 10 },
   hintText: { fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 19, color: colors.ink },

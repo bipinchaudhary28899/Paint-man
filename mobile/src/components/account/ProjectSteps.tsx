@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { LocationPicker, type PinResult } from "~/components/site/LocationPicker";
+import { LocationPicker, PinPreview, type PinResult } from "~/components/site/LocationPicker";
 import { Card } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
 import { DateInput, Field, Input, optionsOf, Select } from "~/components/ui/Field";
@@ -15,9 +15,12 @@ import { bookingDateRange, detailSteps, fieldProblem, floorOptions, homeSizes, l
 import { colors, fonts } from "~/theme";
 
 // "Steps to complete" on the project screen (the website's ProjectSteps), until the inspection: the
-// booking asked only who and where, so here the customer adds the address the inspector visits
-// (typed, or filled from a pin dropped with "Use my current location" or "Pick on the map"; the pin
-// goes along as the address's map pin) and tells us about the job. One step open at a time, the
+// booking asked only who and where, so here the customer adds the address the inspector visits and
+// tells us about the job. The address starts from the map (owner: fill it "by map only"): "Use my
+// current location" or "Pick on the map" drops a pin, shown as a small map, and the fields fill from
+// the place under it. The house, street and area can then be corrected without moving the pin; the
+// PIN code is the map's and stays as the map gave it (typed only where the map has none). The pin
+// goes along as the address's map pin. One step open at a time, the
 // first one not done; a done step shows what was given, with Edit. Saving sends the step's fields to
 // PATCH /api/v1/projects/{id} and the screen shows the project it answers with.
 
@@ -69,6 +72,8 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
   const [picker, setPicker] = useState<MapRegion>();
   const [gps, setGps] = useState<LatLng>();
   const [pin, setPin] = useState<LatLng | null>(project.location);
+  // the PIN code came with the pin (from the map, or saved with it), so it is not typed over
+  const [pincodeFromMap, setPincodeFromMap] = useState(() => Boolean(project.location && project.pincode));
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<LocateProblem>();
   const live = liveCities();
@@ -81,6 +86,8 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
 
   function edit(key: DetailStepKey) {
     setValues(valuesOf(project));
+    setPin(project.location);
+    setPincodeFromMap(Boolean(project.location && project.pincode));
     setErrors({});
     setFormError("");
     setOpen(key);
@@ -101,13 +108,22 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
     setPicker(pin ? regionAt(pin) : await cityRegion((city ?? live[0])?.name));
   }
 
-  /** The confirmed pin fills the address fields it has answers for, all still editable. */
+  /**
+   * The confirmed pin fills the address fields it has answers for (the house, street and area stay
+   * editable). Its PIN code is the spot's own: a PIN code from an earlier pin goes with that pin, and
+   * where the map has none it is typed in.
+   */
   function confirmPin({ coords, place }: PinResult) {
     setPicker(undefined);
     setPin(coords);
     const found = place ? fillFromPlace(place, live, city) : undefined;
-    if (!found) return;
-    setValues((v) => ({ ...v, ...(found.address && { address: found.address }), ...(found.locality && { locality: found.locality }), ...(found.pincode && { pincode: found.pincode }) }));
+    setValues((v) => ({
+      ...v,
+      ...(found?.address && { address: found.address }),
+      ...(found?.locality && { locality: found.locality }),
+      pincode: found?.pincode || (pincodeFromMap ? "" : v.pincode),
+    }));
+    setPincodeFromMap(Boolean(found?.pincode));
     setErrors({});
   }
 
@@ -193,14 +209,19 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
 
           {open === step.key && step.key === "address" && (
             <View style={styles.form}>
-              <View style={styles.locate}>
-                <Button label={pin ? "Pinned on the map: change" : "Use my current location"} busyLabel="Finding you…" busy={locating} variant="secondary" onPress={pin ? pickOnMap : locateMe} height={48} />
-                {!pin && (
+              {pin ? (
+                <PinPreview pin={pin} onChange={pickOnMap} />
+              ) : (
+                <View style={styles.locate}>
+                  <P size={14} leading={1.5} color={colors.muted} style={styles.firstPin}>
+                    Put a pin on your home first: we fill in the address from the map, and you can correct it.
+                  </P>
+                  <Button label="Use my current location" busyLabel="Finding you…" busy={locating} variant="secondary" onPress={locateMe} height={48} />
                   <Pressable accessibilityRole="button" disabled={locating} onPress={pickOnMap} style={styles.pick}>
                     <Text style={styles.editText}>Pick on the map</Text>
                   </Pressable>
-                )}
-              </View>
+                </View>
+              )}
               {locError && (
                 <View>
                   <Text style={styles.note} accessibilityLiveRegion="polite">
@@ -213,15 +234,24 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
                   )}
                 </View>
               )}
-              <Field label="House / flat no., building and street" error={errors.address}>
-                <Input {...bind("address", "House / flat no., building and street")} autoComplete="street-address" textContentType="streetAddressLine1" placeholder="e.g. 12, Rose Villa, Nehru Road" maxLength={200} />
-              </Field>
-              <Field label="Area / locality" error={errors.locality}>
-                <Input {...bind("locality", "Area / locality")} textContentType="sublocality" maxLength={80} />
-              </Field>
-              <Field label="PIN code" error={errors.pincode}>
-                <Input {...bind("pincode", "PIN code")} keyboardType="number-pad" autoComplete="postal-code" textContentType="postalCode" placeholder="6 digits" maxLength={7} />
-              </Field>
+              {pin && (
+                <>
+                  <Field label="House / flat no., building and street" error={errors.address}>
+                    <Input {...bind("address", "House / flat no., building and street")} autoComplete="street-address" textContentType="streetAddressLine1" placeholder="e.g. 12, Rose Villa, Nehru Road" maxLength={200} />
+                  </Field>
+                  <Field label="Area / locality" error={errors.locality}>
+                    <Input {...bind("locality", "Area / locality")} textContentType="sublocality" maxLength={80} />
+                  </Field>
+                  <Field label="PIN code" error={errors.pincode}>
+                    {pincodeFromMap ? (
+                      <Input value={values.pincode} editable={false} accessibilityLabel="PIN code" accessibilityHint="From the pin on the map" style={styles.locked} />
+                    ) : (
+                      <Input {...bind("pincode", "PIN code")} keyboardType="number-pad" autoComplete="postal-code" textContentType="postalCode" placeholder="6 digits" maxLength={7} />
+                    )}
+                    <Text style={styles.fieldNote}>{pincodeFromMap ? "From the pin on the map. Move the pin to change it." : "The map has no PIN code here: type it in."}</Text>
+                  </Field>
+                </>
+              )}
             </View>
           )}
 
@@ -251,7 +281,8 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
             </View>
           )}
 
-          {open === step.key && (
+          {/* the address is saved once it has a pin */}
+          {open === step.key && (step.key !== "address" || pin || step.done) && (
             <View style={styles.form}>
               {formError !== "" && (
                 <Text accessibilityRole="alert" style={styles.formError}>
@@ -259,7 +290,7 @@ export function ProjectSteps({ project, onSaved }: { project: ProjectDetail; onS
                 </Text>
               )}
               <View style={styles.actions}>
-                <Button label="Save" busyLabel="Saving…" busy={saving} onPress={() => void save(step.key)} height={50} style={styles.flex} />
+                {(step.key !== "address" || pin) && <Button label="Save" busyLabel="Saving…" busy={saving} onPress={() => void save(step.key)} height={50} style={styles.flex} />}
                 {step.done && <Button label="Cancel" variant="secondary" onPress={() => setOpen(null)} height={50} style={styles.flex} />}
               </View>
             </View>
@@ -292,6 +323,10 @@ const styles = StyleSheet.create({
   editText: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: colors.terracotta, textDecorationLine: "underline" },
   form: { marginTop: 14, gap: 14 },
   locate: { gap: 4 },
+  firstPin: { marginBottom: 8 },
+  // the map's PIN code: shown, not typed (canvas fill, muted ink)
+  locked: { backgroundColor: colors.canvas, color: colors.muted },
+  fieldNote: { marginTop: 6, fontFamily: fonts.sans, fontSize: 13, lineHeight: 18, color: colors.muted },
   pick: { minHeight: 44, justifyContent: "center", alignSelf: "center" },
   note: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 20, color: colors.muted },
   textarea: { minHeight: 96, textAlignVertical: "top" },

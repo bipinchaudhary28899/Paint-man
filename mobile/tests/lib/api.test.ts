@@ -1,4 +1,4 @@
-import { apiGet, ApiError, apiPath, NETWORK_MESSAGE } from "~/lib/api";
+import { apiGet, ApiError, apiPath, apiRequest, NETWORK_MESSAGE } from "~/lib/api";
 import { apiBase, DEFAULT_API_BASE, webUrl } from "~/lib/config";
 
 const json = (body: unknown, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body }) as Response;
@@ -46,15 +46,31 @@ describe("apiGet", () => {
     expect(err).toMatchObject({ code: "invalid_brand", message: 'Unknown brand "x".', status: 400, details: ["berger"] });
   });
 
-  it("reports a failed connection as a network error", async () => {
+  it("reports a failed connection as a network error, after trying once more", async () => {
     fetchMock.mockRejectedValue(new TypeError("Network request failed"));
     await expect(apiGet("/api/v1/colours/brands")).rejects.toMatchObject({ code: "network", message: NETWORK_MESSAGE });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("tries a dropped PATCH once more (iOS repeats only GETs), never a POST", async () => {
+    const lost = new TypeError("The network connection was lost.");
+    const body = { apiVersion: "v1", kind: "user", label: "x", data: { name: "Asha" }, meta: { generatedAt: "2026-10-31T00:00:00.000Z" } };
+    fetchMock.mockRejectedValueOnce(lost).mockResolvedValueOnce(json(body));
+    await expect(apiRequest("/api/v1/me", { method: "PATCH", body: { name: "Asha" }, token: "t" })).resolves.toEqual(body);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "PATCH", body: JSON.stringify({ name: "Asha" }) });
+
+    fetchMock.mockReset();
+    fetchMock.mockRejectedValueOnce(lost).mockResolvedValueOnce(json(body));
+    await expect(apiRequest("/api/v1/bookings", { method: "POST", body: {}, token: "t" })).rejects.toMatchObject({ code: "network" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("passes an abort through untouched", async () => {
     const abort = Object.assign(new Error("Aborted"), { name: "AbortError" });
     fetchMock.mockRejectedValue(abort);
     await expect(apiGet("/api/v1/colours/brands")).rejects.toBe(abort);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("rejects a response that is not the envelope", async () => {

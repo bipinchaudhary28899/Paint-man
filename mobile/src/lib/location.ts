@@ -126,12 +126,12 @@ export const NOT_LISTED_NOTE = "If your area is not listed, book anyway and we w
 export type LocateProblem = "denied" | "services-off" | "timeout" | "unavailable";
 
 /**
- * A calm line for a position that could not be had, pointing to what still works: typing the address
- * (on the form) or moving the map (in the picker). Manual entry is never blocked.
+ * A calm line for a position that could not be had, pointing to what still works: picking the home on
+ * the map (on the form, where the address starts from a pin) or moving the map (in the picker).
  */
 export function locateProblem(problem: LocateProblem, where: "form" | "map"): string {
-  const instead = where === "form" ? "Type your address below" : "Move the map to your home";
-  const or = where === "form" ? "pick it on the map" : "try Locate me again";
+  const instead = where === "form" ? "Pick your home on the map" : "Move the map to your home";
+  const or = where === "form" ? "try again" : "try Locate me again";
   switch (problem) {
     case "denied":
       return `Location is off for ${site.name}. ${instead}, or turn location on in Settings.`;

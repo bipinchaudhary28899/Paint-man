@@ -83,12 +83,12 @@ describe("searchShades", () => {
   });
 
   it("asks once per page for the session, and again after a failure", async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError("offline"));
+    fetchMock.mockRejectedValueOnce(new TypeError("offline")).mockRejectedValueOnce(new TypeError("offline"));
     await expect(searchShades({ brand: "nerolac" })).rejects.toMatchObject({ code: "network" });
     fetchMock.mockResolvedValue(envelope([shade], { total: 1 }));
     await searchShades({ brand: "nerolac" });
     await searchShades({ brand: "nerolac" });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3); // the failed request and its retry, then one answer kept
   });
 
   it("keeps at most a few hundred answers, dropping the oldest", async () => {
