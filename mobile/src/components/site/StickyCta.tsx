@@ -111,7 +111,8 @@ export function StickyCta({ scrollY, viewport, headerHeight, forms, details = si
   const visible = useSharedValue(false);
   const heading = useSharedValue<ScrollHeading>({ down: true, turn: 0 });
   const progress = useSharedValue(0);
-  const off = (CTA_HIDDEN_ROUTES as readonly string[]).includes(pathname);
+  // nor on the staff screens
+  const off = (CTA_HIDDEN_ROUTES as readonly string[]).includes(pathname) || pathname === "/admin" || pathname.startsWith("/admin/");
 
   useAnimatedReaction(
     () => ({ y: scrollY.value, f: forms.value }),

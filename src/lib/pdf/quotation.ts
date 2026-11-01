@@ -3,16 +3,21 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, setCharacterSpacing, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
+import { acceptanceStatement, QUOTATION_TERMS_UPDATED, QUOTATION_VALID_DAYS, quotationTerms } from "@/config/quotation-terms";
 import { promises, site } from "@/config/site";
 import { formatDate, formatMobile, placeLine, QUOTATION_STATUS_LABELS, quotationFilename } from "@/lib/account";
 import { formatPaise } from "@/lib/money";
 import type { QuotationDocument } from "@/lib/projects/repo";
 
-// The branded quotation PDF a customer downloads from the project tracker (and the app): the
-// Paint Saathi logo, the customer and address, the itemised lines (wrapping, and breaking across
-// pages for a long quote), the totals, notes and payment terms, the promises line and a footer on
-// every page. Built with pdf-lib on the server; the brand fonts (DM Serif Display for headings,
-// Manrope for text, both SIL OFL, licences beside them in ./fonts) are embedded and subset.
+// The branded quotation PDF a customer downloads from the project tracker (and the app), in two
+// parts. First the quotation: the Paint Saathi logo, its reference, date and validity, the customer
+// and address, the itemised lines (wrapping, and breaking across pages for a long quote), the
+// totals, the payment milestones with their amounts, notes and payment terms, and the promises
+// line. Then the Terms & Conditions that come with every quotation (src/config/quotation-terms.ts),
+// ending with the customer's acceptance and the lines to sign. Every page carries the quotation
+// reference in its footer, which ties the two parts together. Built with pdf-lib on the server; the
+// brand fonts (DM Serif Display for headings, Manrope for text, both SIL OFL, licences beside them in
+// ./fonts) are embedded and subset.
 
 const FONT_DIR = join(process.cwd(), "src", "lib", "pdf", "fonts");
 const LOGO_FILE = join(process.cwd(), "public", "brand", "01-horizontal", "paintsaathi-horizontal-color@2x.png");
@@ -80,28 +85,45 @@ const LINE = hex("#dcd8d0");
 type Fonts = { serif: PDFFont; regular: PDFFont; bold: PDFFont };
 type Run = { text: string; font: PDFFont; size: number; color: ReturnType<typeof rgb>; lh: number };
 
-/** Greedy word wrap to `width`; a word longer than the line is broken by characters. */
+/**
+ * Greedy word wrap to `width`; a word longer than the line is broken by characters. Each word is
+ * measured once and the line's width kept as a running sum (a space between words), so the long
+ * paragraphs of the terms wrap in linear time.
+ */
 function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const lines: string[] = [];
+  const space = font.widthOfTextAtSize(" ", size);
   for (const paragraph of text.split("\n")) {
     let line = "";
+    let lineWidth = 0;
     for (const word of paragraph.split(/ +/).filter(Boolean)) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (font.widthOfTextAtSize(candidate, size) <= width) {
-        line = candidate;
+      const wordWidth = font.widthOfTextAtSize(word, size);
+      const candidateWidth = line ? lineWidth + space + wordWidth : wordWidth;
+      if (candidateWidth <= width) {
+        line = line ? `${line} ${word}` : word;
+        lineWidth = candidateWidth;
         continue;
       }
       if (line) lines.push(line);
-      line = "";
       // a word wider than the line: as many characters per line as fit
       let rest = word;
-      while (font.widthOfTextAtSize(rest, size) > width) {
-        let n = rest.length - 1;
-        while (n > 1 && font.widthOfTextAtSize(rest.slice(0, n), size) > width) n--;
+      let restWidth = wordWidth;
+      while (restWidth > width) {
+        // the most characters that fit, found by halving (at least one per line)
+        let lo = 1;
+        let hi = rest.length - 1;
+        while (lo < hi) {
+          const mid = Math.ceil((lo + hi) / 2);
+          if (font.widthOfTextAtSize(rest.slice(0, mid), size) <= width) lo = mid;
+          else hi = mid - 1;
+        }
+        const n = lo;
         lines.push(rest.slice(0, n));
         rest = rest.slice(n);
+        restWidth = font.widthOfTextAtSize(rest, size);
       }
       line = rest;
+      lineWidth = restWidth;
     }
     lines.push(line);
   }
@@ -133,7 +155,8 @@ class Writer {
     private f: Fonts,
     private logo: PDFImage,
     private charsets: Map<PDFFont, Set<number>>,
-    private continuation: string,
+    /** What a later page's header says it continues (the quotation, then its terms). */
+    public continuation: string,
   ) {}
 
   safe = (text: string, font: PDFFont) => pdfSafeText(text, this.charsets.get(font)!);
@@ -261,12 +284,37 @@ class Writer {
     this.y -= 12;
   }
 
-  footers(lines: string) {
+  /** A paragraph of the terms, wrapped (indented after a bullet when `bullet`), kept off the footer. */
+  paragraph(body: string, { bullet = false, size = 9, color = INK } = {}) {
+    const indent = bullet ? 12 : 0;
+    const lines = wrap(this.safe(body, this.f.regular), this.f.regular, size, CONTENT - indent);
+    const lh = size + 4;
+    lines.forEach((line, i) => {
+      this.ensure(lh);
+      if (bullet && i === 0) this.text("•", MARGIN + 2, this.y - size, this.f.regular, size, TERRACOTTA);
+      this.text(line, MARGIN + indent, this.y - size, this.f.regular, size, color);
+      this.y -= lh;
+    });
+    this.y -= bullet ? 3 : 6;
+  }
+
+  /** A numbered heading of the terms, kept with the start of its text. */
+  termsHeading(text: string) {
+    this.ensure(18 + 3 * 13);
+    this.y -= 6;
+    this.text(text, MARGIN, this.y - 11, this.f.serif, 12);
+    this.y -= 19;
+  }
+
+  /** The footer of every page: the quotation reference first, then the business line and the page number. */
+  footers(reference: string, lines: string) {
     const total = this.pages.length;
     this.pages.forEach((page, i) => {
       this.page = page;
       this.rule(BOTTOM - 26);
-      this.text(lines, MARGIN, BOTTOM - 40, this.f.regular, 7.5, MUTED);
+      this.text(reference, MARGIN, BOTTOM - 40, this.f.bold, 7.5, INK);
+      const x = MARGIN + this.f.bold.widthOfTextAtSize(this.safe(reference, this.f.bold), 7.5) + 10;
+      this.text(lines, x, BOTTOM - 40, this.f.regular, 7.5, MUTED);
       this.text(`Page ${i + 1} of ${total}`, W - MARGIN, BOTTOM - 40, this.f.regular, 7.5, MUTED, "right");
     });
   }
@@ -276,7 +324,14 @@ const grouped = new Intl.NumberFormat("en-IN");
 
 export type QuotationPdfOptions = { /** The date printed when the quotation has not been sent (a draft preview). */ now?: Date };
 
-/** The quotation as a PDF file: A4, every page with the footer and its page number. */
+/** The day `days` after a calendar day (YYYY-MM-DD). */
+function addDays(day: string, days: number): string {
+  const d = new Date(`${day.slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The quotation and its Terms & Conditions as a PDF file: A4, every page with the reference, the footer and its page number. */
 export async function renderQuotationPdf({ project, quotation: q }: QuotationDocument, opts: QuotationPdfOptions = {}): Promise<Uint8Array> {
   const files = await loadAssets();
   const pdf = await PDFDocument.create();
@@ -301,7 +356,8 @@ export async function renderQuotationPdf({ project, quotation: q }: QuotationDoc
   const issued = q.sentAt ?? (opts.now ?? new Date()).toISOString();
   pdf.setCreationDate(new Date(issued));
 
-  const w = new Writer(pdf, f, logo, charsets, `${title} (continued)`);
+  const reference = q.reference;
+  const w = new Writer(pdf, f, logo, charsets, `${title} · ${reference} (continued)`);
   w.addPage(true);
 
   // ----- Heading: logo left, "Quotation" and its dates right -----
@@ -309,7 +365,13 @@ export async function renderQuotationPdf({ project, quotation: q }: QuotationDoc
   const lh = (lw * logo.height) / logo.width;
   w.page.drawImage(logo, { x: MARGIN, y: w.y - lh, width: lw, height: lh });
   w.text("Quotation", W - MARGIN, w.y - 24, f.serif, 28, INK, "right");
-  const meta = [`Version ${q.version}`, `Date ${formatDate(issued)}`, ...(q.validUntil ? [`Valid until ${formatDate(q.validUntil)}`] : [])];
+  // a quotation holds QUOTATION_VALID_DAYS from its issue unless it states a date (a draft: from when it is sent)
+  const validity = q.validUntil
+    ? `Valid until ${formatDate(q.validUntil)}`
+    : q.status === "draft"
+      ? `Valid ${QUOTATION_VALID_DAYS} days from sending`
+      : `Valid until ${formatDate(addDays(issued, QUOTATION_VALID_DAYS))}`;
+  const meta = [`Reference ${reference}`, `Version ${q.version}`, `Date ${formatDate(issued)}`, validity];
   let my = w.y - 42;
   for (const m of meta) {
     w.text(m, W - MARGIN, my, f.regular, 9, MUTED, "right");
@@ -352,8 +414,6 @@ export async function renderQuotationPdf({ project, quotation: q }: QuotationDoc
     w.text(line, right, ry, f.bold, 11);
     ry -= 14;
   }
-  w.text(`Reference PS-${project.id.slice(0, 8).toUpperCase()}-V${q.version}`, right, ry, f.regular, 9.5, MUTED);
-  ry -= 13;
   w.text(project.stageLabel, right, ry, f.regular, 9.5, MUTED);
   ry -= 13;
   w.y = Math.min(ly, ry) - 16;
@@ -391,6 +451,31 @@ export async function renderQuotationPdf({ project, quotation: q }: QuotationDoc
   w.text(money(q.totalPaise), W - MARGIN - CELL_PAD, w.y - 15, f.bold, 13, INK, "right");
   w.y -= 40;
 
+  // ----- Payment milestones (kept together) -----
+  if (q.paymentSchedule.length) {
+    const rowH = 20;
+    w.ensure(22 + HEADER_ROW + rowH * q.paymentSchedule.length + 12);
+    w.text("Payment schedule", MARGIN, w.y - 13, f.serif, 13);
+    w.y -= 22;
+    const pctX = W - MARGIN - 150;
+    w.page.drawRectangle({ x: MARGIN, y: w.y - HEADER_ROW, width: CONTENT, height: HEADER_ROW, color: SAND });
+    w.text("Milestone", MARGIN + CELL_PAD, w.y - 14.5, f.bold, 8.5);
+    w.text("Share", pctX, w.y - 14.5, f.bold, 8.5, INK, "right");
+    w.text("Amount", W - MARGIN - CELL_PAD, w.y - 14.5, f.bold, 8.5, INK, "right");
+    w.y -= HEADER_ROW;
+    for (const m of q.paymentSchedule) {
+      const label = wrap(w.safe(m.label, f.regular), f.regular, 9.5, pctX - MARGIN - 60)[0] ?? "";
+      w.text(label, MARGIN + CELL_PAD, w.y - 13.5, f.regular, 9.5);
+      w.text(`${m.percent}%`, pctX, w.y - 13.5, f.regular, 9.5, MUTED, "right");
+      w.text(money(m.amountPaise), W - MARGIN - CELL_PAD, w.y - 13.5, f.bold, 9.5, INK, "right");
+      w.y -= rowH;
+      w.rule(w.y);
+    }
+    w.y -= 8;
+    w.paragraph("Nothing is due before the work starts. Each payment is due on the day its milestone is reached.", { size: 8.5, color: MUTED });
+    w.y -= 6;
+  }
+
   // ----- Notes and payment terms -----
   if (q.notes?.trim()) w.section("Notes", q.notes.trim());
   if (q.paymentTerms?.trim()) w.section("Payment terms", q.paymentTerms.trim());
@@ -405,9 +490,54 @@ export async function renderQuotationPdf({ project, quotation: q }: QuotationDoc
     w.text(line, MARGIN + 16, py, f.bold, 10);
     py -= 14;
   }
-  w.y -= boxH;
+  w.y -= boxH + 12;
+  w.paragraph(`The Terms & Conditions on the following pages are part of this quotation (${reference}).`, { size: 8.5, color: MUTED });
+
+  // ----- Terms & Conditions, on their own pages -----
+  w.continuation = `Terms & Conditions · ${reference} (continued)`;
+  w.addPage();
+  w.label("Part of quotation " + reference, MARGIN, w.y - 4);
+  w.y -= 14;
+  w.text("Terms & Conditions", MARGIN, w.y - 22, f.serif, 24);
+  w.y -= 34;
+  w.paragraph(`These terms of ${formatDate(QUOTATION_TERMS_UPDATED)} come with ${site.name} quotation ${reference}, version ${q.version}, and form one agreement with it.`, { size: 9, color: MUTED });
+  w.y -= 4;
+  quotationTerms().forEach((section, i) => {
+    w.termsHeading(`${i + 1}. ${section.title}`);
+    for (const block of section.blocks) {
+      if (block.kind === "p") w.paragraph(block.text);
+      else for (const item of block.items) w.paragraph(item, { bullet: true });
+    }
+  });
+
+  // ----- Acceptance: the statement, then the lines to fill in, kept together -----
+  const acceptance = acceptanceStatement();
+  const statement = acceptance.paragraphs.flatMap((t) => wrap(w.safe(t, f.regular), f.regular, 9, CONTENT));
+  const fieldH = 30;
+  w.ensure(40 + statement.length * 13 + acceptance.paragraphs.length * 6 + acceptance.fields.length * fieldH);
+  w.y -= 10;
+  w.rule(w.y, MARGIN, W - MARGIN, INK, 0.75);
+  w.y -= 8;
+  w.text(acceptance.title, MARGIN, w.y - 15, f.serif, 15);
+  w.y -= 26;
+  for (const t of acceptance.paragraphs) w.paragraph(t);
+  const filled: Record<string, string> = {
+    "Customer name": project.name,
+    "Property address": [project.address, placeLine(project.locality, [project.city, project.pincode].filter(Boolean).join(" "))].filter(Boolean).join(", "),
+    "Quotation reference": `${reference} (version ${q.version})`,
+    Date: q.status === "approved" && q.approvedAt ? `${formatDate(q.approvedAt)} (accepted)` : "",
+  };
+  w.y -= 4;
+  for (const field of acceptance.fields) {
+    const value = filled[field] ?? "";
+    w.text(field, MARGIN, w.y - 18, f.bold, 8.5, MUTED);
+    const x = MARGIN + 130;
+    if (value) w.text(wrap(w.safe(value, f.regular), f.regular, 9.5, W - MARGIN - x)[0] ?? "", x, w.y - 18, f.regular, 9.5);
+    w.rule(w.y - 22, x, W - MARGIN, LINE, 0.75);
+    w.y -= fieldH;
+  }
 
   const host = new URL(site.url).host;
-  w.footers([site.name, host, site.hoursDisplay, site.phone ? site.phoneDisplay || site.phone : ""].filter(Boolean).join("  ·  "));
+  w.footers(reference, [site.name, host, site.hoursDisplay, site.phone ? site.phoneDisplay || site.phone : ""].filter(Boolean).join("  ·  "));
   return pdf.save();
 }

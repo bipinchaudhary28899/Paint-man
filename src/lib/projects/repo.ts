@@ -1,10 +1,13 @@
 import "server-only";
 import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
+import { DEFAULT_PAYMENT_SCHEDULE, QUOTATION_VALID_DAYS } from "@/config/quotation-terms";
 import { getCity } from "@/config/site";
 import { getDb, type Db } from "@/lib/db/client";
 import { inspections, leads, projectEvents, projects, quotationLines, quotations } from "@/lib/db/schema";
+import { indiaToday } from "@/lib/leads/dates";
 import { detailsEditable } from "./details";
 import type { ProjectDetailsInput } from "./inputs";
+import { milestoneAmounts, type PaymentMilestone, type PaymentMilestoneDue } from "./payment-schedule";
 import { isForward, STAGE_LABELS, stageExplanation, stageSteps, type MainStage, type ProjectStage, type StageStep } from "./stages";
 
 // Projects, their timeline, inspection and quotations: the one data layer behind the customer API
@@ -56,12 +59,16 @@ export type QuotationLine = {
 export type Quotation = {
   id: string;
   version: number;
+  /** "PS-3F0C2B1A-V2": the project and version, printed on every page of the quotation and its terms. */
+  reference: string;
   status: QuotationStatus;
   sentAt: string | null;
   approvedAt: string | null;
   validUntil: string | null;
   notes: string | null;
   paymentTerms: string | null;
+  /** When each share of the total is due, with its amount (empty on quotations from before milestones). */
+  paymentSchedule: PaymentMilestoneDue[];
   lines: QuotationLine[];
   subtotalPaise: number;
   totalPaise: number;
@@ -151,6 +158,16 @@ function toLine(l: LineRow): QuotationLine {
   return { position: l.position, item: l.item, description: l.description, areaSqft: l.areaSqft, coats: l.coats, ratePaise: l.ratePaise, amountPaise: l.amountPaise };
 }
 
+/** "PS-3F0C2B1A-V2": a quotation's reference, from its project and version. */
+export const quotationReference = (projectId: string, version: number) => `PS-${projectId.slice(0, 8).toUpperCase()}-V${version}`;
+
+/** The day `days` after a calendar day (YYYY-MM-DD). */
+function addDays(day: string, days: number): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Sum of the line amounts, in paise. There are no taxes or discounts on top, so the total equals it. */
 export const quotationTotal = (lines: { amountPaise: number }[]) => lines.reduce((sum, l) => sum + l.amountPaise, 0);
 
@@ -160,12 +177,14 @@ function toQuotation(q: QuotationRow, lines: LineRow[]): Quotation {
   return {
     id: q.id,
     version: q.version,
+    reference: quotationReference(q.projectId, q.version),
     status: q.status,
     sentAt: iso(q.sentAt),
     approvedAt: iso(q.approvedAt),
     validUntil: q.validUntil,
     notes: q.notes,
     paymentTerms: q.paymentTerms,
+    paymentSchedule: milestoneAmounts(total, q.paymentSchedule ?? []),
     lines: mine.map(toLine),
     subtotalPaise: total,
     totalPaise: total,
@@ -489,7 +508,8 @@ export async function markInspectionVisited(projectId: string, opts: { visitedAt
 
 /**
  * Starts the next quotation version as a draft. A revision starts as a copy of the latest version
- * (its lines, notes, payment terms and validity), so only the changes need entering.
+ * (its lines, notes, payment terms, milestones and validity), so only the changes need entering; the
+ * first version, or a revision of one from before milestones, starts with the standard milestones.
  */
 export async function createQuotation(projectId: string, opts: { now?: Date } = {}): Promise<{ id: string; version: number }> {
   const db = await getDb();
@@ -505,6 +525,7 @@ export async function createQuotation(projectId: string, opts: { now?: Date } = 
         status: "draft",
         notes: latest?.notes ?? null,
         paymentTerms: latest?.paymentTerms ?? null,
+        paymentSchedule: latest?.paymentSchedule ?? DEFAULT_PAYMENT_SCHEDULE.map((m) => ({ ...m })),
         validUntil: latest?.validUntil ?? null,
         createdAt: now,
         updatedAt: now,
@@ -531,12 +552,12 @@ async function lockQuotation(tx: Tx, quotationId: string, projectId?: string): P
 }
 
 export type QuotationLineInput = Omit<QuotationLine, "position">;
-export type QuotationInput = { lines: QuotationLineInput[]; notes?: string | null; paymentTerms?: string | null; validUntil?: string | null };
+export type QuotationInput = { lines: QuotationLineInput[]; notes?: string | null; paymentTerms?: string | null; paymentSchedule?: PaymentMilestone[] | null; validUntil?: string | null };
 /** Options of the quotation writes: `projectId` scopes the quotation to that project (else not found). */
 /** `note`: a line for the timeline with the move it makes (approving: who accepted it). */
 export type QuotationWriteOptions = { now?: Date; projectId?: string; note?: string };
 
-/** Saves a draft: replaces its lines (in the order given) and sets notes, payment terms and validity. */
+/** Saves a draft: replaces its lines (in the order given) and sets notes, payment terms, milestones (an empty list: none) and validity. */
 export async function saveQuotation(quotationId: string, input: QuotationInput, opts: QuotationWriteOptions = {}) {
   const db = await getDb();
   const now = opts.now ?? new Date();
@@ -551,6 +572,7 @@ export async function saveQuotation(quotationId: string, input: QuotationInput, 
         updatedAt: now,
         ...(input.notes !== undefined && { notes: input.notes }),
         ...(input.paymentTerms !== undefined && { paymentTerms: input.paymentTerms }),
+        ...(input.paymentSchedule !== undefined && { paymentSchedule: input.paymentSchedule?.length ? input.paymentSchedule : null }),
         ...(input.validUntil !== undefined && { validUntil: input.validUntil }),
       })
       .where(eq(quotations.id, q.id));
@@ -560,6 +582,7 @@ export async function saveQuotation(quotationId: string, input: QuotationInput, 
 /**
  * Sends a draft to the customer (it must have lines); the project moves to `quotation_shared` if
  * it was earlier. A revision (version 2 on) adds "Revised quotation (version n)." to the timeline.
+ * A draft with no valid-until date holds for QUOTATION_VALID_DAYS from today (India), as the terms say.
  */
 export async function sendQuotation(quotationId: string, opts: QuotationWriteOptions = {}) {
   const db = await getDb();
@@ -569,7 +592,8 @@ export async function sendQuotation(quotationId: string, opts: QuotationWriteOpt
     if (q.status !== "draft") throw new ProjectError("invalid_state", `Version ${q.version} has already been sent.`);
     const [{ lines }] = await tx.select({ lines: count() }).from(quotationLines).where(eq(quotationLines.quotationId, q.id));
     if (lines === 0) throw new ProjectError("invalid_state", "Add at least one line before sending the quotation.");
-    await tx.update(quotations).set({ status: "sent", sentAt: now, updatedAt: now }).where(eq(quotations.id, q.id));
+    const validUntil = q.validUntil ?? addDays(indiaToday(now), QUOTATION_VALID_DAYS);
+    await tx.update(quotations).set({ status: "sent", sentAt: now, validUntil, updatedAt: now }).where(eq(quotations.id, q.id));
     const note = q.version > 1 ? `Revised quotation (version ${q.version}).` : null;
     // a revision sent while the first is still under review is posted as an update at this stage
     if (note && p.stage === "quotation_shared") await moveTo(tx, p, "quotation_shared", note, now);

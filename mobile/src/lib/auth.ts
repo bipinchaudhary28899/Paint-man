@@ -152,5 +152,6 @@ export function safeNext(next: string | string[] | undefined): string | undefine
   const value = Array.isArray(next) ? next[0] : next;
   if (!value || value.length > 200 || !value.startsWith("/") || value.startsWith("//")) return undefined;
   const route = routeFor(value);
-  return route && route.pathname !== "/login" ? value : undefined;
+  // never the login screen itself, nor the staff screens (they have their own sign-in)
+  return route && route.pathname !== "/login" && !route.pathname.startsWith("/admin") ? value : undefined;
 }

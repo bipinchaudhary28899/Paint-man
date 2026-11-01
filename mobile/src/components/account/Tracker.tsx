@@ -252,11 +252,12 @@ function InspectionCard({ inspection }: { inspection: Inspection }) {
   );
 }
 
-const STATUS_LOOK: Record<QuotationStatus, { bg: string; text: string }> = {
-  sent: { bg: colors.golden, text: colors.ink },
-  approved: { bg: colors.sageDeep, text: colors.onSage },
-  declined: { bg: colors.roseWash, text: colors.ink },
-  superseded: { bg: colors.creamWash, text: colors.muted },
+/** A version's status as eyebrow text (never a pill badge): sage once approved, terracotta while open, muted after. */
+const STATUS_COLOUR: Record<QuotationStatus, string> = {
+  sent: colors.terracotta,
+  approved: colors.sageDeep,
+  declined: colors.muted,
+  superseded: colors.muted,
 };
 
 /** One version of the quotation: status, every line with its amount, the totals, its notes and terms, and the PDF. */
@@ -306,7 +307,6 @@ export function QuotationCard({ quotation: q, acceptIn }: { quotation: Quotation
       setAccepting(false);
     }
   }
-  const look = STATUS_LOOK[q.status];
   const approved = q.status === "approved";
 
   async function download() {
@@ -321,16 +321,15 @@ export function QuotationCard({ quotation: q, acceptIn }: { quotation: Quotation
     }
   }
 
-  const dated = approved && q.approvedAt ? `Approved ${formatDay(q.approvedAt)}` : q.sentAt ? `Shared ${formatDay(q.sentAt)}` : "";
+  const dated = [q.reference, approved && q.approvedAt ? `Approved ${formatDay(q.approvedAt)}` : q.sentAt ? `Shared ${formatDay(q.sentAt)}` : ""].filter(Boolean).join(" · ");
+  const schedule = q.paymentSchedule ?? [];
   return (
     <View style={[styles.quote, approved && styles.quoteApproved]} testID={`quotation-${q.version}`}>
       <View style={styles.quoteHead}>
         <H size={22} leading={1.3} style={styles.flex}>
           Quotation, version {q.version}
         </H>
-        <View style={[styles.status, { backgroundColor: look.bg }]}>
-          <Text style={[styles.statusText, { color: look.text }]}>{QUOTATION_STATUS[q.status]}</Text>
-        </View>
+        <Text style={[styles.statusText, { color: STATUS_COLOUR[q.status] }]}>{QUOTATION_STATUS[q.status]}</Text>
       </View>
       {dated !== "" && <Text style={styles.dated}>{dated}</Text>}
 
@@ -363,9 +362,32 @@ export function QuotationCard({ quotation: q, acceptIn }: { quotation: Quotation
         </View>
       </View>
 
+      {schedule.length > 0 && (
+        <View style={styles.detail} testID={`schedule-${q.version}`}>
+          <Text style={styles.kvKey}>Payment schedule</Text>
+          {schedule.map((m, i) => (
+            <View key={i} style={styles.milestone} accessible accessibilityLabel={`${m.label}: ${m.percent}%, ${spokenRupees(m.amountPaise)}`}>
+              <Text style={styles.milestoneLabel}>{m.label}</Text>
+              <Text style={styles.milestoneShare}>{m.percent}%</Text>
+              <Text style={styles.milestoneAmount}>{formatRupees(m.amountPaise)}</Text>
+            </View>
+          ))}
+          <Text style={styles.milestoneNote}>Nothing is due before the work starts. Each payment is due on the day its milestone is reached.</Text>
+        </View>
+      )}
       {q.notes ? <Detail label="Notes" text={q.notes} /> : null}
       {q.paymentTerms ? <Detail label="Payment terms" text={q.paymentTerms} /> : null}
       {q.validUntil && q.status === "sent" ? <Detail label="Valid until" text={formatCalendarDay(q.validUntil)} /> : null}
+
+      {!acceptIn && (
+        <Text style={styles.termsLine}>
+          The{" "}
+          <Text accessibilityRole="link" onPress={() => openHref("/quotation-terms")} style={styles.termsLink}>
+            quotation terms
+          </Text>{" "}
+          come with every quotation and are printed in its PDF.
+        </Text>
+      )}
 
       {acceptIn && (
         <View style={styles.accept}>
@@ -376,7 +398,13 @@ export function QuotationCard({ quotation: q, acceptIn }: { quotation: Quotation
             busy={accepting}
             resetKey={resetKey}
           />
-          <Text style={styles.acceptNote}>Not ready yet? Nothing changes until you accept. Questions? Message us below.</Text>
+          <Text style={styles.acceptNote}>
+            Accepting means accepting the{" "}
+            <Text accessibilityRole="link" onPress={() => openHref("/quotation-terms")} style={styles.termsLink}>
+              quotation terms
+            </Text>{" "}
+            with it. Not ready yet? Nothing changes until you accept. Questions? Message us below.
+          </Text>
         </View>
       )}
 
@@ -503,8 +531,14 @@ const styles = StyleSheet.create({
   quote: { borderRadius: radii.lg, borderWidth: 1, borderColor: colors.lineSoft, backgroundColor: colors.paper, padding: 20 },
   quoteApproved: { borderWidth: 1.5, borderColor: colors.terracotta },
   quoteHead: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  status: { borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6, marginTop: 2 },
-  statusText: { fontFamily: fonts.sansSemiBold, fontSize: 12, lineHeight: 16, letterSpacing: 0.3 },
+  statusText: { marginTop: 6, fontFamily: fonts.sansSemiBold, fontSize: 11, lineHeight: 16, letterSpacing: 1.6, textTransform: "uppercase" },
+  milestone: { flexDirection: "row", alignItems: "baseline", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: colors.lineSoft },
+  milestoneLabel: { flex: 1, fontFamily: fonts.sans, fontSize: 15, lineHeight: 21, color: colors.ink },
+  milestoneShare: { fontFamily: fonts.sans, fontSize: 14, lineHeight: 21, color: colors.muted },
+  milestoneAmount: { fontFamily: fonts.sansSemiBold, fontSize: 15, lineHeight: 21, color: colors.ink },
+  milestoneNote: { marginTop: 6, fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.muted },
+  termsLink: { fontFamily: fonts.sansSemiBold, color: colors.ink, textDecorationLine: "underline" },
+  termsLine: { marginTop: 14, fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.muted },
   dated: { marginTop: 4, fontFamily: fonts.sans, fontSize: 13, lineHeight: 18, color: colors.muted },
   lines: { marginTop: 16, borderTopWidth: 1, borderColor: colors.lineSoft },
   line_: { paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.lineSoft, gap: 2 },

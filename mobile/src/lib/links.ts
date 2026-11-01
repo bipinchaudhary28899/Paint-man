@@ -6,14 +6,17 @@ import { webUrl } from "./config";
 // The app's screens sit at the website's own paths (/services/interior-painting/agra, /colours,
 // /shade-cards/berger...), so every href in the website's config (nav.ts, FAQ links, weather notes)
 // opens the matching screen. A #fragment becomes the `section` param, which the page scrolls to (the
-// website's in-page anchors). Paths the app has no screen for (/admin) open on the website. The
-// customer account screens sit at the website's paths too: /login, /account and /account/projects/<id>.
+// website's in-page anchors). Paths the app has no screen for open on the website. The customer
+// account screens sit at the website's paths too (/login, /account, /account/projects/<id>), and so do
+// the staff screens (/admin/login, /admin, /admin/projects, /admin/projects/<id>).
 
 const ROUTES: RegExp[] = [
   /^\/$/,
-  /^\/(about|book|colours|contact|faq|gallery|login|palettes|privacy-policy|terms|thank-you)$/,
+  /^\/(about|book|colours|contact|faq|gallery|login|palettes|privacy-policy|quotation-terms|terms|thank-you)$/,
   /^\/account$/,
   /^\/account\/projects\/[A-Za-z0-9-]{1,64}$/,
+  /^\/admin(\/login|\/projects)?$/,
+  /^\/admin\/projects\/[A-Za-z0-9-]{1,64}$/,
   /^\/services$/,
   /^\/services\/[a-z0-9-]+$/,
   /^\/services\/[a-z0-9-]+\/[a-z0-9-]+$/,
@@ -37,7 +40,7 @@ export function routeFor(href: string): AppRoute | null {
   return { pathname, params };
 }
 
-/** Opens a website href: its screen in the app, or the page in the browser (external links, /admin). */
+/** Opens a website href: its screen in the app, or the page in the browser (external links, pages the app lacks). */
 export function openHref(href: string): void {
   const route = routeFor(href);
   if (route) {

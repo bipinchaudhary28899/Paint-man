@@ -23,9 +23,14 @@ export default function TermsPage() {
         <h2>Changes in scope</h2>
         <p>Any additional work or change of material is priced and approved by you before it is carried out.</p>
         <h2>Payments, cancellations and refunds</h2>
-        <p>Payment milestones, cancellation terms and refund conditions are stated in your quotation and service agreement.</p>
+        <p>
+          Payment milestones are stated in your quotation. Payments, cancellation, refunds and everything else about the work are covered by the{" "}
+          <Link href="/quotation-terms" className="underline">quotation terms</Link> that come with every quotation.
+        </p>
         <h2>Service terms</h2>
-        <p>Any warranty or after-service commitment applies only as written in your service agreement.</p>
+        <p>
+          The workmanship warranty and after-service commitments are set out in the <Link href="/quotation-terms#warranty" className="underline">quotation terms</Link>.
+        </p>
         <h2>Contact</h2>
         <p>Questions about these terms? Reach us through our <Link href="/contact" className="underline">contact page</Link>.</p>
       </div>

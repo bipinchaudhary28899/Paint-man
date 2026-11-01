@@ -11,6 +11,7 @@ import { getStaticFeatureFlag } from "react-native-reanimated";
 import { BottomNav } from "~/components/site/BottomNav";
 import { LaunchAnimation } from "~/components/site/LaunchAnimation";
 import { NavStateProvider } from "~/components/site/nav-state";
+import { AdminProvider } from "~/lib/admin-context";
 import { AuthProvider } from "~/lib/auth-context";
 import { listenForPush } from "~/lib/push";
 import { colors } from "~/theme";
@@ -22,7 +23,8 @@ export { ScreenError as ErrorBoundary } from "~/components/content/NotFound";
 
 // The app is the website on a phone: one stack of pages at the website's own paths (src/app mirrors
 // src/app/(site)), each with the sticky header and the footer, and the phone nav fixed over them.
-// AuthProvider restores the customer's session (the token in the secure store) for every screen.
+// AuthProvider restores the customer's session (the token in the secure store) for every screen, and
+// AdminProvider the staff's admin session, kept apart from it.
 export default function RootLayout() {
   // a tapped project update opens its project (also the notification that launched the app)
   useEffect(() => listenForPush((path) => router.push(path as never)), []);
@@ -57,14 +59,16 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <NavStateProvider>
-        <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
-          <BottomNav />
-          {launching && <LaunchAnimation onDone={launched} />}
-        </View>
-      </NavStateProvider>
+      <AdminProvider>
+        <NavStateProvider>
+          <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+            <StatusBar style="dark" />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
+            <BottomNav />
+            {launching && <LaunchAnimation onDone={launched} />}
+          </View>
+        </NavStateProvider>
+      </AdminProvider>
     </AuthProvider>
   );
 }

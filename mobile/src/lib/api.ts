@@ -56,7 +56,7 @@ const isEnvelope = (body: unknown): body is ApiEnvelope<unknown> =>
   typeof body === "object" && body !== null && (body as ApiEnvelope<unknown>).apiVersion === "v1" && "data" in body;
 
 export type ApiRequestInit = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** sent as JSON */
   body?: unknown;
   /** the session's bearer token (never logged) */
@@ -64,8 +64,8 @@ export type ApiRequestInit = {
   signal?: AbortSignal;
 };
 
-/** Requests the API is fine to receive twice: reads, and PATCH (it sets fields to the values sent). */
-const REPEATABLE = new Set(["GET", "PATCH"]);
+/** Requests the API is fine to receive twice: reads, and PUT and PATCH (they set fields to the values sent). */
+const REPEATABLE = new Set(["GET", "PUT", "PATCH"]);
 
 /**
  * fetch, with one more try for a repeatable request whose connection fails: iOS can hand a request a

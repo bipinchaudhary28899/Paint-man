@@ -2,41 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { crewEstimate, formatSqft } from "@/lib/leads/estimate";
+import { address, crew, filterLeads, jobSize, leadSource, optionsOf, statusKey, statusOf, type LeadTypeFilter as Filter } from "@/lib/leads/admin-view";
 import { LEAD_STATUSES, type LeadRecord, type LeadStatus } from "@/lib/leads/record";
 import { adminSend } from "./useAdminAction";
 
-type Filter = "all" | "booking" | "visit" | "waitlist" | "contact";
-
-/** "2 floors · 3 BHK · 1,200 sq ft/floor" from the job-size columns (blank for messages). */
-export function jobSize(l: LeadRecord): string {
-  const floors = l.Floors ? (l.Floors === "1" ? "1 floor" : `${l.Floors} floors`) : "";
-  const carpet = Number(l["Carpet Area per Floor (sq ft)"]) ? `${Number(l["Carpet Area per Floor (sq ft)"]).toLocaleString("en-IN")} sq ft/floor` : "";
-  return [floors, l["Home Size"], carpet].filter(Boolean).join(" · ");
-}
-
-/** "≈ 8,400 sq ft · 84 painter-days (8 × 11 days)" from the estimated paint area. */
-export function crew(l: LeadRecord): string {
-  const area = Number(l["Est. Paint Area (sq ft)"]);
-  if (!area) return l.Type === "booking" && l.Floors ? "Measure on site" : "";
-  const c = crewEstimate(area);
-  return `≈ ${formatSqft(area)} · ${c.painterDays} painter-days (${c.painters} × ${c.days} days)`;
-}
-
-/** "12 Rose Villa, Kamla Nagar, Agra 282005": the address columns, for bookings made after they were added. */
-export function address(l: LeadRecord): string {
-  const place = [l.Address, l.Locality, l.City].filter(Boolean).join(", ");
-  return l["PIN Code"] ? `${place} ${l["PIN Code"]}` : place;
-}
-
-/** A lead's status, "New" until the team sets another. */
-export const statusOf = (l: LeadRecord) => l.Status || "New";
-
-/** The stored status for a label the table shows ("Not interested" → "not_interested"), or "" for a label outside the list. */
-export function statusKey(label: string): LeadStatus | "" {
-  const found = Object.entries(LEAD_STATUSES).find(([, l]) => l === label);
-  return found ? (found[0] as LeadStatus) : "";
-}
+// the helpers live in src/lib/leads/admin-view.ts (shared with the admin leads API); tests import them from here too
+export { address, crew, filterLeads, jobSize, optionsOf, statusKey, statusOf };
 
 /**
  * The status control of one lead: choosing another status saves it at once (PATCH
@@ -86,22 +57,6 @@ function StatusSelect({ lead, onSaved }: { lead: LeadRecord; onSaved: (label: st
   );
 }
 
-/** The distinct, non-empty values of a column across the leads, sorted: the options of a filter. */
-export function optionsOf(leads: LeadRecord[], pick: (l: LeadRecord) => string): string[] {
-  return [...new Set(leads.map(pick).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-}
-
-export function filterLeads(leads: LeadRecord[], query: string, type: Filter, more: { city?: string; status?: string } = {}): LeadRecord[] {
-  const q = query.trim().toLowerCase();
-  return leads.filter((l) => {
-    if (type !== "all" && l.Type !== type) return false;
-    if (more.city && l.City !== more.city) return false;
-    if (more.status && statusOf(l) !== more.status) return false;
-    if (!q) return true;
-    return [l.Name, l.Phone, address(l), l.Service, l.Message, l["Lead ID"]].some((v) => v.toLowerCase().includes(q));
-  });
-}
-
 /** The columns of the CSV download, in order, with how each is read from a lead. */
 const CSV_COLUMNS: [string, (l: LeadRecord) => string][] = [
   ["Received", (l) => l["Submitted At (IST)"]],
@@ -114,7 +69,7 @@ const CSV_COLUMNS: [string, (l: LeadRecord) => string][] = [
   ["Job size", jobSize],
   ["Preferred date", (l) => l["Preferred Inspection Date"]],
   ["Message", (l) => l.Message],
-  ["Source", (l) => [l["UTM Source"], l["UTM Campaign"]].filter(Boolean).join(" / ") || "Direct"],
+  ["Source", leadSource],
   ["Status", statusOf],
   ["Lead ID", (l) => l["Lead ID"]],
 ];
@@ -269,7 +224,7 @@ export function LeadsTable({ leads: loaded }: { leads: LeadRecord[] }) {
                   <td className="whitespace-nowrap px-4 py-3">{crew(l)}</td>
                   <td className="whitespace-nowrap px-4 py-3">{l["Preferred Inspection Date"]}</td>
                   <td className="max-w-xs px-4 py-3 text-muted">{l.Message}</td>
-                  <td className="px-4 py-3 text-muted">{[l["UTM Source"], l["UTM Campaign"]].filter(Boolean).join(" / ") || "Direct"}</td>
+                  <td className="px-4 py-3 text-muted">{leadSource(l)}</td>
                   <td className="px-4 py-3">
                     <StatusSelect lead={l} onSaved={(label) => setSaved((s) => ({ ...s, [l["Lead ID"]]: label }))} />
                   </td>

@@ -24,15 +24,22 @@ export type QuotationLine = {
   amountPaise: number;
 };
 
+/** A payment milestone with its amount of the total (src/lib/projects/payment-schedule.ts). */
+export type PaymentMilestoneDue = { label: string; percent: number; amountPaise: number };
+
 export type Quotation = {
   id: string;
   version: number;
+  /** "PS-3F0C2B1A-V2", on every page of its PDF (left out by servers from before it existed) */
+  reference?: string;
   status: QuotationStatus;
   sentAt: string | null;
   approvedAt: string | null;
   validUntil: string | null;
   notes: string | null;
   paymentTerms: string | null;
+  /** when each share of the total is due (left out, or empty, on quotations from before milestones) */
+  paymentSchedule?: PaymentMilestoneDue[];
   lines: QuotationLine[];
   subtotalPaise: number;
   totalPaise: number;

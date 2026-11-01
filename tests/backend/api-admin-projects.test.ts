@@ -213,6 +213,19 @@ describe("inspection endpoints", () => {
   });
 });
 
+describe("payment milestones through the save endpoint", () => {
+  it("saves milestones that add up to 100% and refuses others with the reason", async () => {
+    const { id } = await project();
+    const created = await expectOk(await createRoute(req("POST", `/api/admin/projects/${id}/quotations`), ctx({ id })), 201);
+    const qid = created.data.id as string;
+    const save = (body: unknown) => saveRoute(req("PUT", `/api/admin/projects/${id}/quotations/${qid}`, { body }), ctx({ id, qid }));
+    await expectOk(await save({ lines, paymentSchedule: [{ label: "At start", percent: 40 }, { label: "At handover", percent: 60 }] }));
+    expect((await getProjectForAdmin(id))!.quotations[0].paymentSchedule.map((m) => m.percent)).toEqual([40, 60]);
+    const bad = await expectError(await save({ lines, paymentSchedule: [{ label: "At start", percent: 40 }] }), 400, "invalid_request");
+    expect(bad.error.message).toBe("The payment milestones must add up to 100%");
+  });
+});
+
 describe("quotation endpoints", () => {
   it("starts a draft, saves its lines, sends it, and records the customer's answer", async () => {
     const { id } = await project();

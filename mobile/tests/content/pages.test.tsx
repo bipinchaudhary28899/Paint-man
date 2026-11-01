@@ -9,6 +9,7 @@ import { FaqDirectory } from "~/components/content/Faq";
 import { GalleryGrid, GalleryGroups, GalleryNav, GalleryNote, GalleryPreview } from "~/components/content/Gallery";
 import { ErrorNotice, NotFoundContent, ScreenError } from "~/components/content/NotFound";
 import { ProseH2, ProseList, ProseP, ProsePage } from "~/components/content/Prose";
+import { QuotationTerms } from "~/components/content/QuotationTerms";
 import { notSentCopy, projectParam, sentCopy, ThankYou, thankYouType, wasSent, webActions } from "~/components/content/ThankYou";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { webUrl } from "~/lib/config";
@@ -407,6 +408,21 @@ describe("legal pages", () => {
     expect(screen.getByRole("header", { name: "Information we collect" })).toBeOnTheScreen();
     expect(screen.getByText("Two")).toBeOnTheScreen();
     expect(within(screen.getByLabelText("Breadcrumb")).getByText("Privacy policy")).toBeOnTheScreen();
+  });
+});
+
+describe("the quotation terms", () => {
+  it("show every numbered section of the website's terms, then what accepting means", async () => {
+    await render(<QuotationTerms />);
+    expect(screen.getByRole("header", { name: "Quotation terms and conditions" })).toBeOnTheScreen();
+    expect(screen.getByText(/Last updated Sun 1 Nov 2026/)).toBeOnTheScreen();
+    expect(screen.getByRole("header", { name: "2. Quotation, validity and acceptance" })).toBeOnTheScreen();
+    expect(screen.getByText("Work starts only after you accept. There is no advance payment: nothing is due before the work starts.")).toBeOnTheScreen();
+    expect(screen.getByRole("header", { name: "13. Workmanship warranty" })).toBeOnTheScreen();
+    expect(screen.getByRole("header", { name: "Customer acknowledgement and acceptance" })).toBeOnTheScreen();
+    expect(screen.getByText(/the competent courts at Mathura, Uttar Pradesh/)).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText("terms of service"));
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/terms", params: {} });
   });
 });
 

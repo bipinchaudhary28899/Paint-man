@@ -2,21 +2,23 @@ import type { NextRequest } from "next/server";
 import { failure, personalError } from "@/lib/api-personal";
 import { checkLimits, profileUserLimit, rateLimited } from "@/lib/auth/limits";
 import { requireUser } from "@/lib/auth/user-session";
+import { QUOTATION_TERMS_UPDATED } from "@/config/quotation-terms";
 import { indiaToday } from "@/lib/leads/dates";
 import { projectResponse } from "@/lib/projects/project-response";
 import { approveQuotation, getProjectForUser } from "@/lib/projects/repo";
 
 export const runtime = "nodejs";
 
-/** The timeline line the team (and the customer) sees with the move to "Price finalised". */
-const ACCEPTED_NOTE = "Accepted by the customer in the app.";
+/** The timeline line the team (and the customer) sees with the move to "Price finalised": who accepted, under which terms. */
+const ACCEPTED_NOTE = `Accepted by the customer in the app, with the quotation terms of ${QUOTATION_TERMS_UPDATED}.`;
 
 /**
  * POST /api/v1/projects/{id}/quotations/{qid}/accept (signed in: bearer token or the
  * website's cookie, same-origin)
  * The customer accepts a quotation they were sent: the price is final, exactly as when the team
  * approves it in /admin. Other sent versions become superseded, the project moves to "Price
- * finalised" with "Accepted by the customer in the app." on its timeline. Only the latest sent
+ * finalised" with "Accepted by the customer in the app, with the quotation terms of {date}." (the
+ * terms in src/config/quotation-terms.ts that came with it) on its timeline. Only the latest sent
  * version, still within its validity date (India time), can be accepted. No body.
  * 20 changes per account per 10 minutes. 200: the project, as GET /api/v1/projects/{id} gives it.
  * Errors: 401 unauthenticated, 404 not_found (no such project in the account, or no such quotation

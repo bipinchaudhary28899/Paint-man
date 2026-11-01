@@ -3,7 +3,8 @@
 // the menus and footer link hub (nav.ts), photos and alt text (images.ts), the ideas gallery
 // (gallery.ts), colour combinations (palettes.ts), the room the finder previews shades on
 // (scenes.ts), the booking form's checks, options, date range and job estimate (src/lib/leads), and
-// the customer-facing project stages (src/lib/projects/stages.ts: labels and one-line explanations).
+// the customer-facing project stages (src/lib/projects/stages.ts: labels and one-line explanations),
+// and for the admin screens the lead statuses, the quotation editor's rules and India time (src/lib/admin).
 // Change the facts there and both the site and the app follow. Add an export here when a screen
 // needs another one; never copy website data into the app.
 
@@ -62,4 +63,24 @@ export { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyType
 export { BOOKING_DAYS_AHEAD, bookingDateRange, indiaToday, isCalendarDate } from "@/lib/leads/dates";
 export { crewEstimate, estimatePaintArea, floorCount, formatSqft, PAINT_AREA_PER_CARPET_SQFT, SQFT_PER_PAINTER_DAY } from "@/lib/leads/estimate";
 export { BRAND_SHADES_ROUNDED, PAINTDB } from "@/lib/colours/catalogue";
-export { MAIN_STAGES, STAGE_LABELS, stageExplanation, type ProjectStage, type StageStep } from "@/lib/projects/stages";
+export { MAIN_STAGES, OFF_LINE_STAGES, STAGE_LABELS, stageExplanation, type ProjectStage, type StageStep } from "@/lib/projects/stages";
+// the admin screens: the team's lead statuses, the quotation editor's form rules, India time for staff
+export { LEAD_STATUSES, type LeadStatus } from "@/lib/leads/record";
+export {
+  autoAmount,
+  blankLine,
+  blankMilestone,
+  buildQuotationRequest,
+  draftFromLine,
+  draftFromMilestone,
+  draftScheduleTotal,
+  draftTotal,
+  parseWhole,
+  type LineDraft,
+  type MilestoneDraft,
+  type QuotationRequest,
+} from "@/lib/admin/quotation-form";
+export { MAX_MILESTONES, MILESTONE_LABEL_MAX } from "@/lib/projects/payment-schedule";
+// the Terms & Conditions that come with every quotation (/quotation-terms, and the slide to accept)
+export { acceptanceStatement, DEFAULT_PAYMENT_SCHEDULE, QUOTATION_TERMS_UPDATED, quotationTerms, type TermsBlock, type TermsSection } from "@/config/quotation-terms";
+export { formatIstDateTime, fromIstParts, toIstParts } from "@/lib/admin/ist";

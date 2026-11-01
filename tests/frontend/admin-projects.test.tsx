@@ -41,12 +41,14 @@ const call = (spy: ReturnType<typeof mockFetch>, n = 0) => {
 const quotation = (over: Partial<AdminQuotation> = {}): AdminQuotation => ({
   id: "q1",
   version: 1,
+  reference: "PS-3F0C2B1A-V1",
   status: "draft",
   sentAt: null,
   approvedAt: null,
   validUntil: null,
   notes: null,
   paymentTerms: null,
+  paymentSchedule: [],
   lines: [],
   subtotalPaise: 0,
   totalPaise: 0,
@@ -413,6 +415,13 @@ describe("InspectionPanel", () => {
 });
 
 describe("QuotationView", () => {
+  it("shows the reference and the payment milestones with their amounts", () => {
+    render(<QuotationView quotation={quotation({ status: "sent", sentAt: "2026-11-01T06:30:00.000Z", paymentSchedule: [{ label: "At handover", percent: 100, amountPaise: 250_000 }] })} />);
+    expect(screen.getByText(/PS-3F0C2B1A-V1/)).toBeInTheDocument();
+    const schedule = screen.getByRole("table", { name: "Payment milestones, quotation version 1" });
+    expect(within(schedule).getByRole("row")).toHaveTextContent("At handover100%₹2,500");
+  });
+
   it("shows a sent version read-only, with its totals, notes and terms", () => {
     const q = quotation({
       status: "approved",
@@ -525,6 +534,8 @@ describe("QuotationEditor", () => {
         lines: [{ item: "Living room walls", description: null, areaSqft: 420, coats: 2, ratePaise: 2_500, amountPaise: 1_050_000 }],
         notes: "Furniture moved by us",
         paymentTerms: "50% at start",
+        // this draft has no milestones: an empty list keeps it that way
+        paymentSchedule: [],
         validUntil: "2026-11-30",
       },
     });
@@ -582,6 +593,65 @@ describe("QuotationEditor", () => {
     warn(event);
     expect(event.defaultPrevented).toBe(true);
     expect(screen.getByRole("link", { name: "Preview PDF (last saved)" })).toBeInTheDocument();
+  });
+});
+
+describe("payment milestones in the quotation editor", () => {
+  const draft = quotation({
+    lines: [{ position: 1, item: "Living room walls", description: null, areaSqft: 420, coats: 2, ratePaise: 2_500, amountPaise: 1_050_000 }],
+    subtotalPaise: 1_050_000,
+    totalPaise: 1_050_000,
+    paymentSchedule: [
+      { label: "On the first day of work", percent: 50, amountPaise: 525_000 },
+      { label: "At handover", percent: 50, amountPaise: 525_000 },
+    ],
+  });
+
+  it("shows each milestone's amount live, adds and removes them, and says when they do not add up", async () => {
+    render(<QuotationEditor projectId={PID} quotation={draft} />);
+    const user = userEvent.setup();
+    const group = screen.getByRole("group", { name: "Payment milestones" });
+    expect(within(group).getByLabelText("Milestone 1: when it is due")).toHaveValue("On the first day of work");
+    expect(within(group).getAllByText("₹5,250")).toHaveLength(2);
+    expect(within(group).getByText("Adds up to 100%")).toBeInTheDocument();
+    await user.clear(within(group).getByLabelText("Milestone 2: share in percent"));
+    await user.type(within(group).getByLabelText("Milestone 2: share in percent"), "40");
+    expect(within(group).getByText("Adds up to 90%")).toHaveClass("text-danger");
+    await user.click(within(group).getByRole("button", { name: "Add milestone" }));
+    await user.type(within(group).getByLabelText("Milestone 3: when it is due"), "After the final inspection");
+    await user.type(within(group).getByLabelText("Milestone 3: share in percent"), "10");
+    expect(within(group).getByText("Adds up to 100%")).toBeInTheDocument();
+    await user.click(within(group).getByRole("button", { name: "Remove milestone 3" }));
+    expect(within(group).queryByLabelText("Milestone 3: when it is due")).toBeNull();
+    await user.click(within(group).getByRole("button", { name: "Remove milestone 2" }));
+    await user.click(within(group).getByRole("button", { name: "Remove milestone 1" }));
+    expect(within(group).getByText("No milestones: the PDF shows only the payment terms below.")).toBeInTheDocument();
+    await user.click(within(group).getByRole("button", { name: "Use the standard milestones" }));
+    expect(within(group).getByLabelText("Milestone 1: when it is due")).toHaveValue("On the first day of work, when the materials arrive");
+    expect(within(group).getByLabelText("Milestone 3: share in percent")).toHaveValue("10");
+  });
+
+  it("refuses to save milestones that do not add up, then saves them in the request", async () => {
+    const spy = mockFetch(ok({ lines: 1 }));
+    render(<QuotationEditor projectId={PID} quotation={draft} />);
+    const user = userEvent.setup();
+    await user.clear(screen.getByLabelText("Milestone 2: share in percent"));
+    await user.type(screen.getByLabelText("Milestone 2: share in percent"), "30");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The payment milestones must add up to 100% (now 80%).");
+    await user.clear(screen.getByLabelText("Milestone 1: when it is due"));
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(screen.getByLabelText("Milestone 1: when it is due")).toHaveAttribute("aria-invalid", "true");
+    expect(spy).not.toHaveBeenCalled();
+    await user.type(screen.getByLabelText("Milestone 1: when it is due"), "At start");
+    await user.clear(screen.getByLabelText("Milestone 2: share in percent"));
+    await user.type(screen.getByLabelText("Milestone 2: share in percent"), "50");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Draft saved.");
+    expect(call(spy).body.paymentSchedule).toEqual([
+      { label: "At start", percent: 50 },
+      { label: "At handover", percent: 50 },
+    ]);
   });
 });
 

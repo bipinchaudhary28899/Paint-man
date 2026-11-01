@@ -16,7 +16,9 @@ export const sectionUpdated: Record<string, string> = {
   // the palettes' room became a real Indian living room
   "/palettes": "2026-10-31",
   "/privacy-policy": "2026-10-31",
-  "/terms": "2026-10-19",
+  // the terms point to the quotation terms that come with every quotation
+  "/terms": "2026-11-01",
+  "/quotation-terms": "2026-11-01",
 };
 
 /** The content date for a site path: the most specific section date, else SITE_UPDATED. */

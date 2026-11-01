@@ -180,6 +180,6 @@ describe("helpers", () => {
     expect(safeNext(["/book", "/x"])).toBe("/book");
     expect(safeNext("/account/projects/3f0c-1")).toBe("/account/projects/3f0c-1");
     expect(safeNext("/services/interior-painting/agra")).toBe("/services/interior-painting/agra");
-    for (const bad of [undefined, "", "account", "//evil.example", "https://evil.example/", "/admin", "/login", `/${"a".repeat(300)}`]) expect(safeNext(bad)).toBeUndefined();
+    for (const bad of [undefined, "", "account", "//evil.example", "https://evil.example/", "/admin", "/admin/projects", "/login", `/${"a".repeat(300)}`]) expect(safeNext(bad)).toBeUndefined();
   });
 });

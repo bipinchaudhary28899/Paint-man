@@ -117,3 +117,43 @@ describe("updateLeadStatus", () => {
     expect([isLeadStatus("new"), isLeadStatus("New"), isLeadStatus(1), isLeadStatus("constructor")]).toEqual([true, false, false, false]);
   });
 });
+
+describe("payment milestones and validity", () => {
+  it("start the first version with the standard milestones, copy them into a revision, and save or clear them", async () => {
+    const id = (await saveLead(booking)).projectId!;
+    const v1 = await createQuotation(id);
+    let p = await getProjectForAdmin(id);
+    expect(p!.quotations[0].paymentSchedule.map((m) => m.percent)).toEqual([50, 40, 10]);
+    expect(p!.quotations[0].reference).toBe(`PS-${id.slice(0, 8).toUpperCase()}-V1`);
+
+    await saveQuotation(v1.id, { lines, paymentSchedule: [{ label: "At start", percent: 30 }, { label: "At handover", percent: 70 }] });
+    p = await getProjectForAdmin(id);
+    expect(p!.quotations[0].paymentSchedule).toEqual([
+      { label: "At start", percent: 30, amountPaise: 315_000 },
+      { label: "At handover", percent: 70, amountPaise: 735_000 },
+    ]);
+    await sendQuotation(v1.id);
+    const v2 = await createQuotation(id);
+    p = await getProjectForAdmin(id);
+    expect(p!.quotations.find((q) => q.id === v2.id)!.paymentSchedule.map((m) => m.label)).toEqual(["At start", "At handover"]);
+
+    // an empty list clears them; leaving them out keeps them
+    await saveQuotation(v2.id, { lines });
+    expect((await getProjectForAdmin(id))!.quotations.find((q) => q.id === v2.id)!.paymentSchedule).toHaveLength(2);
+    await saveQuotation(v2.id, { lines, paymentSchedule: [] });
+    expect((await getProjectForAdmin(id))!.quotations.find((q) => q.id === v2.id)!.paymentSchedule).toEqual([]);
+  });
+
+  it("give a quotation sent without a date 15 days from the day it is sent, in India, and keep a date it has", async () => {
+    const id = (await saveLead(booking)).projectId!;
+    const v1 = await createQuotation(id);
+    await saveQuotation(v1.id, { lines });
+    // 20:00 UTC on 1 Nov is already 2 Nov in India
+    await sendQuotation(v1.id, { now: new Date("2026-11-01T20:00:00Z") });
+    expect((await getProjectForAdmin(id))!.quotations[0].validUntil).toBe("2026-11-17");
+    const v2 = await createQuotation(id);
+    await saveQuotation(v2.id, { lines, validUntil: "2026-12-31" });
+    await sendQuotation(v2.id);
+    expect((await getProjectForAdmin(id))!.quotations.find((q) => q.id === v2.id)!.validUntil).toBe("2026-12-31");
+  });
+});

@@ -9,16 +9,20 @@ import { ProjectError } from "@/lib/projects/repo";
 
 // The checks every /api/admin endpoint makes before it touches data: the signed admin session (the
 // same cookie and rules as getAdminSession in src/lib/auth/server.ts, read from the request so a
-// route handler needs nothing else), same-origin for anything that changes data, and bounded,
-// validated JSON. Answers use the API envelope and are never cached.
+// route handler needs nothing else; the phone app sends the same token as a bearer token, from POST
+// /api/admin/session), same-origin for anything that changes data, and bounded, validated JSON.
+// Answers use the API envelope and are never cached.
 
 type Rejected = { ok: false; response: NextResponse };
 
-/** The admin session a request carries, or null (no cookie, forged, expired, another username or login not set up). */
+/** The bearer token of an `Authorization: Bearer …` header, or undefined. */
+const bearerToken = (req: NextRequest) => /^Bearer\s+(\S+)$/i.exec(req.headers.get("authorization") ?? "")?.[1];
+
+/** The admin session a request carries (bearer token, else cookie), or null (none, forged, expired, another username or login not set up). */
 export async function adminSessionFrom(req: NextRequest): Promise<SessionPayload | null> {
   const config = getAdminConfig();
   if (!config) return null;
-  const session = await verifySessionToken(req.cookies.get(sessionCookieName())?.value, config.secret);
+  const session = await verifySessionToken(bearerToken(req) ?? req.cookies.get(sessionCookieName())?.value, config.secret);
   return session && session.sub === config.username ? session : null;
 }
 

@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { autoAmount, blankLine, buildQuotationRequest, draftFromLine, draftTotal, type LineDraft } from "@/lib/admin/quotation-form";
+import { DEFAULT_PAYMENT_SCHEDULE } from "@/config/quotation-terms";
+import {
+  autoAmount,
+  blankLine,
+  blankMilestone,
+  buildQuotationRequest,
+  draftFromLine,
+  draftFromMilestone,
+  draftScheduleTotal,
+  draftTotal,
+  parseWhole,
+  type LineDraft,
+  type MilestoneDraft,
+} from "@/lib/admin/quotation-form";
 import { formatPaise } from "@/lib/money";
+import { MAX_MILESTONES, MILESTONE_LABEL_MAX } from "@/lib/projects/payment-schedule";
 import type { AdminQuotation } from "@/lib/projects/repo";
 import { ActionStatus } from "./ActionStatus";
 import { useAdminAction } from "./useAdminAction";
@@ -22,9 +36,10 @@ const MAX_LINES = 100;
 
 /**
  * The editor of a draft quotation: lines (item, description, area, coats, rate, amount; the amount
- * fills in from area × rate and can be typed over), notes, payment terms and validity, with the
- * total live in rupees. Save keeps it as a draft (staff only); Send saves it, then shares it with
- * the customer, after which it can no longer change.
+ * fills in from area × rate and can be typed over), the payment milestones (when each share is due,
+ * together 100%, with each amount live), notes, payment terms and validity, with the total live in
+ * rupees. Save keeps it as a draft (staff only); Send saves it, then shares it with the customer,
+ * after which it can no longer change.
  */
 export function QuotationEditor({
   projectId,
@@ -41,6 +56,7 @@ export function QuotationEditor({
   const counter = useRef(0);
   const newKey = () => `line-${++counter.current}`;
   const [lines, setLines] = useState<LineDraft[]>(() => (quotation.lines.length ? quotation.lines.map((l) => draftFromLine(l, newKey())) : [blankLine(newKey())]));
+  const [schedule, setSchedule] = useState<MilestoneDraft[]>(() => quotation.paymentSchedule.map((m, i) => draftFromMilestone(m, `milestone-${i + 1}`)));
   const [notes, setNotes] = useState(quotation.notes ?? "");
   const [paymentTerms, setPaymentTerms] = useState(quotation.paymentTerms ?? "");
   const [validUntil, setValidUntil] = useState(quotation.validUntil ?? "");
@@ -91,6 +107,13 @@ export function QuotationEditor({
     touch();
   }
 
+  function updateMilestone(key: string, field: "label" | "percent", value: string) {
+    setSchedule((all) => all.map((m) => (m.key === key ? { ...m, [field]: value } : m)));
+    touch();
+  }
+
+  const scheduleShare = draftScheduleTotal(schedule);
+
   function add() {
     setLines((all) => [...all, blankLine(newKey())]);
     touch();
@@ -98,7 +121,7 @@ export function QuotationEditor({
 
   /** Saves the draft; true when it was saved. Before sending, the page is refreshed once, after the send. */
   async function save({ refresh = true } = {}): Promise<boolean> {
-    const built = buildQuotationRequest(lines, { notes, paymentTerms, validUntil });
+    const built = buildQuotationRequest(lines, { notes, paymentTerms, validUntil, schedule });
     if (!built.ok) {
       setErrors(built.errors);
       action.setError(null);
@@ -229,6 +252,81 @@ export function QuotationEditor({
         </button>
         <p className="text-xs text-muted">The amount fills in from area × rate; type over it to set your own.</p>
       </div>
+
+      <fieldset className="mt-5 rounded-2xl border border-line p-4">
+        <legend className="px-1 text-sm font-semibold">Payment milestones</legend>
+        <p className="text-xs text-muted">When each share of the total is due, together 100%. Nothing may be due before the work starts (no advance payment).</p>
+        {schedule.length === 0 && <p className="mt-3 text-sm text-muted">No milestones: the PDF shows only the payment terms below.</p>}
+        <ol className="mt-3 space-y-2">
+          {schedule.map((m, i) => {
+            const share = parseWhole(m.percent, 100);
+            return (
+              <li key={m.key} className="flex flex-wrap items-center gap-2">
+                <input
+                  aria-label={`Milestone ${i + 1}: when it is due`}
+                  aria-invalid={errors[`${m.key}.label`] ? true : undefined}
+                  value={m.label}
+                  maxLength={MILESTONE_LABEL_MAX}
+                  autoComplete="off"
+                  onChange={(e) => updateMilestone(m.key, "label", e.target.value)}
+                  className="field !py-2 min-w-56 flex-1"
+                />
+                <input
+                  aria-label={`Milestone ${i + 1}: share in percent`}
+                  aria-invalid={errors[`${m.key}.percent`] ? true : undefined}
+                  value={m.percent}
+                  inputMode="numeric"
+                  maxLength={3}
+                  autoComplete="off"
+                  onChange={(e) => updateMilestone(m.key, "percent", e.target.value)}
+                  className="field !py-2 w-20 text-right"
+                />
+                <span className="text-sm text-muted">%</span>
+                <span className="w-28 text-right text-sm tabular-nums">{typeof share === "number" ? formatPaise(Math.round((total * share) / 100)) : ""}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSchedule((all) => all.filter((x) => x.key !== m.key));
+                    touch();
+                  }}
+                  aria-label={`Remove milestone ${i + 1}`}
+                  className="btn-secondary !min-h-11 !px-3 text-sm"
+                >
+                  Remove
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setSchedule((all) => [...all, blankMilestone(`milestone-${Date.now()}-${all.length}`)]);
+              touch();
+            }}
+            disabled={schedule.length >= MAX_MILESTONES}
+            className="btn-secondary !min-h-11 !px-4 text-sm"
+          >
+            Add milestone
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSchedule(DEFAULT_PAYMENT_SCHEDULE.map((d, i) => draftFromMilestone(d, `milestone-std-${Date.now()}-${i}`)));
+              touch();
+            }}
+            className="btn-secondary !min-h-11 !px-4 text-sm"
+          >
+            Use the standard milestones
+          </button>
+          {schedule.length > 0 && (
+            <p aria-live="polite" className={`text-sm ${scheduleShare === 100 ? "text-muted" : "font-semibold text-danger"}`}>
+              Adds up to {scheduleShare}%
+            </p>
+          )}
+        </div>
+      </fieldset>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <div>

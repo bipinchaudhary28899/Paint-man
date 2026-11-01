@@ -89,6 +89,23 @@ describe("the project tracker", () => {
     expect(v1.queryByText("Valid until")).toBeNull();
   });
 
+  it("shows a quotation's reference and payment milestones, its status as plain text, and the terms it comes with", async () => {
+    const q = detail().quotations[0];
+    const withSchedule = { ...q, reference: "PS-3F0C2B1A-V2", paymentSchedule: [{ label: "On the first day of work", percent: 60, amountPaise: 1_350_000 }, { label: "At handover", percent: 40, amountPaise: 900_000 }] };
+    await show({ data: detail({ quotations: [withSchedule, detail().quotations[1]] }) });
+    const v2 = within(await screen.findByTestId("quotation-2"));
+    expect(v2.getByText("PS-3F0C2B1A-V2 · Shared Fri 30 Oct 2026")).toBeOnTheScreen();
+    expect(v2.getByLabelText("On the first day of work: 60%, 13,500 rupees")).toBeOnTheScreen();
+    expect(v2.getByLabelText("At handover: 40%, 9,000 rupees")).toBeOnTheScreen();
+    expect(v2.getByText(/Nothing is due before the work starts/)).toBeOnTheScreen();
+    // the status is text, never a filled pill
+    expect(v2.getByText("Ready to review")).not.toHaveStyle({ borderRadius: 999 });
+    const v1 = within(screen.getByTestId("quotation-1"));
+    expect(v1.queryByText(/Payment schedule/)).toBeNull();
+    await fireEvent.press(v1.getByText("quotation terms"));
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/quotation-terms", params: {} });
+  });
+
   it("highlights the finalised price once a quotation is approved", async () => {
     const base = detail();
     const approved = { ...base.quotations[0], status: "approved" as const, approvedAt: "2026-10-31T06:30:00.000Z", subtotalPaise: 2400000 };

@@ -34,7 +34,11 @@ describe("app links", () => {
     }
   });
 
-  it("leaves the admin, the API and the retired shade pages to the browser", () => {
-    for (const p of ["/admin", "/admin/projects", "/api/v1/colours/paint", "/colours/PM-502"]) expect(routeFor(p)).toBeNull();
+  it("opens the staff screens in the app, not the browser", () => {
+    for (const p of ["/admin/login", "/admin", "/admin/projects", "/admin/projects/3f0c2b1a-1111-4222-8333-444455556666"]) expect(routeFor(p)).toMatchObject({ pathname: p });
+  });
+
+  it("leaves the API, other admin paths and the retired shade pages to the browser", () => {
+    for (const p of ["/admin/settings", "/api/admin/leads", "/api/v1/colours/paint", "/colours/PM-502"]) expect(routeFor(p)).toBeNull();
   });
 });

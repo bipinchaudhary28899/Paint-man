@@ -5,7 +5,6 @@ import { Linking } from "react-native";
 import { countdown, goAfterSignIn, Login, rememberLoginStatus } from "~/components/account/Login";
 import { AuthProvider } from "~/lib/auth-context";
 import { emptyBooking } from "~/lib/booking";
-import { webUrl } from "~/lib/config";
 import { heldBooking, holdBooking, releaseBooking } from "~/lib/pending-booking";
 import { FIELD_MESSAGES } from "~/shared";
 import { asha, mockApi, offline, savedToken, seedToken, type Answer } from "./helpers";
@@ -265,14 +264,15 @@ describe("the login screen while customer accounts are coming soon", () => {
 });
 
 describe("the administrator login", () => {
-  it.each([true, false])("is linked at the bottom whether or not customer login is open (open: %s), on the website", async (open) => {
+  it.each([true, false])("is linked at the bottom whether or not customer login is open (open: %s), as a screen in the app", async (open) => {
     rememberLoginStatus(open);
     mockApi({});
     const visit = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     await show();
     expect(screen.getByText(/Paint Saathi team\?/)).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole("link", { name: "Log in as an administrator" }));
-    expect(visit).toHaveBeenCalledWith(webUrl("/admin/login"));
+    expect(router.push).toHaveBeenCalledWith({ pathname: "/admin/login", params: {} });
+    expect(visit).not.toHaveBeenCalled();
   });
 });
 

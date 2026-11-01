@@ -10,7 +10,8 @@
 // authenticated roles) can read nothing, while the app connects as the tables' owner, which RLS
 // does not restrict.
 import { sql } from "drizzle-orm";
-import { check, date, index, integer, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, date, index, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import type { PaymentMilestone } from "../projects/payment-schedule";
 import { PROJECT_STAGES } from "../projects/stages";
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
@@ -206,6 +207,8 @@ export const quotations = pgTable(
     status: quotationStatus("status").notNull().default("draft"),
     notes: text("notes"),
     paymentTerms: text("payment_terms"),
+    /** The payment milestones (when each is due, its whole-percent share, together 100); null on quotations from before they existed. */
+    paymentSchedule: jsonb("payment_schedule").$type<PaymentMilestone[]>(),
     validUntil: date("valid_until", { mode: "string" }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     approvedAt: timestamp("approved_at", { withTimezone: true }),

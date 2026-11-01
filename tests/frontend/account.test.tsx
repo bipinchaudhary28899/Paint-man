@@ -231,12 +231,14 @@ describe("ProjectCard and the empty state", () => {
 const quote = (over: Partial<Quotation> = {}): Quotation => ({
   id: "9a8b7c6d-1111-4222-8333-444455556666",
   version: 2,
+  reference: "PS-3F0C2B1A-V2",
   status: "sent",
   sentAt: "2026-10-31T06:30:00.000Z",
   approvedAt: null,
   validUntil: "2026-11-30",
   notes: "Furniture covered by our crew.",
   paymentTerms: "Half at the midpoint, the rest at handover.",
+  paymentSchedule: [],
   lines: [
     { position: 1, item: "Living room walls", description: "Putty, primer, two coats", areaSqft: 1200, coats: 2, ratePaise: 1_850, amountPaise: 2_220_000 },
     { position: 2, item: "Main door", description: null, areaSqft: null, coats: 1, ratePaise: null, amountPaise: 150_000 },
@@ -334,11 +336,22 @@ describe("ProjectTracker", () => {
     expect(screen.getByText(/Not scheduled yet/)).toBeInTheDocument();
   });
 
+  it("a quotation's payment milestones with their amounts, its status as text (never a pill), and the terms it comes with", () => {
+    render(<QuotationCard quotation={quote({ paymentSchedule: [{ label: "On the first day of work", percent: 60, amountPaise: 1_200_000 }, { label: "At handover", percent: 40, amountPaise: 800_000 }] })} latest />);
+    const schedule = screen.getByRole("table", { name: "Payment milestones, quotation version 2" });
+    const rows = within(schedule).getAllByRole("row");
+    expect(rows[0]).toHaveTextContent("On the first day of work60%₹12,000");
+    expect(rows[1]).toHaveTextContent("At handover40%₹8,000");
+    expect(screen.getByText(/Nothing is due before the work starts/)).toBeInTheDocument();
+    expect(screen.getByText("For your review")).not.toHaveClass("rounded-full");
+    expect(screen.getByRole("link", { name: "quotation terms" })).toHaveAttribute("href", "/quotation-terms");
+  });
+
   it("a quotation: status, dates, itemised lines with ₹ totals, notes, terms and the PDF download", () => {
     render(<QuotationCard quotation={quote()} latest />);
     expect(screen.getByRole("heading", { level: 3, name: "Quotation, version 2" })).toBeInTheDocument();
     expect(screen.getByText("For your review")).toBeInTheDocument();
-    expect(screen.getByText("Sent 31 Oct 2026 · Valid until 30 Nov 2026")).toBeInTheDocument();
+    expect(screen.getByText("PS-3F0C2B1A-V2 · Sent 31 Oct 2026 · Valid until 30 Nov 2026")).toBeInTheDocument();
     const table = screen.getByRole("table", { name: "Quotation version 2, itemised" });
     expect(within(table).getAllByRole("columnheader").map((th) => th.textContent)).toEqual(["Item", "Area", "Coats", "Rate", "Amount"]);
     const rows = within(table).getAllByRole("row");

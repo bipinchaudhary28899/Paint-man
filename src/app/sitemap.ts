@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/contact",
     "/privacy-policy",
     "/terms",
+    "/quotation-terms",
   ];
   return paths.map((path) => ({
     url: `${site.url}${path === "/" ? "" : path}`,

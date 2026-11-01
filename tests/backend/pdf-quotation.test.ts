@@ -35,12 +35,14 @@ function doc(lines: QuotationLine[], q: Partial<Quotation> = {}): QuotationDocum
     quotation: {
       id: "9a8b7c6d-1111-4222-8333-444455556666",
       version: 2,
+      reference: "PS-3F0C1A2B-V2",
       status: "sent",
       sentAt: "2026-10-31T06:30:00.000Z",
       approvedAt: null,
       validUntil: "2026-11-30",
       notes: "Furniture moved and covered by our crew.\nTouch-ups included at handover.",
       paymentTerms: "Pay in two parts: half when the work is half done, the rest at handover.",
+      paymentSchedule: [],
       lines,
       subtotalPaise: total,
       totalPaise: total,
@@ -53,12 +55,21 @@ function doc(lines: QuotationLine[], q: Partial<Quotation> = {}): QuotationDocum
 
 const parse = async (bytes: Uint8Array) => PDFDocument.load(bytes, { updateMetadata: false });
 
+/** Pages of a one-line quote: the quotation on page 1, then the Terms & Conditions. */
+let shortPages = 0;
+async function short() {
+  shortPages ||= (await parse(await renderQuotationPdf(doc([line(1)])))).getPageCount();
+  return shortPages;
+}
+
 describe("renderQuotationPdf", () => {
-  it("makes a one-page A4 PDF for a short quote, titled by version and brand (no personal data in the metadata)", async () => {
+  it("fits a short quote on its first page, with the Terms & Conditions after it; A4, titled by version and brand (no personal data in the metadata)", async () => {
     const bytes = await renderQuotationPdf(doc([line(1), line(2), line(3)]));
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
     const pdf = await parse(bytes);
-    expect(pdf.getPageCount()).toBe(1);
+    // the terms run to at least two pages of their own
+    expect(await short()).toBeGreaterThanOrEqual(3);
+    expect(pdf.getPageCount()).toBe(await short());
     const { width, height } = pdf.getPage(0).getSize();
     expect([Math.round(width), Math.round(height)]).toEqual([595, 842]);
     expect(pdf.getTitle()).toBe(`Quotation v2 – ${site.name}`);
@@ -86,20 +97,30 @@ describe("renderQuotationPdf", () => {
     );
     odd.project = { ...odd.project, name: "आशा", address: null, locality: null, pincode: null, service: null, phone: "+44 20 7946 0000" };
     const pdf = await parse(await renderQuotationPdf(odd));
-    expect(pdf.getPageCount()).toBe(1);
+    expect(pdf.getPageCount()).toBe(await short());
   });
 
-  it("prints a quote with no lines, and each status (approved, superseded, declined, a draft preview)", async () => {
-    for (const q of [
-      { status: "approved" as const, approvedAt: "2026-11-02T05:00:00.000Z" },
-      { status: "superseded" as const },
-      { status: "declined" as const },
-      { status: "draft" as const, sentAt: null },
-    ]) {
-      const pdf = await parse(await renderQuotationPdf(doc([], q), { now: new Date("2026-11-05T05:00:00.000Z") }));
-      expect(pdf.getPageCount(), q.status).toBe(1);
-      if (q.status === "draft") expect(pdf.getCreationDate()?.toISOString()).toBe("2026-11-05T05:00:00.000Z");
-    }
+  it.each([
+    { status: "approved" as const, approvedAt: "2026-11-02T05:00:00.000Z" },
+    { status: "superseded" as const },
+    { status: "declined" as const },
+    { status: "draft" as const, sentAt: null },
+    { status: "draft" as const, sentAt: null, validUntil: null },
+    { status: "sent" as const, validUntil: null },
+  ])("prints a quote with no lines in each status, with or without a validity date: %o", async (q) => {
+    const pdf = await parse(await renderQuotationPdf(doc([], q), { now: new Date("2026-11-05T05:00:00.000Z") }));
+    expect(pdf.getPageCount()).toBe(await short());
+    if (q.status === "draft") expect(pdf.getCreationDate()?.toISOString()).toBe("2026-11-05T05:00:00.000Z");
+  });
+
+  it("prints the payment milestones on the first page", async () => {
+    const schedule = [
+      { label: "On the first day of work, when the materials arrive", percent: 50, amountPaise: 216_000 },
+      { label: "When the painting is complete", percent: 40, amountPaise: 172_800 },
+      { label: "After the final inspection and handover, ".repeat(6), percent: 10, amountPaise: 43_200 },
+    ];
+    const pdf = await parse(await renderQuotationPdf(doc([line(1)], { paymentSchedule: schedule })));
+    expect(pdf.getPageCount()).toBe(await short());
   });
 
   it("long notes and payment terms flow onto further pages", async () => {

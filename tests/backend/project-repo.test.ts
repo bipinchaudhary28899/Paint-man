@@ -123,12 +123,19 @@ describe("customer reads", () => {
     expect(project!.quotations[0]).toEqual({
       id: v1.id,
       version: 1,
+      reference: `PS-${id.slice(0, 8).toUpperCase()}-V1`,
       status: "sent",
       sentAt: "2026-11-05T06:00:00.000Z",
       approvedAt: null,
       validUntil: "2026-12-05",
       notes: "Includes damp treatment",
       paymentTerms: "Pay after handover",
+      // the first version starts with the standard milestones: 50/40/10 of ₹13,000
+      paymentSchedule: [
+        { label: "On the first day of work, when the materials arrive", percent: 50, amountPaise: 650_000 },
+        { label: "When the painting is complete", percent: 40, amountPaise: 520_000 },
+        { label: "After the final inspection and handover", percent: 10, amountPaise: 130_000 },
+      ],
       lines: [
         { position: 1, ...lines[0] },
         { position: 2, ...lines[1] },

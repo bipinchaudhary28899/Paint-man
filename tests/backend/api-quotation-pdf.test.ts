@@ -67,7 +67,8 @@ describe("GET /api/v1/projects/{id}/quotations/{qid}/pdf", () => {
       const bytes = new Uint8Array(await res.arrayBuffer());
       expect(res.headers.get("content-length")).toBe(String(bytes.byteLength));
       const pdf = await PDFDocument.load(bytes);
-      expect(pdf.getPageCount()).toBe(1);
+      // the quotation, then its Terms & Conditions on pages of their own
+      expect(pdf.getPageCount()).toBeGreaterThanOrEqual(3);
       expect(pdf.getTitle()).toBe("Quotation v1 – Paint Saathi");
     }
   });

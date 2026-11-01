@@ -171,8 +171,8 @@ export function toLeadRecord(l: ReadRow): LeadRecord {
   return Object.fromEntries(LEAD_COLUMNS.map((c) => [c, record[c]])) as LeadRecord;
 }
 
-/** The newest leads first (up to `limit`), each with the project its booking opened. */
-export async function readLeads(limit = 5000): Promise<LeadRecord[]> {
+/** The newest leads first (up to `limit`), each with the project its booking opened and when it arrived. */
+export async function readLeadEntries(limit = 5000): Promise<{ record: LeadRecord; createdAt: Date }[]> {
   const db = await getDb();
   const rows = await db
     .select({ lead: leads, projectId: projects.id })
@@ -180,7 +180,12 @@ export async function readLeads(limit = 5000): Promise<LeadRecord[]> {
     .leftJoin(projects, eq(projects.leadId, leads.id))
     .orderBy(desc(leads.createdAt), desc(leads.id))
     .limit(limit);
-  return rows.map(({ lead, projectId }) => toLeadRecord({ ...lead, projectId }));
+  return rows.map(({ lead, projectId }) => ({ record: toLeadRecord({ ...lead, projectId }), createdAt: lead.createdAt }));
+}
+
+/** The newest leads first (up to `limit`), each with the project its booking opened. */
+export async function readLeads(limit = 5000): Promise<LeadRecord[]> {
+  return (await readLeadEntries(limit)).map((e) => e.record);
 }
 
 // ---------- Follow-up status (admin only) ----------

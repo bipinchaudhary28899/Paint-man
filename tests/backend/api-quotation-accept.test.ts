@@ -68,7 +68,7 @@ describe("POST /api/v1/projects/{id}/quotations/{quotationId}/accept", () => {
     const body = await res.json();
     expect(body).toMatchObject({ apiVersion: "v1", kind: "project", label: "Quotation accepted: the price is final.", data: { id: projectId, stage: "price_finalised" } });
     expect(body.data.quotations[0]).toMatchObject({ id: quotationId, status: "approved", approvedAt: expect.any(String) });
-    expect(body.data.timeline.map((e: { note: string | null }) => e.note)).toContain("Accepted by the customer in the app.");
+    expect(body.data.timeline.map((e: { note: string | null }) => e.note)).toContain("Accepted by the customer in the app, with the quotation terms of 2026-11-01.");
     expect(body.links).toMatchObject({ self: `/api/v1/projects/${projectId}`, html: `/account/projects/${projectId}` });
   });
 

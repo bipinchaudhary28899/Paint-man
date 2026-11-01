@@ -1,3 +1,4 @@
+import { PaymentSchedule } from "@/components/account/PaymentSchedule";
 import { formatIstDateTime } from "@/lib/admin/ist";
 import { formatPaise } from "@/lib/money";
 import type { AdminQuotation, QuotationStatus } from "@/lib/projects/repo";
@@ -28,7 +29,8 @@ export function QuotationView({ quotation: q }: { quotation: AdminQuotation }) {
   return (
     <div>
       <p className="text-sm text-muted">
-        {q.sentAt && <>Sent {formatIstDateTime(q.sentAt)}</>}
+        {q.reference}
+        {q.sentAt && <> · Sent {formatIstDateTime(q.sentAt)}</>}
         {q.approvedAt && <> · Approved {formatIstDateTime(q.approvedAt)}</>}
         {q.validUntil && <> · Valid until {formatDay(q.validUntil)}</>}
       </p>
@@ -74,6 +76,7 @@ export function QuotationView({ quotation: q }: { quotation: AdminQuotation }) {
           </tfoot>
         </table>
       </div>
+      <PaymentSchedule quotation={q} />
       {(q.notes || q.paymentTerms) && (
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
           {q.notes && (

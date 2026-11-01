@@ -1,5 +1,6 @@
 // Metro for the Paint Saathi app. The app shares the website's business facts and form checks
-// (../src/config, ../src/lib/leads, the project stages in ../src/lib/projects) and its brand art, uniform photos and wall mask (../public/brand,
+// (../src/config, ../src/lib/leads, the project stages in ../src/lib/projects, the admin quotation
+// editor's rules and India time in ../src/lib/admin) and its brand art, uniform photos and wall mask (../public/brand,
 // ../public/photos, ../public/scenes) instead of copying them, so Metro watches those folders as well as this one.
 // `@/` in tsconfig.json points at the website's src, so the shared files' own imports resolve.
 const path = require("node:path");
@@ -15,6 +16,7 @@ config.watchFolders = [
   path.join(webRoot, "src/lib/leads"),
   path.join(webRoot, "src/lib/colours"),
   path.join(webRoot, "src/lib/projects"),
+  path.join(webRoot, "src/lib/admin"),
   path.join(webRoot, "public/brand"),
   path.join(webRoot, "public/photos"),
   path.join(webRoot, "public/scenes"),

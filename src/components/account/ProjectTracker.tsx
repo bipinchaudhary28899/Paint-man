@@ -5,6 +5,7 @@ import { formatDate, formatDateTime, NEXT_STEPS, QUOTATION_STATUS_LABELS, quotat
 import { formatPaise } from "@/lib/money";
 import type { Inspection, ProjectDetail, Quotation, TimelineEvent } from "@/lib/projects/repo";
 import { formatVisit, type StageStep } from "@/lib/projects/stages";
+import { PaymentSchedule } from "./PaymentSchedule";
 import { ProjectSteps } from "./ProjectSteps";
 
 // The project tracker (/account/projects/[id]): where the project stands and what happens next, the
@@ -127,12 +128,13 @@ export function InspectionCard({ inspection }: { inspection: Inspection | null }
   );
 }
 
+/** A version's status as eyebrow text (never a pill badge): sage once approved, terracotta while open, muted after. */
 const statusTone: Record<Quotation["status"], string> = {
-  draft: "border border-line bg-paper text-muted",
-  sent: "bg-golden/35 text-ink",
-  approved: "bg-sage-deep text-on-sage",
-  declined: "bg-rose-wash text-ink",
-  superseded: "border border-line bg-paper text-muted",
+  draft: "text-muted",
+  sent: "text-terracotta",
+  approved: "text-sage-deep",
+  declined: "text-muted",
+  superseded: "text-muted",
 };
 
 const grouped = new Intl.NumberFormat("en-IN");
@@ -192,13 +194,14 @@ export function QuotationLines({ quotation }: { quotation: Quotation }) {
   );
 }
 
-/** One version of the quotation: status, dates, the lines (folded away for an old version), notes, terms and the PDF. */
+/** One version of the quotation: status, reference and dates, the lines (folded away for an old version), milestones, notes, terms and the PDF. */
 export function QuotationCard({ quotation: q, latest }: { quotation: Quotation; latest: boolean }) {
   const current = latest || q.status === "approved";
-  const dates = [q.sentAt && `Sent ${formatDate(q.sentAt)}`, q.approvedAt && `Approved ${formatDate(q.approvedAt)}`, q.validUntil && `Valid until ${formatDate(q.validUntil)}`].filter(Boolean);
+  const dates = [q.reference, q.sentAt && `Sent ${formatDate(q.sentAt)}`, q.approvedAt && `Approved ${formatDate(q.approvedAt)}`, q.validUntil && `Valid until ${formatDate(q.validUntil)}`].filter(Boolean);
   const details = (
     <>
       <QuotationLines quotation={q} />
+      <PaymentSchedule quotation={q} />
       {(q.notes || q.paymentTerms) && (
         <dl className="mt-5 grid gap-4 tab:grid-cols-2">
           {q.notes && (
@@ -226,7 +229,7 @@ export function QuotationCard({ quotation: q, latest }: { quotation: Quotation; 
           </h3>
           {dates.length > 0 && <p className="mt-1 text-sm text-muted">{dates.join(" · ")}</p>}
         </div>
-        <span className={`inline-flex min-h-7 items-center rounded-full px-3 text-xs font-semibold ${statusTone[q.status]}`}>{QUOTATION_STATUS_LABELS[q.status]}</span>
+        <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${statusTone[q.status]}`}>{QUOTATION_STATUS_LABELS[q.status]}</p>
       </div>
       {current ? (
         details
@@ -246,6 +249,13 @@ export function QuotationCard({ quotation: q, latest }: { quotation: Quotation; 
           To approve it or ask for changes, tell our team. Nothing starts until you approve it, and there is no advance payment.
         </p>
       )}
+      <p className="mt-4 text-sm text-muted">
+        The{" "}
+        <Link href="/quotation-terms" className="font-semibold text-ink underline underline-offset-4 hover:text-terracotta">
+          quotation terms
+        </Link>{" "}
+        come with every quotation and are printed in its PDF.
+      </p>
       <a href={q.pdf} download={quotationFilename(q.version)} className={`${current ? "btn-primary" : "btn-secondary"} mt-5 w-full tab:w-auto`}>
         Download PDF<span className="sr-only">, quotation version {q.version}</span>
       </a>

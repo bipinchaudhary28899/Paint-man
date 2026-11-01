@@ -3,6 +3,8 @@ import { bookingDateRange, isCalendarDate } from "@/lib/leads/dates";
 import { FIELD_MESSAGES } from "@/lib/leads/field-checks";
 import { CARPET_AREA_MAX, CARPET_AREA_MIN, floorOptions, homeSizes, propertyTypes, serviceTypes } from "@/lib/leads/options";
 import { addressField, pincodeField } from "@/lib/leads/schema";
+import { MAX_LINE_PAISE } from "./limits";
+import { MAX_MILESTONES, MILESTONE_LABEL_MAX, scheduleTotal } from "./payment-schedule";
 import { PROJECT_STAGES } from "./stages";
 
 // Bounded input for the /admin project actions (route handlers or server actions validate with
@@ -28,8 +30,7 @@ export const inspectionScheduleSchema = z.object({ scheduledAt: instant, inspect
 
 export const inspectionVisitSchema = z.object({ visitedAt: instant.optional(), findings: optionalText(2000), inspectorName: optionalText(80) });
 
-/** ₹1 crore in paise: a ceiling no single line comes near. */
-export const MAX_LINE_PAISE = 1_00_00_000 * 100;
+export { MAX_LINE_PAISE };
 
 export const quotationLineSchema = z.object({
   item: z.string().trim().min(1, "Name the room or item").max(120, "Use 120 characters or fewer"),
@@ -40,10 +41,22 @@ export const quotationLineSchema = z.object({
   amountPaise: int(0, MAX_LINE_PAISE, "Amount"),
 });
 
+export const paymentMilestoneSchema = z.object({
+  label: z.string().trim().min(1, "Say when the payment is due").max(MILESTONE_LABEL_MAX, `Use ${MILESTONE_LABEL_MAX} characters or fewer`),
+  percent: int(1, 100, "The share"),
+});
+
 export const quotationSaveSchema = z.object({
   lines: z.array(quotationLineSchema).max(100, "Use 100 lines or fewer"),
   notes: optionalText(2000),
   paymentTerms: optionalText(1000),
+  /** The payment milestones, together 100%; an empty list or null means none. */
+  paymentSchedule: z
+    .array(paymentMilestoneSchema)
+    .max(MAX_MILESTONES, `Use ${MAX_MILESTONES} payment milestones or fewer`)
+    .nullable()
+    .optional()
+    .refine((s) => !s?.length || scheduleTotal(s) === 100, { message: "The payment milestones must add up to 100%" }),
   validUntil: day,
 });
 

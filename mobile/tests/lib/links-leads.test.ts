@@ -27,6 +27,7 @@ describe("routeFor", () => {
     expect(routeFor("/login")).toEqual({ pathname: "/login", params: {} });
     expect(routeFor("/login?next=/account")).toEqual({ pathname: "/login", params: { next: "/account" } });
     expect(routeFor("/account")).toEqual({ pathname: "/account", params: {} });
+    expect(routeFor("/quotation-terms#warranty")).toEqual({ pathname: "/quotation-terms", params: { section: "warranty" } });
     expect(routeFor("/account/projects/3f0c2b1a-1111-4222-8333-444455556666")).toEqual({ pathname: "/account/projects/3f0c2b1a-1111-4222-8333-444455556666", params: {} });
     expect(routeFor("/account/projects/a/b")).toBeNull();
     expect(routeFor("/account/settings")).toBeNull();
@@ -34,7 +35,7 @@ describe("routeFor", () => {
 
   it("has no screen for external links or pages the app does not have", () => {
     expect(routeFor("https://wa.me/91")).toBeNull();
-    expect(routeFor("/admin")).toBeNull();
+    expect(routeFor("/admin/settings")).toBeNull();
     expect(routeFor("/services/a/b/c")).toBeNull();
   });
 
@@ -55,9 +56,9 @@ describe("openHref", () => {
 
   it("opens other links in the browser, website paths on the website", () => {
     const open = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
-    openHref("/admin");
+    openHref("/privacy-policy/print");
     openHref("tel:+911234");
-    expect(open.mock.calls).toEqual([[webUrl("/admin")], ["tel:+911234"]]);
+    expect(open.mock.calls).toEqual([[webUrl("/privacy-policy/print")], ["tel:+911234"]]);
     expect(router.push).not.toHaveBeenCalled();
   });
 });

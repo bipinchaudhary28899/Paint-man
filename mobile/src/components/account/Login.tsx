@@ -25,7 +25,7 @@ import { colors, fonts, radii } from "~/theme";
 // or their account.
 // While customer accounts are coming soon (GET /api/v1/auth/status; the build's own setting until it
 // answers) the screen says so and points to booking, and the tester numbers sign in from a fold-out.
-// Staff always find the administrator login (the website's /admin/login) at the bottom.
+// Staff always find the administrator login (/admin/login, a screen in the app) at the bottom.
 
 type Phase = "phone" | "code";
 

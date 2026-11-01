@@ -20,9 +20,21 @@ export default function TermsScreen() {
         <ProseH2>Changes in scope</ProseH2>
         <ProseP>Any additional work or change of material is priced and approved by you before it is carried out.</ProseP>
         <ProseH2>Payments, cancellations and refunds</ProseH2>
-        <ProseP>Payment milestones, cancellation terms and refund conditions are stated in your quotation and service agreement.</ProseP>
+        <ProseP>
+          Payment milestones are stated in your quotation. Payments, cancellation, refunds and everything else about the work are covered by the{" "}
+          <InlineLink href="/quotation-terms" plain>
+            quotation terms
+          </InlineLink>{" "}
+          that come with every quotation.
+        </ProseP>
         <ProseH2>Service terms</ProseH2>
-        <ProseP>Any warranty or after-service commitment applies only as written in your service agreement.</ProseP>
+        <ProseP>
+          The workmanship warranty and after-service commitments are set out in the{" "}
+          <InlineLink href="/quotation-terms#warranty" plain>
+            quotation terms
+          </InlineLink>
+          .
+        </ProseP>
         <ProseH2>Contact</ProseH2>
         <ProseP>
           Questions about these terms? Reach us through our{" "}

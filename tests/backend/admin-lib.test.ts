@@ -3,9 +3,20 @@ import { z } from "zod";
 import { NextRequest } from "next/server";
 import { inputErrors, readAdminInput } from "@/lib/admin/guard";
 import { formatIstDateTime, fromIstParts, toIstParts } from "@/lib/admin/ist";
-import { autoAmount, blankLine, buildQuotationRequest, draftFromLine, draftTotal, parseWhole, type LineDraft } from "@/lib/admin/quotation-form";
+import {
+  autoAmount,
+  blankLine,
+  blankMilestone,
+  buildQuotationRequest,
+  draftFromLine,
+  draftFromMilestone,
+  draftScheduleTotal,
+  draftTotal,
+  parseWhole,
+  type LineDraft,
+} from "@/lib/admin/quotation-form";
 import { paiseToInput, parseRupees } from "@/lib/admin/rupees";
-import { quotationStatusSchema, workStartSchema } from "@/lib/projects/inputs";
+import { quotationSaveSchema, quotationStatusSchema, workStartSchema } from "@/lib/projects/inputs";
 
 // The pure helpers behind the admin tools: rupees ↔ paise without float drift, India-time inputs,
 // the quotation editor's conversion to the save request, and the admin input schemas.
@@ -101,6 +112,8 @@ describe("the quotation editor's form", () => {
       },
     });
     expect(buildQuotationRequest([], { notes: "", paymentTerms: "", validUntil: "" })).toEqual({ ok: true, request: { lines: [], notes: null, paymentTerms: null, validUntil: null } });
+    // with the milestones shown, they are sent (an empty list clears them)
+    expect(buildQuotationRequest([], { notes: "", paymentTerms: "", validUntil: "", schedule: [] })).toEqual({ ok: true, request: { lines: [], notes: null, paymentTerms: null, paymentSchedule: [], validUntil: null } });
   });
 
   it("names every problem with its line, keyed by the row and field", () => {
@@ -153,5 +166,42 @@ describe("readAdminInput", () => {
     const result = await readAdminInput(req, z.object({}));
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.response.status).toBe(415);
+  });
+});
+
+describe("payment milestones in the quotation editor", () => {
+  const line = { key: "l1", item: "Hall", description: "", area: "", coats: "", rate: "", amount: "1000" };
+  const base = { notes: "", paymentTerms: "", validUntil: "" };
+
+  it("turn typed milestones into the save request, and add up the shares as typed", () => {
+    const schedule = [draftFromMilestone({ label: "On the first day of work", percent: 60 }, "m1"), { key: "m2", label: " At handover ", percent: "40" }];
+    expect(draftScheduleTotal(schedule)).toBe(100);
+    expect(draftScheduleTotal([blankMilestone("m3"), { key: "m4", label: "x", percent: "abc" }])).toBe(0);
+    const built = buildQuotationRequest([line], { ...base, schedule });
+    expect(built).toEqual({
+      ok: true,
+      request: expect.objectContaining({ paymentSchedule: [{ label: "On the first day of work", percent: 60 }, { label: "At handover", percent: 40 }] }),
+    });
+  });
+
+  it("mark each milestone to fix, then a schedule that does not add up to 100%", () => {
+    const blank = buildQuotationRequest([line], { ...base, schedule: [blankMilestone("m1")] });
+    expect(blank).toEqual({ ok: false, errors: { "m1.label": "Milestone 1: say when it is due.", "m1.percent": "Milestone 1: the share is a whole percent from 1 to 100." } });
+    const short = buildQuotationRequest([line], { ...base, schedule: [{ key: "m1", label: "Start", percent: "50" }] });
+    expect(short).toEqual({ ok: false, errors: { schedule: "The payment milestones must add up to 100% (now 50%)." } });
+  });
+
+  it("are checked again on the server: whole percents, at most six, together 100%", () => {
+    const ok = quotationSaveSchema.safeParse({ lines: [], paymentSchedule: [{ label: "Start", percent: 50 }, { label: "End", percent: 50 }] });
+    expect(ok.success).toBe(true);
+    expect(quotationSaveSchema.safeParse({ lines: [], paymentSchedule: [] }).success).toBe(true);
+    expect(quotationSaveSchema.safeParse({ lines: [], paymentSchedule: null }).success).toBe(true);
+    const sum = quotationSaveSchema.safeParse({ lines: [], paymentSchedule: [{ label: "Start", percent: 50 }] });
+    expect(sum.success).toBe(false);
+    expect(inputErrors(sum.error!)).toEqual({ paymentSchedule: "The payment milestones must add up to 100%" });
+    const seven = quotationSaveSchema.safeParse({ lines: [], paymentSchedule: Array.from({ length: 7 }, () => ({ label: "x", percent: 10 })) });
+    expect(seven.success).toBe(false);
+    const blank = quotationSaveSchema.safeParse({ lines: [], paymentSchedule: [{ label: " ", percent: 100 }] });
+    expect(inputErrors(blank.error!)).toEqual({ "paymentSchedule.0.label": "Say when the payment is due" });
   });
 });
