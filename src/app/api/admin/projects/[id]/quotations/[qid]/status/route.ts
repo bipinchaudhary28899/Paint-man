@@ -3,6 +3,7 @@ import { adminFailure, readAdminInput, requireAdminRequest } from "@/lib/admin/g
 import { personalOk } from "@/lib/api-personal";
 import { quotationStatusSchema } from "@/lib/projects/inputs";
 import { approveQuotation, declineQuotation, sendQuotation } from "@/lib/projects/repo";
+import { notifyProjectUpdate } from "@/lib/push/notify";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,7 @@ const ACTIONS = {
  *   other sent versions become superseded and the project moves to "Price finalised".
  * - "declined": the customer turned a sent version down.
  * Body: { status: "sent" | "approved" | "declined" }. 200 { kind: "quotation", data: { id, status } }.
+ * The project's customer gets a push notification of the new stage (lib/push/notify.ts).
  * Errors: 400 invalid_request, 401 unauthenticated, 403 forbidden, 404 not_found (also a quotation of
  * another project), 409 invalid_state (e.g. sending one already sent), 413, 415, 503, 500.
  * Example: POST /api/admin/projects/3f0c…/quotations/9a1b…/status { "status": "sent" } → 200 { "kind": "quotation", "data": { "status": "sent" } }
@@ -34,7 +36,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const { id, qid } = await ctx.params;
     const { status } = input.data;
     const action = ACTIONS[status];
+    const since = new Date();
     await action.run(qid, { projectId: id });
+    // the customer's phones hear about any stage this moved the project to, after the response
+    notifyProjectUpdate(id, since);
     return personalOk({
       kind: "quotation",
       label: `Quotation ${action.label}.`,

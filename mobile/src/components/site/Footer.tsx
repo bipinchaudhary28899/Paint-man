@@ -7,7 +7,7 @@ import { Logo } from "~/components/ui/Media";
 import { openHref } from "~/lib/links";
 import { footerColumns, liveCities, promises, site } from "~/shared";
 import { colors, fonts, gutter, NAV_CLEARANCE } from "~/theme";
-import { usePage } from "./Page";
+import { usePage } from "./page-context";
 
 // The website's footer on phones (src/components/Footer.tsx): the link hub on ink. The stacked
 // reversed logo, the tagline in golden italic, a line about the service, "Visit & call", then the link

@@ -3,7 +3,8 @@ import { Linking } from "react-native";
 
 import { FIELD_MESSAGES } from "@/lib/leads/field-checks";
 import { webUrl } from "~/lib/config";
-import { FORM_ERROR, LEADS_ARE_SENT, submitContact, toContactPayload } from "~/lib/leads";
+import { ApiError, NETWORK_MESSAGE } from "~/lib/api";
+import { FORM_ERROR, submitContact, toContactPayload } from "~/lib/leads";
 import { openHref, routeFor } from "~/lib/links";
 import { footerColumns, navMenus, menuLinks } from "~/shared";
 
@@ -61,15 +62,37 @@ describe("openHref", () => {
   });
 });
 
-describe("contact form (stubbed)", () => {
-  it("check the website's required fields and send nothing (bookings are sent; messages have no app endpoint)", async () => {
-    expect(LEADS_ARE_SENT).toEqual({ booking: true, contact: false });
-    await expect(submitContact({ name: "", phone: "", message: "" })).resolves.toEqual({
+describe("contact form", () => {
+  const ok = { apiVersion: "v1" as const, kind: "contact-message", label: "x", data: { received: true }, meta: { generatedAt: "x" } };
+
+  it("checks the website's required fields first and sends nothing with a mistake in it", async () => {
+    const send = jest.fn();
+    await expect(submitContact({ name: "", phone: "", message: "" }, { send })).resolves.toEqual({
       ok: false,
       errors: { name: FIELD_MESSAGES.name, phone: FIELD_MESSAGES.phone, message: FIELD_MESSAGES.message },
       message: FORM_ERROR,
     });
-    await expect(submitContact({ name: "Asha", phone: "9876543210", message: "Two doors" })).resolves.toEqual({ ok: true, sent: false });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("sends the message (a city's waitlist too) to /api/v1/messages, with the screen it came from", async () => {
+    const send = jest.fn().mockResolvedValue(ok);
+    await expect(submitContact({ name: "Asha", phone: "98765 43210", message: "Two doors" }, { page: "/contact", send })).resolves.toEqual({ ok: true, sent: true });
+    expect(send).toHaveBeenCalledWith("/api/v1/messages", { method: "POST", body: { type: "contact", name: "Asha", phone: "9876543210", message: "Two doors", page: "/contact" } });
+  });
+
+  it("shows the API's field messages, and its one message otherwise", async () => {
+    const refused = new ApiError("invalid_request", "Please check the highlighted fields.", 400, { message: FIELD_MESSAGES.message });
+    await expect(submitContact({ name: "Asha", phone: "9876543210", message: "Hi there" }, { send: jest.fn().mockRejectedValue(refused) })).resolves.toEqual({
+      ok: false,
+      errors: { message: FIELD_MESSAGES.message },
+      message: FORM_ERROR,
+    });
+    await expect(submitContact({ name: "Asha", phone: "9876543210", message: "Hi there" }, { send: jest.fn().mockRejectedValue(new ApiError("network", NETWORK_MESSAGE)) })).resolves.toEqual({
+      ok: false,
+      errors: {},
+      message: NETWORK_MESSAGE,
+    });
   });
 
   it("builds the payload the website's schema expects", () => {

@@ -186,7 +186,8 @@ describe("LeadForm (booking): what the page added", () => {
 });
 
 describe("LeadForm (contact)", () => {
-  it("is one short form: name, mobile and a message, then the thank-you page", async () => {
+  it("is one short form: name, mobile and a message, sent, then the thank-you page", async () => {
+    const calls = mockApi({ "POST /api/v1/messages": { status: 201, data: { received: true } } });
     await render(<LeadForm type="contact" defaultMessage="Waitlist for Delhi NCR" />);
     expect(screen.queryByRole("progressbar")).toBeNull();
     expect(screen.queryByLabelText("House / flat no., building and street")).toBeNull();
@@ -198,7 +199,22 @@ describe("LeadForm (contact)", () => {
     await type("Mobile number", "9876543210");
     await type("How can we help?", "Waitlist for Delhi NCR");
     await press("Send message");
-    expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "contact", sent: "0" } });
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith({ pathname: "/thank-you", params: { type: "contact", sent: "1" } }));
+    const [sent] = calls.filter((c) => c.path === "/api/v1/messages");
+    expect(sent).toMatchObject({ method: "POST", body: { type: "contact", name: "Asha", phone: "9876543210", message: "Waitlist for Delhi NCR", page: "/book" } });
+    expect(sent.headers).not.toHaveProperty("Authorization");
+  });
+
+  it("keeps the answers and shows the API's message when it cannot send", async () => {
+    mockApi({ "POST /api/v1/messages": { status: 429, error: { code: "rate_limited", message: "Too many requests. Try again in 40 seconds.", details: { retryAfterSeconds: 40 } } } });
+    await render(<LeadForm type="contact" />);
+    await type("Your name", "Asha");
+    await type("Mobile number", "9876543210");
+    await type("How can we help?", "Two doors and a grill");
+    await press("Send message");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many requests. Try again in 40 seconds.");
+    expect(screen.getByLabelText("How can we help?")).toHaveProp("value", "Two doors and a grill");
+    expect(router.push).not.toHaveBeenCalled();
   });
 });
 

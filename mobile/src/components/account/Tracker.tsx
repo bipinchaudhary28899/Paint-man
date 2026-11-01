@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, Alert, Linking, StyleSheet, Text, View } from "react-native";
 
 import { Container } from "~/components/site/Page";
 import { Breadcrumbs } from "~/components/site/Sections";
@@ -14,6 +14,8 @@ import { useAuth } from "~/lib/auth-context";
 import { contactLinks } from "~/lib/contact";
 import { openHref } from "~/lib/links";
 import {
+  acceptableQuotation,
+  acceptQuotation,
   downloadQuotationPdf,
   formatCalendarDay,
   formatDay,
@@ -30,10 +32,11 @@ import {
   type QuotationStatus,
   type TimelineEvent,
 } from "~/lib/projects";
-import { site, type StageStep } from "~/shared";
+import { indiaToday, site, type StageStep } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 import { Loading, useRequireSignIn } from "./Account";
 import { ProjectSteps } from "./ProjectSteps";
+import { SlideToAccept } from "./SlideToAccept";
 
 // The project tracker (the website's /account/projects/[id]): where the project stands and what
 // happens next, the stages as a vertical stepper (done, now, to come, with the day each was reached),
@@ -115,6 +118,7 @@ function TrackerBody({ project, onSaved }: { project: ProjectDetail; onSaved: (p
   const { what, where } = projectTitle(project);
   const next = nextStep(project.stages);
   const approved = project.quotations.find((q) => q.status === "approved");
+  const acceptable = acceptableQuotation(project.quotations, indiaToday());
   const address = [project.address, project.locality, [project.city, project.pincode].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   return (
     <Container style={styles.page}>
@@ -181,7 +185,7 @@ function TrackerBody({ project, onSaved }: { project: ProjectDetail; onSaved: (p
       ) : (
         <View style={styles.quotes}>
           {project.quotations.map((q) => (
-            <QuotationCard key={q.id} quotation={q} />
+            <QuotationCard key={q.id} quotation={q} acceptIn={q.id === acceptable?.id ? { projectId: project.id, onAccepted: onSaved } : undefined} />
           ))}
         </View>
       )}
@@ -256,10 +260,52 @@ const STATUS_LOOK: Record<QuotationStatus, { bg: string; text: string }> = {
 };
 
 /** One version of the quotation: status, every line with its amount, the totals, its notes and terms, and the PDF. */
-export function QuotationCard({ quotation: q }: { quotation: Quotation }) {
+type AcceptIn = {
+  projectId: string;
+  /** the project as it is once the quotation is accepted */
+  onAccepted: (project: ProjectDetail) => void;
+};
+
+/**
+ * One quotation: its lines, totals, notes and PDF. `acceptIn` (the one quotation the customer can
+ * accept now) adds "Slide to accept", which asks them to confirm and then makes the price final.
+ */
+export function QuotationCard({ quotation: q, acceptIn }: { quotation: Quotation; acceptIn?: AcceptIn }) {
   const auth = useAuth();
   const [downloading, setDownloading] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  // bumped to send the slider's knob back (not confirmed, or it failed)
+  const [resetKey, setResetKey] = useState(0);
   const [error, setError] = useState("");
+  const sendBack = () => setResetKey((k) => k + 1);
+
+  function confirmAccept() {
+    Alert.alert(
+      "Accept this quotation?",
+      `${formatRupees(q.totalPaise)} for version ${q.version}. The price becomes final, and nothing else is added without your written approval.`,
+      [
+        { text: "Not now", style: "cancel", onPress: sendBack },
+        { text: "Accept", onPress: () => void accept() },
+      ],
+      { cancelable: true, onDismiss: sendBack },
+    );
+  }
+
+  async function accept() {
+    if (!acceptIn) return;
+    setError("");
+    setAccepting(true);
+    try {
+      const project = await acceptQuotation(auth.request, acceptIn.projectId, q.id);
+      AccessibilityInfo.announceForAccessibility("Quotation accepted. The price is final.");
+      acceptIn.onAccepted(project);
+    } catch (err) {
+      setError(errorMessage(err));
+      sendBack();
+    } finally {
+      setAccepting(false);
+    }
+  }
   const look = STATUS_LOOK[q.status];
   const approved = q.status === "approved";
 
@@ -321,11 +367,24 @@ export function QuotationCard({ quotation: q }: { quotation: Quotation }) {
       {q.paymentTerms ? <Detail label="Payment terms" text={q.paymentTerms} /> : null}
       {q.validUntil && q.status === "sent" ? <Detail label="Valid until" text={formatCalendarDay(q.validUntil)} /> : null}
 
+      {acceptIn && (
+        <View style={styles.accept}>
+          <SlideToAccept
+            label={`Slide to accept ${formatRupees(q.totalPaise)}`}
+            accessibilityLabel={`Accept quotation version ${q.version}, ${spokenRupees(q.totalPaise)}`}
+            onSlid={confirmAccept}
+            busy={accepting}
+            resetKey={resetKey}
+          />
+          <Text style={styles.acceptNote}>Not ready yet? Nothing changes until you accept. Questions? Message us below.</Text>
+        </View>
+      )}
+
       <Button
         label="Download PDF"
         busyLabel="Preparing the PDF…"
         busy={downloading}
-        variant={approved || q.status === "sent" ? "primary" : "secondary"}
+        variant={!acceptIn && (approved || q.status === "sent") ? "primary" : "secondary"}
         accessibilityLabel={`Download PDF of quotation version ${q.version}`}
         accessibilityHint="Saves the PDF and opens the share sheet"
         onPress={() => void download()}
@@ -462,6 +521,8 @@ const styles = StyleSheet.create({
   totalApproved: { color: colors.terracotta },
   detail: { marginTop: 14, gap: 2 },
   download: { marginTop: 20 },
+  accept: { marginTop: 22, gap: 10 },
+  acceptNote: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: "center" },
   formError: { marginTop: 12, borderRadius: 8, backgroundColor: colors.paper, borderWidth: 1, borderColor: colors.danger, padding: 12, fontFamily: fonts.sansSemiBold, fontSize: 14, lineHeight: 20, color: colors.danger },
   timeline: { marginTop: 16 },
   event: { paddingVertical: 14, gap: 2 },

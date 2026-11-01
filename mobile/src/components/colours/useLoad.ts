@@ -21,6 +21,7 @@ export function useLoad<T>(load: () => Promise<T>, key: string): Load<T> {
       live = false;
     };
     // `load` is a fresh closure each render; the key names what it loads
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs again for a new key or a retry, not a new closure
   }, [key, attempt]);
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
   const current = state.key === key && state.attempt === attempt;

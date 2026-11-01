@@ -15,6 +15,13 @@
       "when": 1793450144966,
       "tag": "0001_project_details",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793505439760,
+      "tag": "0002_push_tokens",
+      "breakpoints": true
     }
   ]
 }

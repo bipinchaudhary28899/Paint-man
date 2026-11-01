@@ -20,11 +20,13 @@ function area(place: string, layout: "phone" | "tab") {
 }
 
 describe("Finishes (home)", () => {
-  it("has one h2 with one italic accent and says the photos are examples, not our jobs", () => {
+  it("has one h2 with one italic accent and says the photos are inspiration, not our jobs", () => {
     render(<Finishes />);
-    const heading = screen.getByRole("heading", { level: 2, name: "The finish we work to." });
+    expect(screen.getByText("Inspiration")).toBeInTheDocument();
+    const heading = screen.getByRole("heading", { level: 2, name: "Ideas for your walls." });
     expect(heading.querySelectorAll("em")).toHaveLength(1);
-    expect(screen.getByText(/example photos of painting across India\. Photos of our own jobs are added/)).toBeInTheDocument();
+    expect(screen.getByText(/These are inspiration photos, not jobs we have done\./)).toBeInTheDocument();
+    expect(screen.queryByText(/The finish we work to|own jobs are added/)).toBeNull();
   });
 
   it("lists the collage photos, painting in India, each with its descriptive alt", () => {

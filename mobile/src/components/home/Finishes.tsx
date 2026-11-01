@@ -11,7 +11,7 @@ import { coverProgress, riseIn, screenTop } from "./motion";
 import { coverRect, skiaSource } from "./pictures";
 import { useContentY } from "./useContentY";
 
-// "The finish we work to" on phones (src/components/home/Finishes.tsx): example photos of painting in
+// "Ideas for your walls" on phones (src/components/home/Finishes.tsx): inspiration photos of painting in
 // India cut into shapes that fill one rectangle (collage.ts), drawn with Skia clip paths. Scrolling it
 // in raises the tiles in the wave's order, as the website's view timelines do; off under reduced motion.
 // The website's hover wave and zoom need a pointer, so phones never see them.
@@ -35,13 +35,13 @@ export function Finishes() {
   return (
     <View ref={ref} onLayout={onLayout} collapsable={false} testID="finishes" style={styles.section}>
       <Eyebrow size={11} style={styles.eyebrow}>
-        Finishes
+        Inspiration
       </Eyebrow>
       <H size={30} leading={1.06} style={styles.heading}>
-        The finish we <Em>work to.</Em>
+        Ideas for your <Em>walls.</Em>
       </H>
       <P size={14} leading={1.55} color={colors.muted} style={styles.text}>
-        Rang, roller aur mehnat: example photos of painting across India. Photos of our own jobs are added as each one is handed over.
+        Rang, roller aur mehnat: painted homes and walls from across India, to help you picture yours. These are inspiration photos, not jobs we have done.
       </P>
       <View style={styles.collage} onLayout={onCollageLayout} testID="collage">
         {width > 0 && (

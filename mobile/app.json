@@ -154,7 +154,14 @@
           "faceIDPermission": false
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "color": "#a8532f",
+          "defaultChannel": "updates"
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

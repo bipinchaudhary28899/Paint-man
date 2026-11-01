@@ -1,4 +1,4 @@
-// The app's config is app.json; this adds what is not committed, and one Android build rule.
+// The app's config is app.json; this adds what is not committed, and two Android build rules.
 //
 // On Android react-native-maps draws Google Maps, which needs an API key (without one the app closes
 // when a map opens). The key comes from GOOGLE_MAPS_ANDROID_API_KEY: mobile/.env.local on this Mac
@@ -57,8 +57,19 @@ const withHttpClient = (config) =>
     return mod;
   });
 
+// Push notifications on Android go through Firebase: Expo push tokens need the Firebase project's
+// google-services.json in the build. Its path comes from GOOGLE_SERVICES_JSON (mobile/.env.local or
+// the build service's secrets; the file itself is not committed). iOS needs nothing here: the
+// expo-notifications plugin in app.json adds the push entitlement, and Apple's key lives in the
+// app's Expo project.
+
 module.exports = ({ config }) => {
   const key = process.env.GOOGLE_MAPS_ANDROID_API_KEY?.trim();
-  const withKey = key ? { ...config, android: { ...config.android, config: { ...config.android?.config, googleMaps: { apiKey: key } } } } : config;
-  return withHttpClient(withRoomKeepRule(withKey));
+  const googleServicesFile = process.env.GOOGLE_SERVICES_JSON?.trim();
+  const android = {
+    ...config.android,
+    ...(key && { config: { ...config.android?.config, googleMaps: { apiKey: key } } }),
+    ...(googleServicesFile && { googleServicesFile }),
+  };
+  return withHttpClient(withRoomKeepRule({ ...config, android }));
 };

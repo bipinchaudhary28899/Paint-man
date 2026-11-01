@@ -12,7 +12,7 @@ export const SITE_UPDATED = "2026-10-31";
  * specific key wins. Anything not listed uses SITE_UPDATED.
  */
 export const sectionUpdated: Record<string, string> = {
-  "/": "2026-10-31",
+  "/": "2026-11-01",
   // the palettes' room became a real Indian living room
   "/palettes": "2026-10-31",
   "/privacy-policy": "2026-10-31",

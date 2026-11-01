@@ -122,7 +122,7 @@ describe("the home page", () => {
       "Painting, without the project management.",
       "How the work gets done",
       "Find a shade that feels like you.",
-      "The finish we work to.",
+      "Ideas for your walls.",
       `Painting homes across ${liveCityNames()}`,
       "Book a site visit online",
       "Good questions.",
@@ -200,7 +200,7 @@ describe("the home page", () => {
   it("draws the collage once it has a width, every photo cut to its shape and named for screen readers", async () => {
     measureLayout.mockImplementation((_container, onSuccess: (x: number, y: number) => void) => onSuccess(0, 9000));
     await renderHome();
-    expect(screen.getByRole("header", { name: "The finish we work to." })).toBeOnTheScreen();
+    expect(screen.getByRole("header", { name: "Ideas for your walls." })).toBeOnTheScreen();
     await fireEvent(screen.getByTestId("finishes"), "layout", { nativeEvent: { layout: { x: 0, y: 9000, width: 393, height: 1100 } } });
     const collage = screen.getByTestId("collage");
     expect(within(collage).queryByTestId("skia-canvas")).toBeNull();

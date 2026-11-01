@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 
 import { apiRequest, ApiError, type ApiEnvelope, type ApiRequestInit } from "./api";
 import { clearToken, deleteMe, endSession, fetchMe, readToken, renameMe, saveToken, SIGNED_OUT_MESSAGE, verifyCode, type User } from "./auth";
+import { forgetPushToken, registerForPush, unregisterPush } from "./push";
 
 // The signed-in state for the whole app. At launch the saved token is read from the secure store and
 // checked with GET /api/v1/me (offline, the session is kept and the user loads later). Screens get
@@ -84,6 +85,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // signed in on a phone already allowed to show notifications: register it again (a token can
+  // change); one not yet allowed is asked only when the customer taps "Turn on updates"
+  const signedIn = state.status === "signedIn";
+  useEffect(() => {
+    const current = token.current;
+    if (!signedIn || !current) return;
+    registerForPush((path, init) => apiRequest(path, { ...init, token: current })).catch(() => undefined);
+  }, [signedIn]);
+
   async function withToken<T>(fn: (token: string) => Promise<T>): Promise<T> {
     await restored.current;
     const current = token.current;
@@ -109,11 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async signOut() {
       const current = token.current;
+      // this phone stops getting the account's updates
+      if (current) await unregisterPush((path, init) => apiRequest(path, { ...init, token: current }));
       await dropSession();
       if (current) await endSession(current);
     },
     async deleteAccount() {
       await withToken(deleteMe);
+      await forgetPushToken();
       await dropSession();
     },
     async rename(name) {

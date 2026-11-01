@@ -1,10 +1,10 @@
 import { router, usePathname } from "expo-router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Button } from "~/components/ui/Button";
 import { Skeleton } from "~/components/ui/Skeleton";
-import { Field, Input, optionsOf, PhoneInput, PillChoice, type Focusable } from "~/components/ui/Field";
+import { Field, Input, optionsOf, PhoneInput, PillChoice, type Focusable, type InputHandle } from "~/components/ui/Field";
 import { bookingRequiredFields, emptyBooking, type BookingField, type BookingValues } from "~/lib/booking";
 import { useAuth } from "~/lib/auth-context";
 import { submitBooking, submitContact, type SubmitResult } from "~/lib/leads";
@@ -85,10 +85,17 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   const [submitting, setSubmitting] = useState(false);
   // focus moves after the render that shows the problem
   const [focusOn, setFocusOn] = useState<{ field: BookingField }>();
-  const inputs = useRef<Partial<Record<BookingField, Focusable | null>>>({});
+  // one ref per field that can take focus (the fields in ORDER)
+  const nameRef = useRef<InputHandle>(null);
+  const phoneRef = useRef<InputHandle>(null);
+  const cityRef = useRef<Focusable>(null);
+  const localityRef = useRef<InputHandle>(null);
+  const messageRef = useRef<InputHandle>(null);
+  const fieldRefs: Partial<Record<BookingField, RefObject<Focusable | null>>> = { name: nameRef, phone: phoneRef, city: cityRef, locality: localityRef, message: messageRef };
 
   useEffect(() => {
-    if (focusOn) inputs.current[focusOn.field]?.focus();
+    if (focusOn) fieldRefs[focusOn.field]?.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the refs are the same objects every render
   }, [focusOn]);
 
   // the account loaded after the form opened: the name and mobile start as the account's while both are still blank
@@ -123,7 +130,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
 
   async function submit(current: Values = values) {
     setSubmitting(true);
-    const result: SubmitResult = booking ? await submitBooking(current, { live, request: auth.request }) : await submitContact(current);
+    const result: SubmitResult = booking ? await submitBooking(current, { live, request: auth.request }) : await submitContact(current, { page: pathname });
     setSubmitting(false);
     if (result.ok) {
       setErrors({});
@@ -156,12 +163,8 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the sign-in lands, with the held answers
   }, [status]);
 
-  const register = (name: BookingField) => (el: Focusable | null) => {
-    inputs.current[name] = el;
-  };
-
+  // the field's ref goes on it as its own attribute (the React Compiler only knows a ref there)
   const bind = (name: BookingField, label: string) => ({
-    ref: register(name),
     value: values[name],
     onChangeText: (v: string) => set(name, v),
     onBlur: () => blur(name),
@@ -198,10 +201,10 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
   const nameAndMobile = (
     <>
       <Field label="Your name" error={errors.name}>
-        <Input {...bind("name", "Your name")} autoComplete="name" textContentType="name" autoCapitalize="words" maxLength={80} returnKeyType="next" onSubmitEditing={() => inputs.current.phone?.focus()} />
+        <Input ref={nameRef} {...bind("name", "Your name")} autoComplete="name" textContentType="name" autoCapitalize="words" maxLength={80} returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()} />
       </Field>
       <Field label="Mobile number" error={errors.phone}>
-        <PhoneInput {...bind("phone", "Mobile number")} />
+        <PhoneInput ref={phoneRef} {...bind("phone", "Mobile number")} />
       </Field>
     </>
   );
@@ -211,7 +214,7 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
       <View style={styles.form} accessibilityState={{ busy: submitting }}>
         {nameAndMobile}
         <Field label="How can we help?" error={errors.message}>
-          <Input {...bind("message", "How can we help?")} multiline maxLength={1000} style={styles.textareaTall} />
+          <Input ref={messageRef} {...bind("message", "How can we help?")} multiline maxLength={1000} style={styles.textareaTall} />
         </Field>
         {errorLine}
         <Button label="Send message" busyLabel="Sending…" busy={submitting} onPress={() => void submit()} height={54} fontSize={16} />
@@ -225,11 +228,11 @@ export function LeadForm({ type, defaultService, defaultMessage, defaultCity, fo
       {nameAndMobile}
       {askCity && (
         <Field label="City" error={errors.city}>
-          <PillChoice ref={register("city")} label="City" value={values.city} options={live.map((c) => ({ value: c.slug, label: c.name }))} onChange={(v) => set("city", v)} error={errors.city} />
+          <PillChoice ref={cityRef} label="City" value={values.city} options={live.map((c) => ({ value: c.slug, label: c.name }))} onChange={(v) => set("city", v)} error={errors.city} />
         </Field>
       )}
       <Field label={localityLabel} error={errors.locality}>
-        <Input {...bind("locality", localityLabel)} autoComplete="address-line2" textContentType="sublocality" placeholder="Type it, or tap one below" maxLength={80} returnKeyType="done" />
+        <Input ref={localityRef} {...bind("locality", localityLabel)} autoComplete="address-line2" textContentType="sublocality" placeholder="Type it, or tap one below" maxLength={80} returnKeyType="done" />
         {city && localities.length > 0 && (
           <View style={styles.localities}>
             <PillChoice scroll label={`Localities in ${city.name}`} value={values.locality} options={optionsOf(localities)} onChange={(v) => set("locality", v)} />

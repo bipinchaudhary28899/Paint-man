@@ -2,9 +2,9 @@ import type { NextRequest } from "next/server";
 import { failure, fieldErrors, personalError, personalOk, readJsonBody } from "@/lib/api-personal";
 import { checkLimits, profileUserLimit, rateLimited } from "@/lib/auth/limits";
 import { requireUser } from "@/lib/auth/user-session";
-import { detailSteps, stepsProgress } from "@/lib/projects/details";
 import { projectDetailsSchema } from "@/lib/projects/inputs";
-import { getProjectForUser, updateProjectDetailsForUser, type ProjectDetail } from "@/lib/projects/repo";
+import { projectResponse } from "@/lib/projects/project-response";
+import { getProjectForUser, updateProjectDetailsForUser } from "@/lib/projects/repo";
 
 export const runtime = "nodejs";
 
@@ -38,18 +38,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
 }
 
-function projectResponse(project: ProjectDetail, status = 200) {
-  const where = [project.locality, project.city].filter(Boolean).join(", ");
-  const progress = stepsProgress(detailSteps(project));
-  return personalOk({
-    status,
-    kind: "project",
-    label: `${project.service ?? "Painting"} project${where ? ` in ${where}` : ""}: ${project.stageLabel}.`,
-    data: project,
-    meta: { quotations: project.quotations.length, detailSteps: { done: progress.done, total: progress.total } },
-    links: { self: `/api/v1/projects/${project.id}`, html: `/account/projects/${project.id}`, projects: "/api/v1/projects" },
-  });
-}
 
 /**
  * PATCH /api/v1/projects/{id} (website cookie from this origin, or the app's bearer token)

@@ -75,7 +75,7 @@ export const collageTiles: Tile[] = [
   },
 ];
 
-// "The finish we work to": a collage of painting in India, photos cut into shapes that fill one
+// "Ideas for your walls": an inspiration collage of painting in India (not our own jobs), photos cut into shapes that fill one
 // rectangle. Hovering it sends a wave across the pieces and zooms the photo under the pointer;
 // scrolling it in raises the tiles in the same order. Both are off under reduced motion.
 export function Finishes() {
@@ -83,13 +83,13 @@ export function Finishes() {
     <section id="work" className="container-page relative z-[1] pb-14 tab:pb-[88px] desk:pb-40" aria-labelledby="work-heading">
       <div className="tab:flex tab:flex-wrap tab:items-end tab:justify-between tab:gap-6">
         <div>
-          <p className="eyebrow max-tab:text-[11px]">Finishes</p>
+          <p className="eyebrow max-tab:text-[11px]">Inspiration</p>
           <h2 id="work-heading" className="mt-3 text-[30px] leading-[1.06] tab:mt-5 tab:text-[44px] desk:mt-6 desk:text-[clamp(36px,4vw,56px)]">
-            The finish we <em>work to.</em>
+            Ideas for your <em>walls.</em>
           </h2>
         </div>
         <p className="mt-2.5 leading-[1.6] text-muted max-tab:text-[14px] max-tab:leading-[1.55] tab:mt-0 tab:max-desk:max-w-[300px] tab:max-desk:text-[15px] desk:max-w-[340px]">
-          Rang, roller aur mehnat: example photos of painting across India. Photos of our own jobs are added as each one is handed over.
+          Rang, roller aur mehnat: painted homes and walls from across India, to help you picture yours. These are inspiration photos, not jobs we have done.
         </p>
       </div>
       <ul

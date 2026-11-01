@@ -94,7 +94,8 @@ export function ColourFinder({ initialQuery = "", initialBrand, initialFamily, i
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pages, setPages] = useState(1);
-  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+  // with a brand or a search to show from the start, the first page is loading straight away
+  const [state, setState] = useState<"idle" | "loading" | "error">(() => (startBrand || initialQuery.trim() ? "loading" : "idle"));
   // bumped by "Try again" after a failed load, which runs the first-page load once more
   const [attempt, setAttempt] = useState(0);
   const [selected, setSelected] = useState<PaintShade | null>(null);
@@ -111,12 +112,23 @@ export function ColourFinder({ initialQuery = "", initialBrand, initialFamily, i
   // a brand opened from a link may sit off the row's right edge: bring its pill into view
   const revealPill = (e: LayoutChangeEvent) => brandRow.current?.scrollTo({ x: Math.max(0, e.nativeEvent.layout.x - gutter), animated: false });
 
+  // A new search (brand, colour family, order, search text or Try again) shows as loading with no
+  // shades straight away. Set while rendering, as React suggests for state that follows a change,
+  // rather than in the effect below.
+  const searchKey = showBrandGrid ? "" : JSON.stringify([q, brand, family, sort, attempt]);
+  const [shownKey, setShownKey] = useState(searchKey);
+  if (shownKey !== searchKey) {
+    setShownKey(searchKey);
+    if (searchKey) {
+      setState("loading");
+      setItems([]);
+    }
+  }
+
   // first page whenever the brand, colour family, order or search changes
   useEffect(() => {
     if (showBrandGrid) return;
     let live = true;
-    setState("loading");
-    setItems([]);
     const t = setTimeout(
       async () => {
         try {

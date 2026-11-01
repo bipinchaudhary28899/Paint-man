@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DM_Serif_Display, Manrope } from "next/font/google";
 import { site } from "@/config/site";
 import { siteVerification, TITLE_SUFFIX } from "@/lib/seo";
@@ -66,6 +67,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         {/* Vercel Web Analytics: cookie-free page views, from the same-origin /_vercel/insights script. */}
         <Analytics />
+        {/* Vercel Speed Insights: real visitors' Core Web Vitals (LCP, INP, CLS), from the same-origin
+            /_vercel/speed-insights script, loaded after the page is interactive; no cookies. */}
+        <SpeedInsights />
       </body>
     </html>
   );

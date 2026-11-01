@@ -200,3 +200,21 @@ export async function downloadQuotationPdf(token: string, quotation: Pick<Quotat
   if (!(await Sharing.isAvailableAsync())) throw new ApiError("sharing_unavailable", "Sharing files is not available on this phone, so the PDF cannot be opened from the app.");
   await Sharing.shareAsync(saved.uri, { mimeType: "application/pdf", UTI: "com.adobe.pdf", dialogTitle: `Quotation version ${quotation.version}` });
 }
+
+/** An /api/v1 call with the session (useAuth().request). */
+type Request = <T>(path: string, init?: { method?: "GET" | "POST" | "PATCH" | "DELETE"; body?: unknown }) => Promise<{ data: T }>;
+
+/**
+ * The quotation the customer can accept now: the latest version sent, while its price still holds
+ * (its validity date, in India, not past). Undefined when there is none.
+ */
+export function acceptableQuotation(quotations: readonly Quotation[], today: string): Quotation | undefined {
+  const latest = quotations.filter((q) => q.status === "sent").sort((a, b) => b.version - a.version)[0];
+  return latest && (!latest.validUntil || latest.validUntil >= today) ? latest : undefined;
+}
+
+/** Accepts a quotation (POST …/accept): the price is final. Answers with the project as it now is. */
+export async function acceptQuotation(request: Request, projectId: string, quotationId: string): Promise<ProjectDetail> {
+  const res = await request<ProjectDetail>(`/api/v1/projects/${encodeURIComponent(projectId)}/quotations/${encodeURIComponent(quotationId)}/accept`, { method: "POST" });
+  return res.data;
+}

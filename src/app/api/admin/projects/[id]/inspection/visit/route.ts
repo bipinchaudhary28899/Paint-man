@@ -3,6 +3,7 @@ import { adminFailure, readAdminInput, requireAdminRequest } from "@/lib/admin/g
 import { personalOk } from "@/lib/api-personal";
 import { inspectionVisitSchema } from "@/lib/projects/inputs";
 import { markInspectionVisited } from "@/lib/projects/repo";
+import { notifyProjectUpdate } from "@/lib/push/notify";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,7 @@ export const runtime = "nodejs";
  * Body: { visitedAt? (ISO date-time with offset; default now), findings?, inspectorName? }.
  * 200 { kind: "inspection", data: { projectId, visited: true } }. Errors: 400 invalid_request,
  * 401 unauthenticated, 403 forbidden, 404 not_found, 413, 415, 503, 500.
+ * The project's customer gets a push notification of the new stage (lib/push/notify.ts).
  * Example: POST /api/admin/projects/3f0c…/inspection/visit { "findings": "Damp patch on the north wall; needs waterproofing." }
  *   → 200 { "kind": "inspection", "data": { "visited": true } }
  */
@@ -23,7 +25,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const input = await readAdminInput(req, inspectionVisitSchema);
     if (!input.ok) return input.response;
     const { id } = await ctx.params;
+    const since = new Date();
     await markInspectionVisited(id, input.data);
+    // the customer's phones hear about any stage this moved the project to, after the response
+    notifyProjectUpdate(id, since);
     return personalOk({
       kind: "inspection",
       label: "Inspection marked visited.",

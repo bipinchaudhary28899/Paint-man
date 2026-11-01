@@ -21,6 +21,7 @@ export const projectStage = pgEnum("project_stage", PROJECT_STAGES);
 export const leadKind = pgEnum("lead_kind", ["booking", "contact", "visit", "waitlist"]);
 export const leadSource = pgEnum("lead_source", ["web", "app"]);
 export const sessionClient = pgEnum("session_client", ["web", "app"]);
+export const pushPlatform = pgEnum("push_platform", ["ios", "android"]);
 export const quotationStatus = pgEnum("quotation_status", ["draft", "sent", "approved", "declined", "superseded"]);
 
 /** Customers: one row per verified mobile number. Deleting a user removes the row (no soft delete). */
@@ -62,6 +63,26 @@ export const sessions = pgTable(
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [uniqueIndex("sessions_token_hash_idx").on(t.tokenHash), index("sessions_user_id_idx").on(t.userId)],
+).enableRLS();
+
+/**
+ * A phone that gets the customer's project updates as push notifications: its Expo push token (the
+ * address Expo's push service delivers to), whose account it belongs to and its platform. A phone
+ * registers its token after the customer allows notifications and forgets it when they sign out;
+ * a token Expo reports as gone is deleted. Removed with the account.
+ */
+export const pushTokens = pgTable(
+  "push_tokens",
+  {
+    token: text("token").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    platform: pushPlatform("platform").notNull(),
+    createdAt: createdAt(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("push_tokens_user_id_idx").on(t.userId)],
 ).enableRLS();
 
 /** Every form submission: website bookings, contact messages, quick site visits and app bookings. */

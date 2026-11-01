@@ -1,8 +1,8 @@
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from "react-native";
-import Animated, { makeMutable, useAnimatedRef, useReducedMotion, useScrollOffset, useSharedValue, type SharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedRef, useReducedMotion, useScrollOffset, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AccountButton } from "~/components/account/AccountButton";
@@ -13,6 +13,8 @@ import { MenuButton, NavDrawer } from "./Drawer";
 import { Footer } from "./Footer";
 import { useNavState } from "./nav-state";
 import { CTA_HIDDEN_ROUTES, ctaRoomHeight, FORM_ANCHORS, StickyCta } from "./StickyCta";
+import { PageCtx, usePage, type ViewHandle } from "./page-context";
+import { useKeyboardRoom } from "./useKeyboardRoom";
 
 // Every screen is a website page: the sticky header (the full Paint Saathi logo, and the menu
 // button that opens the drawer), the page's sections, then the footer, all in one scroll. In-page
@@ -22,39 +24,8 @@ import { CTA_HIDDEN_ROUTES, ctaRoomHeight, FORM_ANCHORS, StickyCta } from "./Sti
 // Blocks that place themselves by where they sit in the page (Reveal) can watch for the content changing
 // height (an accordion opening above them), and the footer's "Back to top" scrolls the page to its top.
 
-type ViewHandle = ComponentRef<typeof View>;
-type PageApi = {
-  /** `margin`: how far below the top of the screen a jump to this anchor stops (the website's scroll-margin-top); `height`: the anchor's own height */
-  register: (id: string, y: number, margin?: number, height?: number) => void;
-  scrollTo: (id: string) => void;
-  contentRef: React.RefObject<ViewHandle | null>;
-  /** the page's scroll offset, on the UI thread, for scroll-driven motion (the website's animation-timeline) */
-  scrollY: SharedValue<number>;
-  /** the screen height (the website's viewport) */
-  viewport: number;
-  /** the height the sticky header covers at the top of the screen (safe area + header) */
-  headerHeight: number;
-  /** scrolls the page back to its top (the footer's "Back to top") */
-  scrollToTop: () => void;
-  /** calls `fn` shortly after the page's content changes height (so a block measures where it now sits); returns the unsubscribe */
-  watchLayout: (fn: () => void) => () => void;
-  /** the page's own booking or contact form anchor, once it has one (the first that registered) */
-  ownForm?: string;
-};
-
-const PageCtx = createContext<PageApi>({
-  register: () => undefined,
-  scrollTo: () => undefined,
-  contentRef: { current: null },
-  scrollY: makeMutable(0),
-  viewport: 0,
-  headerHeight: 0,
-  scrollToTop: () => undefined,
-  watchLayout: () => () => undefined,
-});
-
-/** Scrolls the current page to one of its anchors (the website's same-page #links). */
-export const usePage = () => useContext(PageCtx);
+// the page's API for the blocks inside it (usePage) lives in page-context.tsx, so the footer can use it
+export { usePage, type PageApi } from "./page-context";
 
 /** The website's scroll-margin-top for [id] (6rem). */
 const ANCHOR_MARGIN = 96;
@@ -99,7 +70,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
       const y = anchors.current.get(id);
       if (y !== undefined) scrollRef.current?.scrollTo({ y: offsetFor(y, margins.current.get(id)), animated: true });
     },
-    [offsetFor],
+    [offsetFor, scrollRef],
   );
 
   const register = useCallback(
@@ -108,7 +79,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
       if (margin !== undefined) margins.current.set(id, margin);
       if (height !== undefined && FORM_ANCHORS.includes(id)) {
         formRanges.current.set(id, [y, y + height]);
-        forms.value = [...formRanges.current.values()].flat();
+        forms.set([...formRanges.current.values()].flat());
         setOwnForm((f) => f ?? id);
       }
       if (id === section && !jumped.current) {
@@ -116,10 +87,10 @@ export function Page({ children, testID, footer = true, sections }: Props) {
         scrollRef.current?.scrollTo({ y: offsetFor(y, margin), animated: false });
       }
     },
-    [section, offsetFor, forms],
+    [section, offsetFor, forms, scrollRef],
   );
 
-  const scrollToTop = useCallback(() => scrollRef.current?.scrollTo({ y: 0, animated: !reduced }), [reduced]);
+  const scrollToTop = useCallback(() => scrollRef.current?.scrollTo({ y: 0, animated: !reduced }), [reduced, scrollRef]);
 
   // blocks watching the layout measure again once the content's height has settled after a change
   const watchers = useRef(new Set<() => void>());
@@ -141,6 +112,8 @@ export function Page({ children, testID, footer = true, sections }: Props) {
   }, [sections, scrollTo, setScrollHome]);
 
   const headerHeight = insets.top + HEADER_HEIGHT;
+  // Android: the keyboard's height while it is up, taken off the page so the focused field shows
+  const keyboardRoom = useKeyboardRoom({ scrollRef, contentRef, scrollY, headerHeight, viewport: vh });
 
   return (
     <PageCtx.Provider value={{ register, scrollTo, contentRef, scrollY, viewport: vh, headerHeight, scrollToTop, watchLayout, ownForm }}>
@@ -149,7 +122,7 @@ export function Page({ children, testID, footer = true, sections }: Props) {
         <Header />
         <Animated.ScrollView
           ref={scrollRef}
-          style={styles.page}
+          style={[styles.page, keyboardRoom > 0 && { marginBottom: keyboardRoom }]}
           contentContainerStyle={{ paddingTop: insets.top + HEADER_HEIGHT }}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets

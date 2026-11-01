@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { router } from "expo-router";
 import type { SharedValue } from "react-native-reanimated";
 
@@ -49,7 +49,9 @@ describe("the colour preview slider", () => {
     const [photo, tint] = screen.getAllByTestId("skia-image");
     expect(photo.props.skia).toMatchObject({ fit: "cover", width: W, height: H });
     expect(tint.props.skia).toMatchObject({ blendMode: "multiply", fit: "cover", width: W });
-    expect(clip()).toEqual({ x: W / 2, y: 0, width: W / 2, height: H });
+    // the clip is a derived value, computed a frame after the size arrives: wait for it rather than assume
+    // that frame has run (on a busy machine it may not have yet)
+    await waitFor(() => expect(clip()).toEqual({ x: W / 2, y: 0, width: W / 2, height: H }));
     const colour = screen.getByTestId("skia-blend-color").props.skia as { color: SharedValue<string>; mode: string };
     expect(colour.mode).toBe("srcIn");
     expect(colour.color.value).toBe(pepper.hex);

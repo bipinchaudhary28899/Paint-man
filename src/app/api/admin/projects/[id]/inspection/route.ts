@@ -4,6 +4,7 @@ import { personalOk } from "@/lib/api-personal";
 import { inspectionScheduleSchema } from "@/lib/projects/inputs";
 import { scheduleInspection } from "@/lib/projects/repo";
 import { formatVisit } from "@/lib/projects/stages";
+import { notifyProjectUpdate } from "@/lib/push/notify";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ export const runtime = "nodejs";
  * Body: { scheduledAt: ISO date-time with offset, inspectorName? }. 200 { kind: "inspection",
  * data: { projectId, scheduledAt } }. Errors: 400 invalid_request, 401 unauthenticated, 403 forbidden,
  * 404 not_found, 413, 415, 503, 500.
+ * The project's customer gets a push notification of the new stage (lib/push/notify.ts).
  * Example: PUT /api/admin/projects/3f0c…/inspection { "scheduledAt": "2026-11-04T11:30:00+05:30", "inspectorName": "Ramesh" }
  *   → 200 { "kind": "inspection", "data": { "scheduledAt": "2026-11-04T06:00:00.000Z" } }
  */
@@ -25,7 +27,10 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (!input.ok) return input.response;
     const { id } = await ctx.params;
     const { scheduledAt, inspectorName } = input.data;
+    const since = new Date();
     await scheduleInspection(id, { scheduledAt, inspectorName });
+    // the customer's phones hear about any stage this moved the project to, after the response
+    notifyProjectUpdate(id, since);
     return personalOk({
       kind: "inspection",
       label: `Inspection scheduled for ${formatVisit(scheduledAt)}.`,

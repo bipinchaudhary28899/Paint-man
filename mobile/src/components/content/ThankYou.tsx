@@ -13,11 +13,11 @@ import { ButtonRow } from "./Inline";
 
 // The thank-you page (src/app/(site)/thank-you/page.tsx and ThankYouMessage): the toolbox, the
 // heading and line for the form that was sent (?type=booking|visit|waitlist|contact) and, for a
-// booking, what happens next. A booking sent from the app (POST /api/v1/bookings, signed in) arrives
-// with sent=1 and its project id (?project=), and the page links to "Add your address" in the
-// account. A form the app checked but did not send (the contact form: there is no app endpoint for
-// messages yet) arrives with sent=0, and then the page says plainly that nothing was sent and points
-// to the website and the ways to reach us, never to a call back.
+// booking, what happens next. A booking sent from the app (POST /api/v1/bookings) arrives with sent=1,
+// and with its project id (?project=) when it went into the account, and then the page links to "Add
+// your address". A message (POST /api/v1/messages) arrives with sent=1 too. Anything that says it was
+// not sent (sent missing or 0) gets a page that says so plainly and points to the website and the ways
+// to reach us, never to a call back.
 
 export type ThankYouType = "booking" | "visit" | "waitlist" | "contact";
 

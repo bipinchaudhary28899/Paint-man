@@ -4,6 +4,7 @@ import { personalOk } from "@/lib/api-personal";
 import { stageChangeSchema } from "@/lib/projects/inputs";
 import { setProjectStage } from "@/lib/projects/repo";
 import { STAGE_LABELS } from "@/lib/projects/stages";
+import { notifyProjectUpdate } from "@/lib/push/notify";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ export const runtime = "nodejs";
  * tracker; setting the current stage again with a note posts a progress update. `workStartsOn`
  * (YYYY-MM-DD) also records the crew's start date.
  * Body: { stage, note?, workStartsOn? }. 200 { kind: "project", data: { id, stage, stageLabel } }.
+ * The project's customer gets a push notification of the new stage (lib/push/notify.ts).
  * Errors: 400 invalid_request, 401 unauthenticated, 403 forbidden, 404 not_found, 413, 415, 503, 500.
  * Example: POST /api/admin/projects/3f0c…/stage { "stage": "call_confirmed", "note": "Visit fixed for Tuesday" }
  *   → 200 { "kind": "project", "data": { "stage": "call_confirmed", "stageLabel": "Visit being arranged" } }
@@ -26,7 +28,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     if (!input.ok) return input.response;
     const { id } = await ctx.params;
     const { stage, note, workStartsOn } = input.data;
+    const since = new Date();
     await setProjectStage(id, stage, { note, workStartsOn });
+    // the customer's phones hear about any stage this moved the project to, after the response
+    notifyProjectUpdate(id, since);
     return personalOk({
       kind: "project",
       label: `Project moved to "${STAGE_LABELS[stage]}".`,

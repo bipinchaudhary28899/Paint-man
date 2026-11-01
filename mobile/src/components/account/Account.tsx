@@ -14,6 +14,7 @@ import { useAuth } from "~/lib/auth-context";
 import { formatDay, formatRupees, projectTitle, spokenRupees, summaryExplanation, type ProjectSummary } from "~/lib/projects";
 import { FIELD_MESSAGES } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
+import { ProjectUpdates } from "./ProjectUpdates";
 
 // The account screen (the website's /account): a greeting, the customer's painting projects as cards
 // (stage, what it means, last update, the final price once a quotation is approved), their name
@@ -112,6 +113,7 @@ function AccountBody({ setLeaving }: { setLeaving: Leaving }) {
         My projects
       </H>
       <ProjectList projects={projects} onRetry={() => setAttempt((a) => a + 1)} onRetryStart={() => setProjects({ status: "loading" })} />
+      <ProjectUpdates />
 
       <H size={28} leading={1.2} style={styles.section}>
         Your details

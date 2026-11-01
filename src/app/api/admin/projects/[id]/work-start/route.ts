@@ -3,6 +3,7 @@ import { adminFailure, readAdminInput, requireAdminRequest } from "@/lib/admin/g
 import { personalOk } from "@/lib/api-personal";
 import { workStartSchema } from "@/lib/projects/inputs";
 import { setWorkStartDate } from "@/lib/projects/repo";
+import { notifyProjectUpdate } from "@/lib/push/notify";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,7 @@ export const runtime = "nodejs";
  * Admin only (signed admin session; same-origin). Sets or clears the crew's start date without
  * changing the stage; the customer's "Work scheduled" step names it.
  * Body: { workStartsOn: "YYYY-MM-DD" | null }. 200 { kind: "project", data: { id, workStartsOn } }.
+ * The project's customer gets a push notification of the new stage (lib/push/notify.ts).
  * Errors: 400 invalid_request, 401 unauthenticated, 403 forbidden, 404 not_found, 413, 415, 503, 500.
  * Example: PUT /api/admin/projects/3f0c…/work-start { "workStartsOn": "2026-11-10" } → 200 { "data": { "workStartsOn": "2026-11-10" } }
  */
@@ -22,7 +24,10 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (!input.ok) return input.response;
     const { id } = await ctx.params;
     const { workStartsOn } = input.data;
+    const since = new Date();
     await setWorkStartDate(id, workStartsOn);
+    // the customer's phones hear about any stage this moved the project to, after the response
+    notifyProjectUpdate(id, since);
     return personalOk({
       kind: "project",
       label: workStartsOn ? `Work start date set to ${workStartsOn}.` : "Work start date cleared.",

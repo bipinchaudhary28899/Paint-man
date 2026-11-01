@@ -23,6 +23,8 @@ export const testerVerifyLimit = lazy("tester-verify", 10, HOUR);
 /** App bookings: 5 per account per 10 minutes; while customer login is closed, 5 per IP per 10 minutes without one. */
 export const bookingUserLimit = lazy("booking-user", 5, 10 * MINUTE);
 export const bookingGuestLimit = lazy("booking-guest", 5, 10 * MINUTE);
+/** Messages from the app (contact form, a city's waitlist): 5 per IP per 10 minutes. */
+export const messageIpLimit = lazy("message-ip", 5, 10 * MINUTE);
 /** Profile changes: 20 per account per 10 minutes. */
 export const profileUserLimit = lazy("profile-user", 20, 10 * MINUTE);
 

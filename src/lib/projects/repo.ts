@@ -533,7 +533,8 @@ async function lockQuotation(tx: Tx, quotationId: string, projectId?: string): P
 export type QuotationLineInput = Omit<QuotationLine, "position">;
 export type QuotationInput = { lines: QuotationLineInput[]; notes?: string | null; paymentTerms?: string | null; validUntil?: string | null };
 /** Options of the quotation writes: `projectId` scopes the quotation to that project (else not found). */
-export type QuotationWriteOptions = { now?: Date; projectId?: string };
+/** `note`: a line for the timeline with the move it makes (approving: who accepted it). */
+export type QuotationWriteOptions = { now?: Date; projectId?: string; note?: string };
 
 /** Saves a draft: replaces its lines (in the order given) and sets notes, payment terms and validity. */
 export async function saveQuotation(quotationId: string, input: QuotationInput, opts: QuotationWriteOptions = {}) {
@@ -592,7 +593,7 @@ export async function approveQuotation(quotationId: string, opts: QuotationWrite
       .set({ status: "superseded", updatedAt: now })
       .where(and(eq(quotations.projectId, q.projectId), ne(quotations.id, q.id), inArray(quotations.status, ["sent", "approved"])));
     await tx.update(quotations).set({ status: "approved", approvedAt: now, updatedAt: now }).where(eq(quotations.id, q.id));
-    await advance(tx, p, "price_finalised", null, now);
+    await advance(tx, p, "price_finalised", opts.note ?? null, now);
   });
 }
 

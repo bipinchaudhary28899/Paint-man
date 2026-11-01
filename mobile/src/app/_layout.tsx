@@ -1,7 +1,7 @@
 import { DMSerifDisplay_400Regular, DMSerifDisplay_400Regular_Italic } from "@expo-google-fonts/dm-serif-display";
 import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { BottomNav } from "~/components/site/BottomNav";
 import { LaunchAnimation } from "~/components/site/LaunchAnimation";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { AuthProvider } from "~/lib/auth-context";
+import { listenForPush } from "~/lib/push";
 import { colors } from "~/theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -23,6 +24,8 @@ export { ScreenError as ErrorBoundary } from "~/components/content/NotFound";
 // src/app/(site)), each with the sticky header and the footer, and the phone nav fixed over them.
 // AuthProvider restores the customer's session (the token in the secure store) for every screen.
 export default function RootLayout() {
+  // a tapped project update opens its project (also the notification that launched the app)
+  useEffect(() => listenForPush((path) => router.push(path as never)), []);
   const [loaded, error] = useFonts({
     DMSerifDisplay_400Regular,
     DMSerifDisplay_400Regular_Italic,

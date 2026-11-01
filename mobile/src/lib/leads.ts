@@ -8,12 +8,9 @@ import type { LatLng } from "./location";
 // A booking is sent to POST /api/v1/bookings with the visitor's session (a verified mobile number).
 // Signed out, it is sent without one: while customer accounts are coming soon the API takes it by the
 // number given, as the website's form does; once they are open the API answers 401 and the form asks
-// the visitor to sign in first and then sends it. The website's /api/leads accepts
-// same-origin requests only and there is no app endpoint for contact messages yet, so a contact
-// request is checked and reported as not sent: nothing is transmitted or stored.
-
-/** Which forms leave the phone: bookings (once signed in), not contact messages (no app endpoint yet). */
-export const LEADS_ARE_SENT = { booking: true, contact: false } as const;
+// the visitor to sign in first and then sends it. A contact message (and a city's waitlist, which
+// is one) goes to POST /api/v1/messages, no account needed, and is saved as the website's contact
+// form saves it.
 
 export type SubmitResult =
   | { ok: true; sent: boolean; projectId?: string }
@@ -29,7 +26,7 @@ const BOOKING_FIELDS: readonly string[] = ["name", "phone", "address", "city", "
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /**
- * What the form shows for a booking the API refused: the API's message for each form field it names
+ * What the form shows for a booking or a message the API refused: the API's message for each form field it names
  * (the website's own words, such as "Use the mobile number you signed in with (******3210)") with the
  * form's line, or the API's one message (rate limited with the wait, unavailable, offline).
  */
@@ -82,20 +79,32 @@ function booked(res: ApiEnvelope<Booked>): SubmitResult {
 
 export type ContactValues = { name: string; phone: string; message: string };
 
-/** Checks a contact request as the website does; it is not sent (no app endpoint for messages yet). */
-export async function submitContact(values: ContactValues): Promise<SubmitResult> {
+type ContactOptions = {
+  /** the screen it was sent from (the website sends its page's path) */
+  page?: string;
+  /** the call that sends it (apiRequest) */
+  send?: typeof apiRequest;
+};
+
+/** Checks a contact message as the website does, then sends it; the API's words for anything that stops it. */
+export async function submitContact(values: ContactValues, { page, send = apiRequest }: ContactOptions = {}): Promise<SubmitResult> {
   const errors = requiredFieldErrors("contact", values);
   if (Object.keys(errors).length > 0) return { ok: false, errors, message: FORM_ERROR };
-  return { ok: true, sent: LEADS_ARE_SENT.contact };
+  try {
+    await send("/api/v1/messages", { method: "POST", body: toContactPayload(values, page) });
+    return { ok: true, sent: true };
+  } catch (err) {
+    return { ok: false, ...bookingErrors(err) };
+  }
 }
 
-/** The JSON a contact request would send (cleaned as the website's schema cleans it). */
-export const toContactPayload = (values: ContactValues) => ({
+/** The JSON a contact message sends (cleaned as the website's schema cleans it). */
+export const toContactPayload = (values: ContactValues, page = "app") => ({
   type: "contact" as const,
   name: values.name.trim(),
   phone: normalizeMobile(values.phone),
   message: values.message.trim(),
-  page: "app",
+  page,
 });
 
 export { FORM_ERROR, type BookingValues };

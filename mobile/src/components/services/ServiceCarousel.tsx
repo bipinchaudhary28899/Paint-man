@@ -1,19 +1,24 @@
 import { memo, useState } from "react";
-import { StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { Card, Swipe } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
 import { Photo } from "~/components/ui/Media";
 import { H, P } from "~/components/ui/Text";
+import { useSpringPress } from "~/components/ui/useSpringPress";
 import { openHref } from "~/lib/links";
 import { servicePath, services, type Service } from "~/shared";
 import { colors, fonts, gutter, radii } from "~/theme";
 import { ServiceSticker } from "./bits";
+import { ServiceSheet } from "./ServiceSheet";
 
 // The services as a swipe row of cards (the home page's "Every wall in the house" and /services): one
 // card fills the screen less a peek of the next, each snaps into place, and dots with a "1 / 4" counter
 // say where you are. A card is the service's photo (the card frames it), its coloured sticker, its name,
 // one short line and a pill opening the service; on /services a second pill books a visit for it.
+// Pressing the card lifts it a little (useSpringPress); tapping its photo and name opens the
+// service's details in a sheet (ServiceSheet), with what it includes.
 
 const GAP = 12;
 /** How much of the next card shows at the screen's edge. */
@@ -42,20 +47,34 @@ export function cardInView(x: number, interval: number, maxScroll: number, count
 
 /** One card; memoised, so the dots following the scroll never re-render the cards. */
 const ServiceCard = memo(function ServiceCard({ service, width, book }: { service: Service; width: number; book: boolean }) {
+  const lift = useSpringPress();
+  const [open, setOpen] = useState(false);
   return (
-    <Card radius={radii.xl} style={[styles.card, { width }]}>
-      <View>
-        {/* fetched at the card's width; low priority: the carousel sits below the page's first screen */}
-        <Photo image={service.image} width={width} aspectRatio={16 / 10} position={photoPosition[service.slug]} priority="low" recyclingKey={service.slug} />
-        <ServiceSticker service={service} style={styles.sticker} />
-      </View>
-      <View style={styles.body}>
-        <H size={24} leading={1.12} balance={false}>
-          {service.name}
-        </H>
-        <P size={14} leading={1.55} color={colors.muted} style={styles.line}>
-          {serviceLine(service)}
-        </P>
+    <Animated.View style={lift.style}>
+      <Card radius={radii.xl} style={[styles.card, { width }]}>
+        {/* the photo, name and line open the details; the pills below stay buttons of their own */}
+        <Pressable
+          {...lift.handlers}
+          onPress={() => setOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`${service.name}: what's included`}
+          accessibilityHint="Opens the service's details"
+          testID={`service-card-${service.slug}`}
+        >
+          <View>
+            {/* fetched at the card's width; low priority: the carousel sits below the page's first screen */}
+            <Photo image={service.image} width={width} aspectRatio={16 / 10} position={photoPosition[service.slug]} priority="low" recyclingKey={service.slug} />
+            <ServiceSticker service={service} style={styles.sticker} />
+          </View>
+          <View style={styles.head}>
+            <H size={24} leading={1.12} balance={false}>
+              {service.name}
+            </H>
+            <P size={14} leading={1.55} color={colors.muted} style={styles.line}>
+              {serviceLine(service)}
+            </P>
+          </View>
+        </Pressable>
         <View style={styles.actions}>
           <Button
             small
@@ -74,8 +93,9 @@ const ServiceCard = memo(function ServiceCard({ service, width, book }: { servic
             />
           )}
         </View>
-      </View>
-    </Card>
+      </Card>
+      {open && <ServiceSheet service={service} onClose={() => setOpen(false)} />}
+    </Animated.View>
   );
 });
 
@@ -123,12 +143,13 @@ export function ServiceCarousel({ book = false, style }: { book?: boolean; style
 const styles = StyleSheet.create({
   // room under the cards for the hairline to show
   row: { paddingBottom: 2 },
-  card: { overflow: "hidden" },
+  // fills the lifting wrapper, which the row stretches: every card is as tall as the tallest
+  card: { flex: 1, overflow: "hidden" },
   sticker: { position: "absolute", left: 14, top: 14 },
-  body: { flex: 1, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18 },
+  head: { paddingHorizontal: 18, paddingTop: 16 },
   line: { marginTop: 8 },
   // the pills sit at the foot of every card, so a row of cards of different lengths lines up
-  actions: { marginTop: "auto", paddingTop: 16, flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  actions: { marginTop: "auto", paddingTop: 16, paddingHorizontal: 18, paddingBottom: 18, flexDirection: "row", flexWrap: "wrap", gap: 8 },
   footer: { marginTop: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   dots: { flexDirection: "row", gap: 6 },
   dot: { height: 4, width: 6, borderRadius: 2, backgroundColor: "rgba(36, 37, 34, 0.2)" },
