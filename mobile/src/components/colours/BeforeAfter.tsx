@@ -4,8 +4,9 @@ import { PanResponder, StyleSheet, Text, View, type AccessibilityActionEvent, ty
 import Animated, { cancelAnimation, Easing, ReduceMotion, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 
-import { Sticker, Swipe } from "~/components/ui/Bits";
+import { Swipe } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
+import { Eyebrow } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
 import { palettes, shadeDisplayName } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
@@ -16,7 +17,7 @@ import { useSceneImages, WallTint } from "./WallPreview";
 // one of our jobs), with a divider the visitor drags sideways. Left of it the room before colouring, its
 // walls in bare primer white; right of it the same photo with its walls painted in the chosen shade, by
 // the same Skia multiply tint as every other preview (WallPreview). The shades are the palettes' feature walls: real Asian Paints shade-card codes. The
-// divider lives in a shared value, so a drag moves the line, the handle, the stickers and the tint's clip
+// divider lives in a shared value, so a drag moves the line, the handle and the tint's clip
 // on the UI thread without re-rendering React; the drag itself is a PanResponder that claims sideways
 // moves only, so a vertical swipe over the photo still scrolls the page. Screen readers get an
 // adjustable control (swipe up or down to show more or less of the repainted room); a new shade eases
@@ -99,11 +100,6 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
   const W = size.width;
   const clip = useDerivedValue(() => ({ x: split.value * W, y: 0, width: (1 - split.value) * W, height: size.height }));
   const divider = useAnimatedStyle(() => ({ transform: [{ translateX: split.value * W - HANDLE / 2 }] }));
-  // each sticker sits in its own half: a full-frame box slid so its edge is the divider, the sticker slid back
-  const leftBox = useAnimatedStyle(() => ({ transform: [{ translateX: (split.value - 1) * W }] }));
-  const leftInner = useAnimatedStyle(() => ({ transform: [{ translateX: (1 - split.value) * W }] }));
-  const rightBox = useAnimatedStyle(() => ({ transform: [{ translateX: split.value * W }] }));
-  const rightInner = useAnimatedStyle(() => ({ transform: [{ translateX: -split.value * W }] }));
 
   const ready = photo && mask && W > 0 && size.height > 0;
   const full = `${shade.name}, ${shade.brandName} ${shade.code}`;
@@ -130,16 +126,6 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
             </Group>
           </Canvas>
         )}
-        <Animated.View style={[styles.half, leftBox]} pointerEvents="none">
-          <Animated.View style={[StyleSheet.absoluteFill, leftInner]}>
-            <Sticker style={styles.stickerLeft}>Before</Sticker>
-          </Animated.View>
-        </Animated.View>
-        <Animated.View style={[styles.half, rightBox]} pointerEvents="none">
-          <Animated.View style={[StyleSheet.absoluteFill, rightInner]}>
-            <Sticker style={styles.stickerRight}>After</Sticker>
-          </Animated.View>
-        </Animated.View>
         <Animated.View style={[styles.divider, divider]} pointerEvents="none" testID="before-after-divider">
           <View style={styles.line} />
           <View style={styles.handle}>
@@ -150,6 +136,10 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
         </Animated.View>
         {/* the touch layer over the whole room takes the drags */}
         <View style={StyleSheet.absoluteFill} testID="before-after-touch" {...responder.panHandlers} />
+      </View>
+      <View style={styles.captions} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Eyebrow size={11}>Before</Eyebrow>
+        <Eyebrow size={11}>After</Eyebrow>
       </View>
 
       <View style={styles.chips}>
@@ -171,9 +161,8 @@ export function BeforeAfter({ shades = previewShades, style }: { shades?: Previe
 
 const styles = StyleSheet.create({
   frame: { width: "100%", aspectRatio: FRAME_RATIO, overflow: "hidden", backgroundColor: colors.sand },
-  half: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, overflow: "hidden" },
-  stickerLeft: { position: "absolute", top: 12, left: 12 },
-  stickerRight: { position: "absolute", top: 12, right: 12 },
+  // Before and After name the two halves from under the photo (labels, never chips on it)
+  captions: { marginTop: 8, flexDirection: "row", justifyContent: "space-between" },
   divider: { position: "absolute", top: 0, bottom: 0, left: 0, width: HANDLE, alignItems: "center", justifyContent: "center" },
   line: { position: "absolute", top: 0, bottom: 0, width: 2, backgroundColor: colors.canvas, boxShadow: "0px 0px 8px rgba(36, 37, 34, 0.35)" },
   handle: {

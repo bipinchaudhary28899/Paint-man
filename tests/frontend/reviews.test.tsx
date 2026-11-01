@@ -34,6 +34,6 @@ describe("What customers say", () => {
   it("marks the development samples as samples", () => {
     render(<Reviews shown={{ items: sampleReviews, sample: true }} />);
     expect(screen.getByText(/Sample reviews, shown only on a development server/)).toBeInTheDocument();
-    expect(screen.getAllByText("Sample customer")).toHaveLength(sampleReviews.length);
+    for (const r of sampleReviews) expect(screen.getByText(r.name)).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react-native";
 import { router } from "expo-router";
+import { StyleSheet } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 import { BeforeAfter, bookShadeHref, clampSplit, FRAME_RATIO, isNearWhite, isSideways, previewShades, STEP } from "~/components/colours/BeforeAfter";
@@ -55,8 +56,13 @@ describe("the colour preview slider", () => {
     const colour = screen.getByTestId("skia-blend-color").props.skia as { color: SharedValue<string>; mode: string };
     expect(colour.mode).toBe("srcIn");
     expect(colour.color.value).toBe(pepper.hex);
-    expect(screen.getByText("Before")).toBeOnTheScreen();
-    expect(screen.getByText("After")).toBeOnTheScreen();
+    // Before and After name the halves from under the photo, plain labels (no chips on it); screen
+    // readers hear the frame's own label instead
+    for (const name of ["Before", "After"]) {
+      const caption = screen.getByText(name, { includeHiddenElements: true });
+      expect(within(frame()).queryByText(name, { includeHiddenElements: true })).toBeNull();
+      expect(StyleSheet.flatten(caption.props.style).backgroundColor).toBeUndefined();
+    }
   });
 
   it("draws nothing until the photo and mask load", async () => {

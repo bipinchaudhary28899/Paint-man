@@ -78,7 +78,8 @@ describe("PinnedReveal", () => {
     const after = container.querySelector(".pin-after .tint") as HTMLElement;
     expect(after.style.background).toBe("rgb(187, 200, 178)"); // #bbc8b2, Asian Paints Pepper Leaf 8386
     expect(after.style.maskImage).toContain("/scenes/indian-living-room-mask.png");
-    expect(container.querySelectorAll(".pin-label")).toHaveLength(4);
+    // no stage label on the photo: the stage list beside it shows the stage (no pill badges)
+    expect(container.querySelectorAll(".pin-label, .sticker")).toHaveLength(0);
     expect(container.querySelector(".pin-track")).not.toBeNull();
     expect(container.querySelector(".pin-bar")).not.toBeNull();
     // the wet edge is a full-size track (moved only by transform) carrying a 1px line at its top

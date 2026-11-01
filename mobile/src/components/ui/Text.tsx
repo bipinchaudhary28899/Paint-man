@@ -11,7 +11,7 @@ import { colors, fonts } from "~/theme";
  * How far text grows with the phone's text size (Settings > Larger Text / Font size). Body text has no
  * cap. Headings and button labels, already large, stop at 2× (200%, what WCAG 1.4.4 asks for), so a
  * 40pt heading never breaks a word across lines. Labels inside a fixed box (the bottom nav, pills,
- * stickers on photos) stop at 1.3×, where the box still holds them.
+ * small labels) stop at 1.3×, where the box still holds them.
  */
 export const MAX_SCALE = { large: 2, fixed: 1.3 } as const;
 

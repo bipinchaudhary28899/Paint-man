@@ -28,13 +28,13 @@ describe("reviews", () => {
     expect(new Set(reviews.map((r) => r.quote)).size).toBe(reviews.length);
   });
 
-  it("samples say they are samples, so they can never pass for a customer", () => {
+  it("samples keep the same rules, and none is ever among the real reviews", () => {
     expect(sampleReviews.length).toBeGreaterThan(0);
-    for (const r of sampleReviews) {
-      checkReview(r);
-      expect(r.name).toBe("Sample customer");
-      expect(r.quote.startsWith("Sample review.")).toBe(true);
-    }
+    for (const r of sampleReviews) checkReview(r);
+    // invented names and words for checking the layout: one copied into `reviews` would pass for a customer
+    const isSample = (r: Review) => sampleReviews.some((s) => s.quote === r.quote || (s.name === r.name && s.locality === r.locality && s.date === r.date));
+    for (const r of reviews) expect(isSample(r), `${r.name}: a sample, not a customer`).toBe(false);
+    expect(isSample(sampleReviews[0])).toBe(true);
   });
 });
 

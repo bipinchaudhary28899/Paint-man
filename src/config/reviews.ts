@@ -6,8 +6,9 @@ import { getCity } from "./site";
 // (first name and initial, their locality, what was painted and the month the job was handed over).
 // Never invent, edit the meaning of or pay for a review: made-up reviews mislead the people deciding
 // whom to let into their home, and India's consumer protection rules treat them as misleading ads.
-// Until `reviews` has an entry the section is not shown at all, except on a development server,
-// where `sampleReviews` stand in (marked "Sample") so the layout can be checked.
+// Until `reviews` has an entry the section is not shown at all, except on a development server and
+// in a development build of the app, where `sampleReviews` stand in under a "Sample reviews" notice
+// so the layout can be checked with realistic text.
 //
 // No Review or AggregateRating markup: Google ignores a business's reviews of itself on its own site.
 
@@ -28,30 +29,34 @@ export type Review = {
 
 export const reviews: Review[] = [];
 
-/** Layout stand-ins for a development server only. Never shown on the live site or in a release build. */
+/**
+ * Layout stand-ins for a development server and development builds only: invented names and words,
+ * no real customer. Never shown on the live site or in a release build, and never to be moved into
+ * `reviews` (a test fails if one is).
+ */
 export const sampleReviews: Review[] = [
   {
-    name: "Sample customer",
+    name: "Neha S.",
     locality: "Kamla Nagar",
     city: "agra",
     job: "2 BHK interior",
-    quote: "Sample review. A real customer's words go here: how the inspection, the itemised quote and the crew went, in one to three sentences.",
+    quote: "The inspector measured every room, and the quote listed each wall with its paint and coats. The crew covered our furniture every morning and left the flat clean each evening.",
     date: "2026-10",
   },
   {
-    name: "Sample customer",
+    name: "Rajesh G.",
     locality: "Krishna Nagar",
     city: "mathura",
     job: "Exterior walls",
-    quote: "Sample review. Keep each one as the customer wrote it, with their permission, their locality and the month the job was handed over.",
+    quote: "They filled the cracks and treated the damp patch before painting, as the quote said. Nothing was asked in advance, and the work finished on the day they gave us.",
     date: "2026-09",
   },
   {
-    name: "Sample customer",
+    name: "Pooja M.",
     locality: "Raman Reti",
     city: "vrindavan",
     job: "Front door and grills",
-    quote: "Sample review. The section stays hidden on the live site until src/config/reviews.ts has a real one.",
+    quote: "Only the main door and the window grills needed doing, and they took the small job seriously: rust scraped off, primer, then two coats.",
     date: "2026-08",
   },
 ];

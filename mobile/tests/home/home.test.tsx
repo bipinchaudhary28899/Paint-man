@@ -4,7 +4,7 @@ import { Linking } from "react-native";
 import { getAnimatedStyle, type SharedValue } from "react-native-reanimated";
 
 import { HomeSections } from "~/components/home/HomeSections";
-import { stageLabels, stages, wallShade } from "~/components/home/PinnedReveal";
+import { stages, wallShade } from "~/components/home/PinnedReveal";
 import { serviceLine } from "~/components/services/ServiceCarousel";
 import { NavStateProvider } from "~/components/site/nav-state";
 import { Page, usePage } from "~/components/site/Page";
@@ -75,7 +75,6 @@ describe("the home page", () => {
     await renderHome();
     expect(screen.getByRole("header", { name: "Watch the colour go on." })).toBeOnTheScreen();
     for (const s of stages) expect(screen.getAllByText(s.title).length).toBeGreaterThan(0);
-    for (const l of stageLabels) expect(screen.getAllByText(l).length).toBeGreaterThan(0);
     expect(screen.getByText(wallShade.code)).toBeOnTheScreen();
     expect(screen.getByLabelText(`Living room with the walls being painted ${wallShade.name}`)).toBeOnTheScreen();
 

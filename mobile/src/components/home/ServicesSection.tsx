@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { serviceLine } from "~/components/services/ServiceCarousel";
-import { ServiceSticker } from "~/components/services/bits";
+import { ServiceLabel } from "~/components/services/bits";
 import { Container } from "~/components/site/Page";
 import { Arrow, LinkArrow } from "~/components/ui/Bits";
 import { Photo } from "~/components/ui/Media";
@@ -11,7 +11,7 @@ import { servicePath, services, type Service } from "~/shared";
 import { colors, fonts, radii } from "~/theme";
 
 // "Every wall in the house": the eyebrow, the heading and the website's line, then every service as a
-// row (the website's phone rows): its photo, coloured sticker, name and one short line, the whole row
+// row (the website's phone rows): its photo, its kind (an eyebrow), name and one short line, the whole row
 // opening its hub, all four in view at once, and "All services" under them. The rows only link: booking
 // is the page's one main button.
 
@@ -25,7 +25,7 @@ function ServiceRow({ service }: { service: Service }) {
     >
       <Photo image={service.image} width={96} aspectRatio={1} priority="low" recyclingKey={service.slug} style={styles.photo} decorative />
       <View style={styles.text}>
-        <ServiceSticker service={service} />
+        <ServiceLabel service={service} />
         <Text style={styles.name}>{service.name}</Text>
         <Text style={styles.line} numberOfLines={2}>
           {serviceLine(service)}

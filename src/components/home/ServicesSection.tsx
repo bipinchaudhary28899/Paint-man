@@ -4,11 +4,11 @@ import { images } from "@/config/images";
 import { services } from "@/config/site";
 import { Arrow } from "./Arrow";
 
-const serviceLook: Record<string, { label: string; chip: string; pos?: string }> = {
-  "interior-painting": { label: "Interior", chip: "bg-terracotta text-on-ink" },
-  "exterior-painting": { label: "Exterior", chip: "bg-sage-deep text-on-ink", pos: "center 70%" },
-  "door-window-painting": { label: "Doors & windows", chip: "bg-terracotta text-on-ink" },
-  "rental-property-painting": { label: "Complete home", chip: "bg-golden text-ink" },
+const serviceLook: Record<string, { label: string; pos?: string }> = {
+  "interior-painting": { label: "Interior" },
+  "exterior-painting": { label: "Exterior", pos: "center 70%" },
+  "door-window-painting": { label: "Doors & windows" },
+  "rental-property-painting": { label: "Complete home" },
 };
 const serviceImage: Record<string, (typeof images)[keyof typeof images]> = {
   "interior-painting": images.livingRoom,
@@ -45,7 +45,7 @@ export function ServicesSection() {
       </div>
       <div className="mt-5 flex flex-col gap-2.5 tab:col-span-2 tab:row-start-2 tab:mt-8 tab:grid tab:grid-cols-2 tab:gap-3.5 desk:mt-16 desk:grid-cols-3 desk:gap-6">
         {services.map((s) => {
-          const look = serviceLook[s.slug] ?? { label: s.shortName, chip: "bg-terracotta text-on-ink" };
+          const look = serviceLook[s.slug] ?? { label: s.shortName };
           const img = serviceImage[s.slug] ?? s.image;
           return (
             <Link
@@ -62,14 +62,10 @@ export function ServicesSection() {
                   className="object-cover"
                   style={look.pos ? { objectPosition: look.pos } : undefined}
                 />
-                <span className={`sticker absolute left-5 top-5 hidden !backdrop-blur-none desk:inline-flex ${look.chip}`}>{look.label}</span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-1 tab:gap-2 tab:max-desk:px-4 tab:max-desk:pb-[18px] tab:max-desk:pt-4 desk:block desk:p-7 desk:pb-8">
-                <span
-                  className={`sticker self-start !backdrop-blur-none max-tab:px-2.5 max-tab:py-[5px] max-tab:text-[11px] tab:px-2.5 tab:py-1.5 tab:text-[11px] desk:hidden ${look.chip}`}
-                >
-                  {look.label}
-                </span>
+                {/* the service's kind as an eyebrow over its name (no pill badges) */}
+                <p className="eyebrow text-[11px] desk:mb-2 desk:text-[12px]">{look.label}</p>
                 <h3 className="font-sans text-[16px] font-semibold leading-[1.25] tracking-[-0.01em] max-desk:!font-sans max-desk:!font-semibold max-desk:!tracking-[-0.01em] max-tab:![text-wrap:wrap] tab:text-[17px] desk:text-[22px] desk:leading-[inherit]">
                   {s.name}
                 </h3>

@@ -22,8 +22,10 @@ describe("Services on the home page (phone rows, tablet side cards, desktop grid
     render(<ServicesSection />);
     const door = services.find((s) => s.slug === "door-window-painting")!;
     const card = screen.getByRole("link", { name: /Doors, Windows/ });
-    // The tag appears beside the name (phones, tablets) and over the photo (desktop); one is display:none.
-    expect(within(card).getAllByText("Doors & windows")).toHaveLength(2);
+    // the tag is an eyebrow over the name at every size: plain text, never a pill badge on the photo
+    const tag = within(card).getByText("Doors & windows");
+    expect(tag).toHaveClass("eyebrow");
+    expect(card.querySelector(".sticker")).toBeNull();
     expect(within(card).getByRole("img")).toHaveAttribute("alt", door.image.alt);
     for (const img of screen.getAllByRole("img")) expect(img.getAttribute("alt")).not.toBe("");
   });

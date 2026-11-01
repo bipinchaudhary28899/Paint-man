@@ -20,6 +20,6 @@ describe("What customers say", () => {
   it("shows the marked samples in a development build (tests run as one)", async () => {
     await render(<Reviews />);
     expect(screen.getByText(/Sample reviews, shown only in a development build/)).toBeOnTheScreen();
-    expect(screen.getAllByText(/^Sample customer/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Neha S\./).length).toBeGreaterThan(0);
   });
 });

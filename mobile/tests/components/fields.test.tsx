@@ -3,7 +3,7 @@ import { createRef } from "react";
 import { AccessibilityInfo, Keyboard, Platform, Text } from "react-native";
 
 import { Button } from "~/components/ui/Button";
-import { Arrow, Card, Chevron, LinkArrow, Pill, Plus, Sticker, Swipe } from "~/components/ui/Bits";
+import { Arrow, Card, Chevron, LinkArrow, Plus, Swipe } from "~/components/ui/Bits";
 import { DateInput, Field, FIELD_BORDER, Input, optionsOf, PhoneInput, PillChoice, Select, type Focusable } from "~/components/ui/Field";
 import { Art, Logo, Photo } from "~/components/ui/Media";
 import { Em, Eyebrow, H, P, Strong } from "~/components/ui/Text";
@@ -52,8 +52,6 @@ describe("type and buttons", () => {
         <Plus open={false} />
         <Chevron up />
         <Chevron />
-        <Pill>Zero advance</Pill>
-        <Sticker>Before</Sticker>
         <Swipe>
           <Text>row</Text>
         </Swipe>
@@ -61,7 +59,7 @@ describe("type and buttons", () => {
     );
     await fireEvent.press(screen.getByRole("link", { name: "All services" }));
     expect(onPress).toHaveBeenCalled();
-    for (const t of ["card", "Zero advance", "Before", "row"]) expect(screen.getByText(t)).toBeOnTheScreen();
+    for (const t of ["card", "row"]) expect(screen.getByText(t)).toBeOnTheScreen();
   });
 
   it("labels photos, illustrations and logos, and hides decorative ones", async () => {

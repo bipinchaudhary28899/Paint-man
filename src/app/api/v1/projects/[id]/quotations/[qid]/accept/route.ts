@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 const ACCEPTED_NOTE = "Accepted by the customer in the app.";
 
 /**
- * POST /api/v1/projects/{id}/quotations/{quotationId}/accept (signed in: bearer token or the
+ * POST /api/v1/projects/{id}/quotations/{qid}/accept (signed in: bearer token or the
  * website's cookie, same-origin)
  * The customer accepts a quotation they were sent: the price is final, exactly as when the team
  * approves it in /admin. Other sent versions become superseded, the project moves to "Price
@@ -24,12 +24,12 @@ const ACCEPTED_NOTE = "Accepted by the customer in the app.";
  * Example: POST /api/v1/projects/3f0c…/quotations/9a1b…/accept
  *   → 200 { "kind": "project", "label": "Quotation accepted: the price is final.", "data": { "stage": "price_finalised", … } }
  */
-export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string; quotationId: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string; qid: string }> }) {
   try {
     const auth = await requireUser(req, { mutating: true });
     if (!auth.ok) return auth.response;
     const { user } = auth.session;
-    const { id, quotationId } = await ctx.params;
+    const { id, qid: quotationId } = await ctx.params;
 
     const project = await getProjectForUser(user.id, id);
     const quotation = project?.quotations.find((q) => q.id === quotationId);

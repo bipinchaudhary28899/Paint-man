@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewProps, type StyleProp, type TextStyle, type ViewProps, type ViewStyle } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
@@ -6,7 +5,7 @@ import { Turn } from "./Collapse";
 import { colors, fonts, gutter, radii } from "~/theme";
 import { H, MAX_SCALE } from "./Text";
 
-// Small pieces from the website's stylesheet: .card, .pill, .sticker, .link-arrow with its Arrow,
+// Small pieces from the website's stylesheet: .card, .link-arrow with its Arrow,
 // the + toggle, and the .swipe row that bleeds to the screen edges.
 
 /** .card: white, hairline (line-soft), radius 20. `radius` follows the website's per-screen overrides. */
@@ -80,27 +79,7 @@ export function Chevron({ size = 14, color = colors.ink, up = false, strokeWidth
   );
 }
 
-/** .pill: a quiet chip (proof points, filter tags). Its text stops growing at 1.3× the size (MAX_SCALE.fixed). */
-export function Pill({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return (
-    <View style={[styles.pill, style]}>
-      <Text maxFontSizeMultiplier={MAX_SCALE.fixed} style={styles.pillText}>
-        {children}
-      </Text>
-    </View>
-  );
-}
 
-/** .sticker: the uppercase label on photos and status lines. Pinned over a photo, its text stops growing at 1.3× (MAX_SCALE.fixed). */
-export function Sticker({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return (
-    <View style={[styles.sticker, style]}>
-      <Text maxFontSizeMultiplier={MAX_SCALE.fixed} style={styles.stickerText}>
-        {children}
-      </Text>
-    </View>
-  );
-}
 
 /** .swipe: a horizontal row that scrolls inside itself and bleeds to the screen edges (-mx-5 px-5). */
 export function Swipe({ children, gap = 12, contentStyle, ...props }: ScrollViewProps & { gap?: number; contentStyle?: StyleProp<ViewStyle> }) {
@@ -125,9 +104,5 @@ const styles = StyleSheet.create({
   linkArrow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44, alignSelf: "flex-start" },
   titleLink: { minHeight: 44, justifyContent: "center" },
   linkArrowText: { fontFamily: fonts.sansMedium, fontSize: 16 },
-  pill: { borderRadius: radii.pill, paddingVertical: 10, paddingHorizontal: 16, backgroundColor: "rgba(248, 245, 239, 0.9)", borderWidth: 1, borderColor: colors.lineSoft, alignSelf: "flex-start" },
-  pillText: { fontFamily: fonts.sansMedium, fontSize: 13, color: colors.ink },
-  sticker: { borderRadius: radii.pill, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: "rgba(248, 245, 239, 0.9)", alignSelf: "flex-start" },
-  stickerText: { fontFamily: fonts.sansSemiBold, fontSize: 11, letterSpacing: 1.32, textTransform: "uppercase", color: colors.ink },
   bleed: { marginHorizontal: -gutter },
 });

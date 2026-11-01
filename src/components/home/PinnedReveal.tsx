@@ -20,8 +20,6 @@ export const stages = [
   { title: "First coat", text: "The shade begins to show." },
   { title: "Second coat", text: "Deep, even, finished." },
 ];
-export const stageLabels = ["Before · putty", "Primer going on", "First coat", "Second coat · done"];
-const longestLabel = stageLabels.reduce((a, b) => (b.length > a.length ? b : a));
 
 /** The shade the walls take: a soft sage green, Asian Paints Pepper Leaf 8386 (PaintDB hex). */
 export const wallShade = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2" };
@@ -37,7 +35,7 @@ const maskStyle = { maskImage: `url(${wallMask})`, WebkitMaskImage: `url(${wallM
 
 /**
  * The phone strip's active-stage rule: shown (terracotta) only while its stage is current. It runs
- * the sticker's label keyframes (label-0..3 in globals.css) on the track's `--pin` view timeline;
+ * the label keyframes (label-0..3 in globals.css) on the track's `--pin` view timeline;
  * without scroll timelines the last stage's rule shows, as the finished walls do. Written out in
  * full so Tailwind finds every class.
  */
@@ -110,7 +108,7 @@ export function PinnedReveal() {
                   className={`pin-stage pin-stage-${i} relative flex flex-col gap-0.5 border-t-2 border-line pt-1.5 tab:flex-row tab:items-baseline tab:gap-[18px] tab:border-t-0 tab:border-b tab:py-3.5 desk:gap-6 desk:border-b-0 desk:py-4`}
                   style={js ? ({ "--stage-on": js.stageOn(i) } as CSSProperties) : undefined}
                 >
-                  {/* Phones: the active stage's rule turns terracotta, on the same timeline as the sticker */}
+                  {/* Phones: the active stage's rule turns terracotta as the walls reach it */}
                   <span aria-hidden className={`absolute inset-x-0 -top-0.5 h-0.5 bg-terracotta-light tab:hidden ${activeRule[i]}`} style={js ? { opacity: i === js.stage ? 1 : 0 } : undefined} />
                   <span className="pin-no font-display text-[13px] tab:w-[22px] tab:text-[15px] desk:w-6">0{i + 1}</span>
                   <span className="flex flex-col gap-0.5">
@@ -150,19 +148,6 @@ export function PinnedReveal() {
             <div aria-hidden className="pin-edge pointer-events-none absolute inset-0" style={js ? { transform: `translateY(${100 - js.fill}%)`, opacity: js.edgeVisible ? 1 : 0 } : undefined}>
               <div className="absolute inset-x-0 top-0 h-px bg-canvas/90 shadow-[0_0_20px_4px_rgba(248,245,239,0.5)]" />
             </div>
-            <span className="sticker absolute left-3.5 top-3.5 px-3 py-[7px] text-[11px] tab:left-[18px] tab:top-[18px] tab:px-3.5 tab:py-2 tab:text-[11px] desk:left-5 desk:top-5">
-              {/* an invisible copy of the longest label sizes the sticker, so no stage label ever wraps */}
-              <span aria-hidden className="invisible whitespace-nowrap">{longestLabel}</span>
-              {stageLabels.map((l, i) => (
-                <span
-                  key={l}
-                  className={`pin-label pin-label-${i} absolute inset-0 flex items-center justify-center whitespace-nowrap`}
-                  style={js ? { opacity: i === js.stage ? 1 : 0 } : undefined}
-                >
-                  {l}
-                </span>
-              ))}
-            </span>
           </div>
         </div>
       </div>

@@ -11,10 +11,10 @@ import { Em, Eyebrow, H, MAX_SCALE, P } from "~/components/ui/Text";
 import { goldenText } from "~/lib/contrast";
 import { openHref } from "~/lib/links";
 import { cityPath, liveCities, type Service } from "~/shared";
-import { colors, fonts, radii } from "~/theme";
+import { colors, fonts } from "~/theme";
 
 // Pieces the services and city pages share: links inside text (the website's linkClass and its
-// bold variant), the warm gradient word, the service's sticker, the "What's included" list, the
+// bold variant), the warm gradient word, the service's label, the "What's included" list, the
 // arrow link with a longer spoken label, the live cities as links, the "Book … online" section with
 // the booking form in a card, and the 404 page.
 
@@ -83,27 +83,12 @@ export function GradientWord({ children }: { children: string }) {
   );
 }
 
-const ACCENT_BG: Record<string, string> = { "bg-terracotta": colors.terracotta, "bg-sage-deep": colors.sageDeep, "bg-golden": colors.golden, "bg-ink": colors.ink };
-const ACCENT_TEXT: Record<string, string> = { "text-on-ink": colors.onInk, "text-ink": colors.ink };
-
-/** A service's `accent` classes ("bg-terracotta text-on-ink") as the sticker's colours. */
-export function accentColours(accent: string): { background: string; text: string } {
-  const parts = accent.split(/\s+/);
-  return {
-    background: parts.map((p) => ACCENT_BG[p]).find(Boolean) ?? "rgba(248, 245, 239, 0.9)",
-    text: parts.map((p) => ACCENT_TEXT[p]).find(Boolean) ?? colors.ink,
-  };
-}
-
-/** The .sticker on a service photo, in the service's accent colours; pinned over the photo, its text stops growing at 1.3×. */
-export function ServiceSticker({ service, style }: { service: Service; style?: StyleProp<ViewStyle> }) {
-  const { background, text } = accentColours(service.accent);
+/** A service's kind over its name ("INTERIOR"): eyebrow text, never a pill badge on the photo. */
+export function ServiceLabel({ service, style }: { service: Service; style?: StyleProp<TextStyle> }) {
   return (
-    <View style={[styles.sticker, { backgroundColor: background }, style]}>
-      <Text maxFontSizeMultiplier={MAX_SCALE.fixed} style={[styles.stickerText, { color: text }]}>
-        {service.shortName}
-      </Text>
-    </View>
+    <Eyebrow size={11} maxFontSizeMultiplier={MAX_SCALE.fixed} style={style}>
+      {service.shortName}
+    </Eyebrow>
   );
 }
 
@@ -262,8 +247,6 @@ const styles = StyleSheet.create({
   eyebrow: { lineHeight: 18 },
   blockLink: { minHeight: 44, justifyContent: "center", alignSelf: "flex-start" },
   blockLinkText: { fontFamily: fonts.sansSemiBold, fontSize: 16, lineHeight: 24, color: colors.ink, textDecorationLine: "underline", textDecorationColor: colors.terracotta },
-  sticker: { borderRadius: radii.pill, paddingVertical: 8, paddingHorizontal: 14 },
-  stickerText: { fontFamily: fonts.sansSemiBold, fontSize: 11, lineHeight: 11, letterSpacing: 1.32, textTransform: "uppercase" },
   tickRow: { flexDirection: "row" },
   tick: { color: colors.fern },
   tickText: { flex: 1, color: colors.ink, letterSpacing: -0.08 },

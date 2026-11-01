@@ -1,9 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { router } from "expo-router";
-import { Linking, Text } from "react-native";
+import { Linking, StyleSheet, Text } from "react-native";
 
 import {
-  accentColours,
   ArrowLink,
   BlockLink,
   CreamHero,
@@ -11,7 +10,7 @@ import {
   LiveCityLinks,
   NotFound,
   SectionHead,
-  ServiceSticker,
+  ServiceLabel,
   TextLink,
   Tick,
   warmAt,
@@ -54,18 +53,14 @@ describe("the warm gradient word", () => {
   });
 });
 
-describe("service stickers", () => {
-  it("reads each service's accent classes, with the plain sticker as the fallback", () => {
-    expect(accentColours("bg-terracotta text-on-ink")).toEqual({ background: colors.terracotta, text: colors.onInk });
-    expect(accentColours("bg-golden text-ink")).toEqual({ background: colors.golden, text: colors.ink });
-    expect(accentColours("bg-sage-deep text-on-ink").background).toBe(colors.sageDeep);
-    expect(accentColours("")).toEqual({ background: "rgba(248, 245, 239, 0.9)", text: colors.ink });
-    for (const s of services) expect(accentColours(s.accent).background).not.toBe("rgba(248, 245, 239, 0.9)");
-  });
-
-  it("shows the service's short name", async () => {
-    await render(<ServiceSticker service={services[0]} />);
-    expect(screen.getByText(services[0].shortName)).toBeOnTheScreen();
+describe("service labels", () => {
+  it("name the service's kind as eyebrow text: terracotta, no background, never a pill", async () => {
+    await render(<ServiceLabel service={services[0]} />);
+    const label = screen.getByText(services[0].shortName);
+    const style = StyleSheet.flatten(label.props.style);
+    expect(style).toMatchObject({ color: colors.terracotta, textTransform: "uppercase" });
+    expect(style.backgroundColor).toBeUndefined();
+    expect(style.borderRadius).toBeUndefined();
   });
 });
 

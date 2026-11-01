@@ -26,8 +26,6 @@ export const stages = [
   { title: "First coat", text: "The shade begins to show." },
   { title: "Second coat", text: "Deep, even, finished." },
 ];
-export const stageLabels = ["Before · putty", "Primer going on", "First coat", "Second coat · done"];
-const longestLabel = stageLabels.reduce((a, b) => (b.length > a.length ? b : a));
 
 /** The shade the walls take: a soft sage green, Asian Paints Pepper Leaf 8386 (PaintDB hex). */
 export const wallShade = { name: "Pepper Leaf", code: "Asian Paints 8386", hex: "#bbc8b2" };
@@ -73,7 +71,7 @@ export function PinnedReveal() {
               Watch the colour <Em>go on.</Em>
             </H>
           </View>
-          <Room fill={fill} stage={stage} />
+          <Room fill={fill} />
           <View style={styles.stages}>
             {stages.map((s, i) => (
               <Stage key={s.title} index={i} title={s.title} stage={stage} />
@@ -94,8 +92,8 @@ export function PinnedReveal() {
   );
 }
 
-/** The room: the photo, the putty above the wet edge and the shade below it, the edge itself and the stage sticker. */
-function Room({ fill, stage }: { fill: SharedValue<number>; stage: SharedValue<number> }) {
+/** The room: the photo, the putty above the wet edge and the shade below it, and the edge itself (the stage list beside it names the stage). */
+function Room({ fill }: { fill: SharedValue<number> }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   // the colour previews' Indian living room, its walls in bare primer white (bundled with the app)
   const photo = useImage(skiaSource(genericScene.image.src));
@@ -143,25 +141,8 @@ function Room({ fill, stage }: { fill: SharedValue<number>; stage: SharedValue<n
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, edge]}>
           <View style={styles.edge} />
         </Animated.View>
-        <View style={styles.sticker}>
-          <Text aria-hidden style={[styles.stickerText, styles.invisible]}>
-            {longestLabel}
-          </Text>
-          {stageLabels.map((l, i) => (
-            <StickerLabel key={l} index={i} label={l} stage={stage} />
-          ))}
-        </View>
       </View>
     </View>
-  );
-}
-
-function StickerLabel({ index, label, stage }: { index: number; label: string; stage: SharedValue<number> }) {
-  const shown = useAnimatedStyle(() => ({ opacity: stage.value === index ? 1 : 0 }));
-  return (
-    <Animated.View style={[styles.stickerLabel, shown]}>
-      <Text style={styles.stickerText}>{label}</Text>
-    </Animated.View>
   );
 }
 
@@ -212,10 +193,6 @@ const styles = StyleSheet.create({
   room: { marginTop: 16, flex: 1, minHeight: 180, width: "100%", backgroundColor: "#d9d2c5", boxShadow: "0px 50px 90px -50px rgba(36, 37, 34, 0.5)" },
   roomInner: { flex: 1, overflow: "hidden", backgroundColor: "#d9d2c5" },
   edge: { height: 1, backgroundColor: "rgba(248, 245, 239, 0.9)", boxShadow: "0px 0px 20px 4px rgba(248, 245, 239, 0.5)" },
-  sticker: { position: "absolute", left: 14, top: 14, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: "rgba(248, 245, 239, 0.9)" },
-  stickerLabel: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
-  stickerText: { fontFamily: fonts.sansSemiBold, fontSize: 11, lineHeight: 11, letterSpacing: 1.2, textTransform: "uppercase", color: colors.ink },
-  invisible: { opacity: 0 },
   stages: { marginTop: 14, flexDirection: "row", gap: 8 },
   stage: { flex: 1, borderTopWidth: 2, borderColor: colors.line, paddingTop: 6, gap: 2 },
   rule: { position: "absolute", left: 0, right: 0, top: -2, height: 2, backgroundColor: colors.terracottaLight },

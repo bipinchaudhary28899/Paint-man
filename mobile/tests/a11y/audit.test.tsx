@@ -4,7 +4,6 @@ import type { TestInstance } from "test-renderer";
 
 import { BottomNav } from "~/components/site/BottomNav";
 import { NavStateProvider } from "~/components/site/nav-state";
-import { Pill, Sticker } from "~/components/ui/Bits";
 import { Button } from "~/components/ui/Button";
 import { H, MAX_SCALE, P } from "~/components/ui/Text";
 import { colors } from "~/theme";
@@ -150,16 +149,12 @@ describe("text sizes", () => {
         <H>A heading</H>
         <Button label="Book" onPress={() => undefined} />
         <Button label="In a bar" maxFontSizeMultiplier={MAX_SCALE.fixed} onPress={() => undefined} />
-        <Pill>Zero advance</Pill>
-        <Sticker>Example</Sticker>
       </View>,
     );
     expect(screen.getByText("Body text")).not.toHaveProp("maxFontSizeMultiplier");
     expect(screen.getByText("A heading")).toHaveProp("maxFontSizeMultiplier", MAX_SCALE.large);
     expect(screen.getByText("Book")).toHaveProp("maxFontSizeMultiplier", MAX_SCALE.large);
     expect(screen.getByText("In a bar")).toHaveProp("maxFontSizeMultiplier", MAX_SCALE.fixed);
-    expect(screen.getByText("Zero advance")).toHaveProp("maxFontSizeMultiplier", MAX_SCALE.fixed);
-    expect(screen.getByText("Example")).toHaveProp("maxFontSizeMultiplier", MAX_SCALE.fixed);
   });
 
   it("keeps the bottom nav's labels on one line, growing to 1.3× and shrinking a little to fit a narrow tab", async () => {

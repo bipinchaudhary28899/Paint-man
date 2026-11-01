@@ -32,10 +32,10 @@ export default function ServicesPage() {
           <article key={s.slug} className="reveal card grid overflow-hidden md:grid-cols-2">
             <div className={`relative min-h-72 border-b border-line md:border-b-0 ${i % 2 ? "md:order-2 md:border-l" : "md:border-r"}`}>
               <Image src={s.image.src} alt={s.image.alt} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover transition duration-700 hover:scale-105" />
-              <span className={`sticker absolute left-5 top-5 ${s.accent}`}>{s.shortName}</span>
             </div>
             <div className="p-8 md:p-10">
-              <h2 className="text-3xl font-normal">
+              <p className="eyebrow">{s.shortName}</p>
+              <h2 className="mt-2 text-3xl font-normal">
                 <Link href={servicePath(s)} className="hover:text-tangerine-text">{s.title}</Link>
               </h2>
               <p className="mt-4 leading-relaxed text-muted">{s.intro}</p>

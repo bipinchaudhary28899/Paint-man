@@ -320,8 +320,6 @@ h1 em, h2 em, h3 em, .accent {
 .pin-no { color: color-mix(in srgb, var(--color-terracotta) calc(var(--stage-on) * 100%), var(--color-muted-2)); }
 .pin-title { color: color-mix(in srgb, var(--color-ink) calc(var(--stage-on) * 100%), var(--color-muted)); }
 .pin-text { color: color-mix(in srgb, var(--color-muted) calc(var(--stage-on) * 100%), var(--color-muted-2)); }
-.pin-label { opacity: 0; }
-.pin-label-3 { opacity: 1; }
 @keyframes pin-before { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
 @keyframes pin-after { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes pin-edge { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -338,7 +336,7 @@ h1 em, h2 em, h3 em, .accent {
 @keyframes label-3 { 0%, 78% { opacity: 0; } 79%, 100% { opacity: 1; } }
 @supports (animation-timeline: view()) {
   .pin-track { height: 300vh; view-timeline-name: --pin; view-timeline-axis: block; }
-  .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage, .pin-label {
+  .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage {
     animation-timeline: --pin;
     animation-range: contain 0% contain 100%;
     animation-fill-mode: both;
@@ -353,14 +351,10 @@ h1 em, h2 em, h3 em, .accent {
   .pin-stage-1 { animation-name: stage-1; animation-timing-function: linear; }
   .pin-stage-2 { animation-name: stage-2; animation-timing-function: linear; }
   .pin-stage-3 { animation-name: stage-3; animation-timing-function: linear; }
-  .pin-label-0 { animation-name: label-0; animation-timing-function: linear; }
-  .pin-label-1 { animation-name: label-1; animation-timing-function: linear; }
-  .pin-label-2 { animation-name: label-2; animation-timing-function: linear; }
-  .pin-label-3 { animation-name: label-3; animation-timing-function: linear; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pin-track { height: auto !important; }
-  .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage, .pin-label { animation: none !important; }
+  .pin-before, .pin-after, .pin-edge, .pin-bar, .pin-pct, .pin-stage { animation: none !important; }
 }
 
 /* ---------- Colour wheel: turns only with the scroll, no auto-rotation ----------
@@ -553,23 +547,6 @@ h1 em, h2 em, h3 em, .accent {
 .brush { font-style: italic; color: var(--color-terracotta-light); white-space: nowrap; }
 
 .arch { border-radius: 999px 999px 1.5rem 1.5rem; }
-
-/* Pill label on photos and status lines */
-.sticker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 999px;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  line-height: 1;
-  background: rgba(248, 245, 239, 0.9);
-  color: var(--color-ink);
-  backdrop-filter: blur(8px);
-}
 
 /* Section eyebrow */
 .eyebrow {

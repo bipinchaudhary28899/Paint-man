@@ -9,7 +9,7 @@ import { H, P } from "~/components/ui/Text";
 import { openHref } from "~/lib/links";
 import { servicePath, type Service } from "~/shared";
 import { colors, fonts, gutter, radii } from "~/theme";
-import { ServiceSticker } from "./bits";
+import { ServiceLabel } from "./bits";
 
 // A service card opened into its details (owner: a card "can lift slightly when tapped, then expand
 // into its details"): a sheet that springs up from the bottom with the service's photo, its
@@ -44,8 +44,8 @@ export function ServiceSheet({ service, onClose }: { service: Service; onClose: 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.photo}>
             <Photo image={service.image} width={width - 2 * gutter} aspectRatio={16 / 9} recyclingKey={`${service.slug}-details`} />
-            <ServiceSticker service={service} style={styles.sticker} />
           </View>
+          <ServiceLabel service={service} style={styles.label} />
           <H size={28} leading={1.12} style={styles.title}>
             {service.name}
           </H>
@@ -87,8 +87,8 @@ const styles = StyleSheet.create({
   sheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: colors.canvas, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, overflow: "hidden" },
   content: { padding: gutter, paddingTop: 22 },
   photo: { borderRadius: radii.lg, overflow: "hidden" },
-  sticker: { position: "absolute", left: 14, top: 14 },
-  title: { marginTop: 18 },
+  label: { marginTop: 18 },
+  title: { marginTop: 6 },
   description: { marginTop: 10 },
   includesTitle: { marginTop: 22, fontFamily: fonts.sansSemiBold, fontSize: 12, lineHeight: 16, letterSpacing: 1.2, textTransform: "uppercase", color: colors.terracotta },
   includes: { marginTop: 8 },

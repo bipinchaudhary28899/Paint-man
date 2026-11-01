@@ -9,7 +9,7 @@ import { saveLead } from "@/lib/leads/store";
 import { createQuotation, saveQuotation, sendQuotation } from "@/lib/projects/repo";
 import { resetTestDb, useTestDb } from "../support/db";
 
-// POST /api/v1/projects/{id}/quotations/{quotationId}/accept: the customer accepts their quotation
+// POST /api/v1/projects/{id}/quotations/{qid}/accept: the customer accepts their quotation
 // in the app (slide to accept), against an in-memory Postgres.
 
 const testDb = useTestDb();
@@ -27,7 +27,7 @@ afterEach(() => {
   setDb(testDb.db);
 });
 
-const accept = async () => (await import("@/app/api/v1/projects/[id]/quotations/[quotationId]/accept/route")).POST;
+const accept = async () => (await import("@/app/api/v1/projects/[id]/quotations/[qid]/accept/route")).POST;
 const patchProject = async () => (await import("@/app/api/v1/projects/[id]/route")).PATCH;
 
 async function signedIn(client: "web" | "app" = "app", phone = PHONE) {
@@ -47,7 +47,7 @@ async function quoted(userId: string, validUntil?: string) {
 
 const post = (projectId: string, quotationId: string, headers: Record<string, string> = {}) =>
   new NextRequest(`${BASE}/api/v1/projects/${projectId}/quotations/${quotationId}/accept`, { method: "POST", headers: { host: "localhost:3000", ...headers } });
-const params = (id: string, quotationId: string) => ({ params: Promise.resolve({ id, quotationId }) });
+const params = (id: string, qid: string) => ({ params: Promise.resolve({ id, qid }) });
 
 const expectError = async (res: Response, status: number, code: string) => {
   expect(res.status).toBe(status);

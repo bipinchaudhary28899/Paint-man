@@ -10,12 +10,12 @@ import { useSpringPress } from "~/components/ui/useSpringPress";
 import { openHref } from "~/lib/links";
 import { servicePath, services, type Service } from "~/shared";
 import { colors, fonts, gutter, radii } from "~/theme";
-import { ServiceSticker } from "./bits";
+import { ServiceLabel } from "./bits";
 import { ServiceSheet } from "./ServiceSheet";
 
 // The services as a swipe row of cards (the home page's "Every wall in the house" and /services): one
 // card fills the screen less a peek of the next, each snaps into place, and dots with a "1 / 4" counter
-// say where you are. A card is the service's photo (the card frames it), its coloured sticker, its name,
+// say where you are. A card is the service's photo (the card frames it), its kind (an eyebrow), its name,
 // one short line and a pill opening the service; on /services a second pill books a visit for it.
 // Pressing the card lifts it a little (useSpringPress); tapping its photo and name opens the
 // service's details in a sheet (ServiceSheet), with what it includes.
@@ -64,9 +64,9 @@ const ServiceCard = memo(function ServiceCard({ service, width, book }: { servic
           <View>
             {/* fetched at the card's width; low priority: the carousel sits below the page's first screen */}
             <Photo image={service.image} width={width} aspectRatio={16 / 10} position={photoPosition[service.slug]} priority="low" recyclingKey={service.slug} />
-            <ServiceSticker service={service} style={styles.sticker} />
           </View>
           <View style={styles.head}>
+            <ServiceLabel service={service} style={styles.label} />
             <H size={24} leading={1.12} balance={false}>
               {service.name}
             </H>
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   row: { paddingBottom: 2 },
   // fills the lifting wrapper, which the row stretches: every card is as tall as the tallest
   card: { flex: 1, overflow: "hidden" },
-  sticker: { position: "absolute", left: 14, top: 14 },
+  label: { marginBottom: 6 },
   head: { paddingHorizontal: 18, paddingTop: 16 },
   line: { marginTop: 8 },
   // the pills sit at the foot of every card, so a row of cards of different lengths lines up
